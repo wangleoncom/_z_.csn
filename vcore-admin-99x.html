@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V-CORE MAX | 老王基地終極工程中樞</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: { colors: { primary: '#0ea5e9', bgdark: '#020617' } } } }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { --primary: #0ea5e9; --bg-dark: #020617; }
+        body { background-color: var(--bg-dark); color: #e2e8f0; font-family: 'Noto Sans TC', sans-serif; overflow: hidden; }
+        .bg-glow { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% 50%, #0c4a6e 0%, #020617 70%); z-index: -1; opacity: 0.6; }
+        .glass-card { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(20px); border: 1px solid rgba(14, 165, 233, 0.2); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8); }
+        .cyber-input { background: rgba(0,0,0,0.5); border: 1px solid rgba(14, 165, 233, 0.3); transition: all 0.3s; color: white; }
+        .cyber-input:focus { border-color: var(--primary); box-shadow: 0 0 15px rgba(14, 165, 233, 0.4); outline: none; }
+        .custom-table thead { background: linear-gradient(to right, rgba(14, 165, 233, 0.15), rgba(0,0,0,0)); }
+        .custom-table tr { transition: all 0.3s ease; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .custom-table tr:hover { background: rgba(14, 165, 233, 0.15); }
+        .btn-action { width: 32px; height: 32px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .btn-action:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.4); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+        .nav-tab.active { background: rgba(14, 165, 233, 0.2); border-color: rgba(14, 165, 233, 0.5); color: #38bdf8; box-shadow: 0 0 15px rgba(14, 165, 233, 0.2); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .cheat-alert { animation: pulse-red 2s infinite; border-color: #ef4444 !important; }
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+
+    <div class="bg-glow"></div>
+
+    <div id="login-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-[#020617]">
+        <div class="glass-card p-10 rounded-3xl w-full max-w-md text-center border-t-4 border-sky-500 shadow-[0_0_50px_rgba(14,165,233,0.1)]">
+            <i class="fa-solid fa-server text-6xl text-sky-400 mb-4 animate-pulse"></i>
+            <h1 class="text-3xl font-black tracking-widest text-white mb-2">V-CORE <span class="text-sky-500">MAX</span></h1>
+            <p class="text-sky-400/70 text-xs mb-8 tracking-widest">基地終極工程中樞 Pro</p>
+            <div class="space-y-4 text-left">
+                <input type="email" id="admin-email" class="cyber-input w-full px-5 py-4 rounded-xl text-sm" placeholder="工程師信箱">
+                <input type="password" id="admin-password" class="cyber-input w-full px-5 py-4 rounded-xl text-sm" placeholder="最高管理員密碼">
+                <button onclick="window.adminLogin()" class="w-full bg-gradient-to-r from-sky-600 to-sky-400 text-white font-black py-4 rounded-xl shadow-[0_0_20px_rgba(14,165,233,0.4)] mt-4 tracking-widest hover:scale-[1.02] transition-transform">
+                    <i class="fa-solid fa-fingerprint mr-2"></i> 驗證並啟動系統
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-dashboard" class="hidden flex-1 flex flex-col overflow-hidden">
+        
+        <header class="h-20 glass-card border-b border-sky-500/30 flex items-center justify-between px-8 flex-shrink-0 z-50">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-sky-400 to-blue-600 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(14,165,233,0.5)]">
+                    <i class="fa-solid fa-satellite-dish text-white text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-black text-white tracking-widest">V-CORE <span class="text-sky-500">MAX</span> 監控矩陣</h2>
+                    <p class="text-[11px] text-emerald-400 mt-1 tracking-widest"><span class="animate-pulse mr-1">●</span>Firebase 即時同步中</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="window.manageAnnouncement()" class="bg-indigo-500/20 text-indigo-400 border border-indigo-500/50 text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-indigo-500 hover:text-white transition-all">
+                    <i class="fa-solid fa-bullhorn"></i> 系統公告
+                </button>
+                <button onclick="window.forceUpdatePage()" class="bg-zinc-700/50 text-zinc-300 border border-zinc-500/50 text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-zinc-600 hover:text-white transition-all" title="無視快取強制重整">
+                    <i class="fa-solid fa-rotate-right"></i> 強制更新
+                </button>
+                <button onclick="window.adminLogout()" class="text-xs font-black text-red-400 hover:text-white border border-red-500/40 px-5 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500 transition-all ml-2">
+                    登出
+                </button>
+            </div>
+        </header>
+
+        <div class="flex-1 flex overflow-hidden">
+            <aside class="w-20 lg:w-64 glass-card border-r border-sky-500/20 flex flex-col p-4 flex-shrink-0 z-40">
+                <div class="flex-1 space-y-3 mt-4">
+                    <button onclick="window.switchTab('tab-analytics', this)" class="nav-tab active w-full flex items-center justify-center lg:justify-start gap-4 px-4 py-4 rounded-xl text-zinc-400 hover:bg-white/5 transition-all border border-transparent">
+                        <i class="fa-solid fa-chart-pie text-xl"></i><span class="hidden lg:block tracking-widest font-bold">數據分析儀表板</span>
+                    </button>
+                    <button onclick="window.switchTab('tab-users', this)" class="nav-tab w-full flex items-center justify-center lg:justify-start gap-4 px-4 py-4 rounded-xl text-zinc-400 hover:bg-white/5 transition-all border border-transparent">
+                        <i class="fa-solid fa-users-viewfinder text-xl"></i><span class="hidden lg:block tracking-widest font-bold">全站粉絲資料庫</span>
+                    </button>
+                    <button onclick="window.switchTab('tab-ai-spy', this)" class="nav-tab w-full flex items-center justify-center lg:justify-start gap-4 px-4 py-4 rounded-xl text-zinc-400 hover:bg-white/5 transition-all border border-transparent">
+                        <i class="fa-solid fa-robot text-xl"></i><span class="hidden lg:block tracking-widest font-bold">AI 對話監控網</span>
+                    </button>
+                    <button onclick="window.switchTab('tab-logs', this)" class="nav-tab w-full flex items-center justify-center lg:justify-start gap-4 px-4 py-4 rounded-xl text-zinc-400 hover:bg-white/5 transition-all border border-transparent">
+                        <i class="fa-solid fa-shield-halved text-xl"></i><span class="hidden lg:block tracking-widest font-bold">雲端安全日誌</span>
+                    </button>
+                </div>
+            </aside>
+
+            <main class="flex-1 p-6 overflow-hidden flex flex-col relative">
+                
+                <div id="tab-analytics" class="content-panel flex-1 flex flex-col animate-[fadeIn_0.5s_ease]">
+                    <h3 class="text-2xl font-black text-white tracking-widest mb-6"><i class="fa-solid fa-chart-line text-sky-500 mr-2"></i>大數據總覽</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                        <div class="glass-card p-6 rounded-2xl flex items-center justify-between border-t-2 border-sky-400">
+                            <div><p class="text-xs text-zinc-400 font-bold tracking-widest mb-1">總註冊粉絲</p><p class="text-3xl font-black text-white" id="stat-total-users">0</p></div>
+                            <i class="fa-solid fa-users text-4xl text-sky-500/20"></i>
+                        </div>
+                        <div class="glass-card p-6 rounded-2xl flex items-center justify-between border-t-2 border-emerald-400">
+                            <div><p class="text-xs text-zinc-400 font-bold tracking-widest mb-1">全站產出 EXP</p><p class="text-3xl font-black text-white" id="stat-total-exp">0</p></div>
+                            <i class="fa-solid fa-star text-4xl text-emerald-500/20"></i>
+                        </div>
+                        <div class="glass-card p-6 rounded-2xl flex items-center justify-between border-t-2 border-amber-400">
+                            <div><p class="text-xs text-zinc-400 font-bold tracking-widest mb-1">今日活躍數</p><p class="text-3xl font-black text-white" id="stat-active-today">0</p></div>
+                            <i class="fa-solid fa-fire text-4xl text-amber-500/20"></i>
+                        </div>
+                        <div id="cheat-indicator" class="glass-card p-6 rounded-2xl flex items-center justify-between border-t-2 border-zinc-500 transition-all">
+                            <div><p class="text-xs text-zinc-400 font-bold tracking-widest mb-1">防作弊偵測</p><p class="text-xl font-black text-zinc-500" id="stat-cheat-status">無異常</p></div>
+                            <i class="fa-solid fa-user-secret text-4xl text-zinc-500/20" id="cheat-icon"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1 glass-card rounded-2xl p-6 flex items-center justify-center">
+                        <div class="w-full max-w-lg"><canvas id="expChart"></canvas></div>
+                    </div>
+                </div>
+
+                <div id="tab-users" class="content-panel hidden flex-1 flex flex-col animate-[fadeIn_0.5s_ease]">
+                    <div class="flex justify-between items-end gap-4 mb-4">
+                        <div class="flex gap-2">
+                            <button onclick="window.bulkAction('ban')" class="bg-red-500/20 text-red-400 border border-red-500/30 text-xs px-4 py-2 rounded-xl font-bold hover:bg-red-500 hover:text-white transition-all">批量封鎖</button>
+                            <button onclick="window.globalAirdrop()" class="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-black px-4 py-2 rounded-xl shadow-[0_0_15px_rgba(245,158,11,0.4)] hover:scale-105 transition-transform"><i class="fa-solid fa-parachute-box mr-1"></i> 全服空投</button>
+                            <button onclick="window.exportCSV()" class="bg-sky-500/20 text-sky-400 border border-sky-500/50 text-xs px-4 py-2 rounded-xl font-bold hover:bg-sky-500 hover:text-white transition-all">匯出 CSV</button>
+                        </div>
+                        <div class="relative w-80">
+                            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-sky-500"></i>
+                            <input type="text" id="search-input" oninput="window.filterUsers()" placeholder="輸入 UID、名稱或信箱過濾..." class="cyber-input w-full pl-12 pr-4 py-2 rounded-xl text-sm">
+                        </div>
+                    </div>
+                    <div class="flex-1 glass-card rounded-2xl overflow-hidden flex flex-col">
+                        <div class="flex-1 overflow-y-auto no-scrollbar">
+                            <table class="w-full text-left border-collapse custom-table">
+                                <thead class="sticky top-0 z-10 bg-[#060e1a] shadow-md border-b border-sky-500/30">
+                                    <tr class="text-[11px] font-black text-sky-400 tracking-widest">
+                                        <th class="py-4 px-4 w-10 text-center"><input type="checkbox" id="select-all" onclick="window.toggleSelectAll()" class="cursor-pointer"></th>
+                                        <th class="py-4 px-4">身分資訊</th>
+                                        <th class="py-4 px-4">聯繫信箱</th>
+                                        <th class="py-4 px-4 text-center">狀態</th>
+                                        <th class="py-4 px-4 text-center">積分 (EXP)</th>
+                                        <th class="py-4 px-4 text-right">執行操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="user-table-body" class="text-sm"></tbody>
+                            </table>
+                        </div>
+                        <div class="py-3 text-center border-t border-sky-500/20 bg-black/40">
+                            <button onclick="window.loadMoreUsers()" class="text-sky-400 text-xs font-bold hover:text-white transition-colors">載入更多名單 <i class="fa-solid fa-chevron-down ml-1"></i></button>
+                            <p class="text-[10px] text-zinc-500 mt-1">目前顯示 <span id="display-count">0</span> 筆</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-ai-spy" class="content-panel hidden flex-1 flex flex-col animate-[fadeIn_0.5s_ease]">
+                    <h3 class="text-2xl font-black text-white tracking-widest mb-4"><i class="fa-solid fa-eye text-sky-500 mr-2"></i>AI 互動監聽網</h3>
+                    <p class="text-xs text-zinc-400 mb-4">目前系統僅追蹤具有 Admin/Senior 權限粉絲之對話紀錄以供安全分析。</p>
+                    <div class="flex-1 flex gap-4 overflow-hidden">
+                        <div class="w-1/3 glass-card rounded-2xl overflow-y-auto no-scrollbar p-2" id="ai-user-list"></div>
+                        <div class="w-2/3 glass-card rounded-2xl p-6 overflow-y-auto no-scrollbar bg-black/50" id="ai-chat-view">
+                            <div class="h-full flex items-center justify-center text-zinc-600">請從左側選擇一位目標對象</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-logs" class="content-panel hidden flex-1 flex flex-col animate-[fadeIn_0.5s_ease]">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-2xl font-black text-white tracking-widest"><i class="fa-solid fa-shield-halved text-sky-500 mr-2"></i>雲端安全日誌</h3>
+                        <button onclick="window.clearLogs()" class="text-xs text-red-400 hover:text-white border border-red-500/40 px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500 transition-all font-bold">
+                            <i class="fa-solid fa-trash-can mr-1"></i> 徹底清空日誌
+                        </button>
+                    </div>
+                    <div class="flex-1 glass-card rounded-2xl p-6 overflow-y-auto no-scrollbar bg-black/40 font-mono text-xs" id="cloud-logs-container"></div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        // 使用 initializeFirestore 傳遞設定來解決 QUIC 錯誤
+        import { initializeFirestore, collection, onSnapshot, doc, updateDoc, query, orderBy, getDocs, writeBatch, addDoc, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // Firebase 配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyDdu8ag6liDwW0AXn3zccIR5a13g7WE-hM",
+            authDomain: "oldwangbase.firebaseapp.com",
+            projectId: "oldwangbase",
+            storageBucket: "oldwangbase.firebasestorage.app",
+            messagingSenderId: "756236660652",
+            appId: "1:756236660652:web:794d9649d7315b64ec1409"
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        
+        // 【重要】解決 net::ERR_QUIC_PROTOCOL_ERROR 斷線問題
+        const db = initializeFirestore(app, {
+            experimentalForceLongPolling: true, 
+            useFetchStreams: false 
+        });
+
+        // 全域變數
+        let masterUserList = [];
+        let renderUserLimit = 50; 
+        let expChartInstance = null;
+        let currentUserEmail = "";
+
+        // 檢查權限錯誤的工具函數
+        function checkPermissionError(error) {
+            if(error.message && error.message.includes('Missing or insufficient permissions')) {
+                Swal.fire({
+                    title: '資料庫權限被拒',
+                    text: '請前往 Firebase Console -> Firestore -> Rules 將權限改為 allow read, write: if true; (或設定管理員規則)',
+                    icon: 'error', background: '#020617', color: '#fff'
+                });
+                return true;
+            }
+            return false;
+        }
+
+        // ==========================================
+        // UI & 基礎功能
+        // ==========================================
+        window.switchTab = function(tabId, btn) {
+            document.querySelectorAll('.content-panel').forEach(p => p.classList.add('hidden'));
+            document.querySelectorAll('.nav-tab').forEach(b => {
+                b.classList.remove('active', 'bg-sky-500/20', 'border-sky-400/50', 'text-sky-400');
+                b.classList.add('text-zinc-400', 'border-transparent');
+            });
+            document.getElementById(tabId).classList.remove('hidden');
+            btn.classList.remove('text-zinc-400', 'border-transparent');
+            btn.classList.add('active', 'bg-sky-500/20', 'border-sky-400/50', 'text-sky-400');
+            
+            if(tabId === 'tab-ai-spy') loadAIUsers();
+        };
+
+        window.forceUpdatePage = function() {
+            Swal.fire({ title: '清理快取並重整中...', showConfirmButton: false, background: '#020617', color: '#fff', didOpen: () => Swal.showLoading() });
+            // 使用時間戳參數無視瀏覽器快取強制重整
+            const url = new URL(window.location.href);
+            url.searchParams.set('forceReload', Date.now());
+            window.location.href = url.toString();
+        };
+
+        // ==========================================
+        // 登入系統與日誌
+        // ==========================================
+        window.adminLogin = async function() {
+            const email = document.getElementById('admin-email').value;
+            const pass = document.getElementById('admin-password').value;
+            if(!email || !pass) return;
+            Swal.fire({ title: '矩陣連線中...', showConfirmButton: false, background: '#020617', color: '#fff', didOpen: () => Swal.showLoading() });
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+                currentUserEmail = email;
+                await cloudLog("系統登入", "工程師已進入 V-CORE MAX 中樞。");
+            } catch (e) { Swal.fire({title:'存取被拒', text:'權限或密碼錯誤', icon:'error', background:'#020617', color:'#fff'}); }
+        };
+
+        window.adminLogout = async function() { 
+            await cloudLog("系統登出", "工程師登出。");
+            await signOut(auth); location.reload(); 
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUserEmail = user.email;
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('main-dashboard').classList.remove('hidden');
+                Swal.close();
+                startRealtimeSync();
+                startLogSync();
+            }
+        });
+
+        async function cloudLog(action, detail) {
+            try {
+                await addDoc(collection(db, "system_logs"), { action: action, detail: detail, adminEmail: currentUserEmail, timestamp: Date.now() });
+            } catch(e) { console.warn("日誌寫入失敗", e); }
+        }
+
+        function startLogSync() {
+            const q = query(collection(db, "system_logs"), orderBy("timestamp", "desc"), limit(100));
+            onSnapshot(q, (snapshot) => {
+                const container = document.getElementById('cloud-logs-container');
+                container.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const time = new Date(data.timestamp).toLocaleString();
+                    container.innerHTML += `<div class="mb-3 pb-3 border-b border-sky-500/20"><span class="text-sky-400">[${time}]</span> <span class="text-emerald-400">${data.adminEmail}</span> 執行了 <b class="text-white">${data.action}</b>：<span class="text-zinc-400">${data.detail}</span></div>`;
+                });
+            }, (error) => checkPermissionError(error));
+        }
+
+        window.clearLogs = async function() {
+            Swal.fire({title: '確定清空所有日誌?', text:'此動作無法復原！', icon:'warning', background: '#020617', color: '#fff', showCancelButton: true, confirmButtonText: '徹底清空', confirmButtonColor: '#ef4444'})
+            .then(async (res) => {
+                if(res.isConfirmed) {
+                    Swal.fire({ title: '刪除中...', didOpen: () => Swal.showLoading(), background: '#0a1120', color: '#fff' });
+                    try {
+                        const q = query(collection(db, "system_logs"), limit(500));
+                        const snapshot = await getDocs(q);
+                        const batch = writeBatch(db);
+                        snapshot.forEach(d => batch.delete(d.ref));
+                        await batch.commit();
+                        await cloudLog("清空日誌", "管理員執行了徹底清空日誌操作。");
+                        Swal.fire({title: '已清空', icon: 'success', background: '#0a1120', color: '#fff'});
+                    } catch(e) { Swal.fire('錯誤', e.message, 'error'); }
+                }
+            });
+        }
+
+        // ==========================================
+        // 核心資料庫與防作弊系統
+        // ==========================================
+        function startRealtimeSync() {
+            // 監聽前 1000 名粉絲以保持前端效能
+            const q = query(collection(db, "users"), orderBy("exp", "desc"), limit(1000));
+            onSnapshot(q, (snapshot) => {
+                masterUserList = [];
+                let totalExp = 0; let activeToday = 0;
+                let cheaterDetected = null;
+                const todayFormatted = new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Taipei' }).split('/').map(n=>n.padStart(2,'0')).join('-');
+
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const exp = data.exp || 0;
+                    masterUserList.push({ uid: doc.id, ...data });
+                    totalExp += exp;
+                    if(data.lastCheckIn && data.lastCheckIn.includes(todayFormatted)) activeToday++;
+                    
+                    // 【防作弊偵測邏輯】如果一般用戶 EXP 超過 10萬
+                    if(exp > 100000 && data.role !== 'admin' && data.role !== 'senior') {
+                        cheaterDetected = data.name || doc.id;
+                    }
+                });
+                
+                // 更新頂部數據板
+                document.getElementById('stat-total-users').innerText = masterUserList.length.toLocaleString() + (snapshot.size === 1000 ? '+' : '');
+                document.getElementById('stat-total-exp').innerText = totalExp.toLocaleString();
+                document.getElementById('stat-active-today').innerText = activeToday.toLocaleString();
+                
+                // 觸發防作弊 UI
+                const cheatBox = document.getElementById('cheat-indicator');
+                const cheatStatus = document.getElementById('stat-cheat-status');
+                const cheatIcon = document.getElementById('cheat-icon');
+                if(cheaterDetected) {
+                    cheatBox.classList.add('cheat-alert');
+                    cheatStatus.innerText = `警告: ${cheaterDetected}`;
+                    cheatStatus.classList.replace('text-zinc-500', 'text-red-500');
+                    cheatIcon.classList.replace('text-zinc-500/20', 'text-red-500/40');
+                } else {
+                    cheatBox.classList.remove('cheat-alert');
+                    cheatStatus.innerText = '無異常';
+                    cheatStatus.classList.replace('text-red-500', 'text-zinc-500');
+                    cheatIcon.classList.replace('text-red-500/40', 'text-zinc-500/20');
+                }
+
+                updateChart();
+                renderTable();
+            }, (error) => checkPermissionError(error));
+        }
+
+        function updateChart() {
+            const ctx = document.getElementById('expChart');
+            if(!ctx) return;
+            let ranges = { '0-100 (菜鳥)': 0, '101-500 (常客)': 0, '501-1000 (死忠)': 0, '1000+ (大老)': 0 };
+            masterUserList.forEach(u => {
+                let e = u.exp || 0;
+                if(e <= 100) ranges['0-100 (菜鳥)']++;
+                else if(e <= 500) ranges['101-500 (常客)']++;
+                else if(e <= 1000) ranges['501-1000 (死忠)']++;
+                else ranges['1000+ (大老)']++;
+            });
+
+            if(expChartInstance) expChartInstance.destroy();
+            expChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(ranges),
+                    datasets: [{ data: Object.values(ranges), backgroundColor: ['#94a3b8', '#38bdf8', '#fbbf24', '#ef4444'], borderColor: '#020617', borderWidth: 2 }]
+                },
+                options: { plugins: { legend: { position: 'right', labels: { color: '#e2e8f0' } } }, maintainAspectRatio: false }
+            });
+        }
+
+        // ==========================================
+        // 名單渲染、分頁與搜尋
+        // ==========================================
+        window.loadMoreUsers = function() {
+            renderUserLimit += 50;
+            renderTable();
+        };
+
+        window.filterUsers = function() { renderTable(); };
+
+        function renderTable() {
+            const term = document.getElementById('search-input').value.toLowerCase();
+            let filtered = masterUserList.filter(u => (u.uid && u.uid.toLowerCase().includes(term)) || (u.name && u.name.toLowerCase().includes(term)) || (u.email && u.email.toLowerCase().includes(term)));
+            
+            const tbody = document.getElementById('user-table-body');
+            tbody.innerHTML = '';
+            
+            const toRender = filtered.slice(0, renderUserLimit);
+            document.getElementById('display-count').innerText = toRender.length;
+
+            toRender.forEach((user) => {
+                const safeName = (user.name || "未命名").replace(/'/g, "\\'").replace(/"/g, "&quot;");
+                const avatar = user.photoURL || `https://ui-avatars.com/api/?name=${safeName}&background=020617&color=0ea5e9`;
+                const email = user.email || '未綁定 / Google';
+                
+                let roleHtml = '<span class="text-sky-400">一般</span>';
+                if(user.role === 'admin') roleHtml = '<span class="text-red-400 font-bold">工程師</span>';
+                else if(user.role === 'senior') roleHtml = '<span class="text-amber-400 font-bold">老粉</span>';
+                else if(user.role === 'banned') roleHtml = '<span class="text-zinc-600 bg-zinc-800 px-2 rounded line-through">封鎖</span>';
+
+                tbody.innerHTML += `
+                    <tr class="${user.role === 'banned' ? 'opacity-50' : ''}">
+                        <td class="py-2 px-4 text-center"><input type="checkbox" class="user-cb cursor-pointer" value="${user.uid}"></td>
+                        <td class="py-2 px-4"><div class="flex items-center gap-3"><img src="${avatar}" class="w-8 h-8 rounded-full object-cover"><div><p class="font-bold">${safeName}</p><p class="text-[10px] text-zinc-500">UID-${user.uid.substring(0,8)}</p></div></div></td>
+                        <td class="py-2 px-4 font-mono text-sky-200/70 text-xs">${email}</td>
+                        <td class="py-2 px-4 text-center">${roleHtml}</td>
+                        <td class="py-2 px-4 text-center text-sky-400 font-black">${(user.exp || 0).toLocaleString()}</td>
+                        <td class="py-2 px-4 text-right space-x-1">
+                            <button onclick="window.viewTimeline('${user.uid}', '${safeName}')" class="btn-action bg-purple-500/20 text-purple-400 hover:bg-purple-500 hover:text-white" title="活動時間軸"><i class="fa-solid fa-clock-rotate-left"></i></button>
+                            <button onclick="window.editUserStats('${user.uid}', '${safeName}', ${user.exp || 0}, '${user.role || 'user'}')" class="btn-action bg-sky-500/20 text-sky-400 hover:bg-sky-500 hover:text-white" title="編輯數據與派信"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="window.resetUserPassword('${user.email}')" class="btn-action bg-amber-500/20 text-amber-400 hover:bg-amber-500 hover:text-white" title="發送重設密碼信件" ${user.email ? '' : 'disabled style="opacity:0.3"'}><i class="fa-solid fa-key"></i></button>
+                            <button onclick="window.banUser('${user.uid}', '${safeName}', '${user.role}')" class="btn-action bg-orange-500/20 text-orange-400 hover:bg-orange-500 hover:text-white" title="${user.role === 'banned' ? '解封' : '封鎖'}"><i class="fa-solid fa-ban"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // ==========================================
+        // 單一與批量操作 (Bulk)
+        // ==========================================
+        window.toggleSelectAll = function() {
+            const isChecked = document.getElementById('select-all').checked;
+            document.querySelectorAll('.user-cb').forEach(cb => cb.checked = isChecked);
+        };
+
+        window.bulkAction = async function(actionType) {
+            const selected = Array.from(document.querySelectorAll('.user-cb:checked')).map(cb => cb.value);
+            if(selected.length === 0) return Swal.fire({title: '未選取', text: '請先在列表中勾選用戶', icon: 'info', background: '#0a1120', color: '#fff'});
+
+            const res = await Swal.fire({title: '批量封鎖', text: `確定要將這 ${selected.length} 個帳號全部封鎖嗎？`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', background: '#0a1120', color: '#fff'});
+            if(res.isConfirmed) {
+                Swal.fire({ title: '寫入中...', didOpen: () => Swal.showLoading(), background: '#0a1120', color: '#fff' });
+                try {
+                    const batch = writeBatch(db);
+                    selected.forEach(uid => {
+                        batch.update(doc(db, "users", uid), { role: 'banned' });
+                    });
+                    await batch.commit();
+                    await cloudLog("批量操作", `執行了批量封鎖，共影響 ${selected.length} 個帳號。`);
+                    Swal.fire({title: '成功', text: '已全數封鎖', icon: 'success', background: '#0a1120', color: '#fff'});
+                } catch(e) { Swal.fire('錯誤', e.message, 'error'); }
+            }
+        };
+
+        window.banUser = async function(id, name, currentRole) {
+            const isBanned = currentRole === 'banned';
+            const newRole = isBanned ? 'user' : 'banned';
+            const actionText = isBanned ? '解除封鎖' : '封鎖 (限制權限)';
+            Swal.fire({
+                title: `確定要 ${actionText} ${name} 嗎？`, icon: 'warning', background: '#0a1120', color: '#fff', showCancelButton: true, confirmButtonText: `確認${actionText}`, confirmButtonColor: isBanned ? '#10b981' : '#ef4444'
+            }).then(async (res) => {
+                if(res.isConfirmed) {
+                    await updateDoc(doc(db, "users", id), { role: newRole });
+                    cloudLog("帳號狀態變更", `將 [${name}] 的狀態改為 ${newRole}`);
+                    Swal.fire({title: '執行成功', icon:'success', toast:true, position:'top-end', timer: 1500, showConfirmButton:false, background: '#0a1120', color: '#fff'});
+                }
+            });
+        };
+
+        window.editUserStats = function(id, name, exp, role) {
+            Swal.fire({
+                title: '數據覆寫與系統派信',
+                html: `
+                    <div class="text-left space-y-4 pt-4">
+                        <div><label class="text-xs text-sky-500">名稱</label><input id="swal-name" class="cyber-input w-full p-2 rounded text-white" value="${name}"></div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="text-xs text-emerald-400">EXP</label><input id="swal-exp" type="number" class="cyber-input w-full p-2 rounded text-white" value="${exp}"></div>
+                            <div><label class="text-xs text-amber-400">權限</label>
+                            <select id="swal-role" class="cyber-input w-full p-2 rounded text-white bg-black">
+                                <option value="user" ${role==='user'?'selected':''}>粉絲</option>
+                                <option value="senior" ${role==='senior'?'selected':''}>老粉</option>
+                                <option value="admin" ${role==='admin'?'selected':''}>工程師</option>
+                                <option value="banned" ${role==='banned'?'selected':''}>封鎖</option>
+                            </select></div>
+                        </div>
+                        <div><label class="text-xs text-purple-400">附帶信件訊息 (將發送至該用戶信箱)</label><input id="swal-reason" class="cyber-input w-full p-2 rounded text-white" placeholder="若留空且數值變動，預設為「管理員後台資料變更」"></div>
+                    </div>
+                `,
+                background: '#0a1120', color: '#fff', showCancelButton: true, confirmButtonText: '寫入並發送', customClass: { confirmButton: 'bg-sky-500 text-white rounded px-5 py-2' },
+                preConfirm: () => ({ 
+                    name: document.getElementById('swal-name').value, 
+                    exp: parseInt(document.getElementById('swal-exp').value), 
+                    role: document.getElementById('swal-role').value,
+                    reason: document.getElementById('swal-reason').value 
+                })
+            }).then(async (res) => {
+                if(res.isConfirmed) {
+                    const diff = res.value.exp - exp;
+                    await updateDoc(doc(db, "users", id), { name: res.value.name, exp: res.value.exp, role: res.value.role });
+                    
+                    // 若有填寫原因或 EXP 確實有變動，發送系統信件
+                    if (res.value.reason || diff !== 0) {
+                        const reasonText = res.value.reason || "管理員後台資料變更";
+                        await addDoc(collection(doc(db, "users", id), "exp_history"), {
+                            amount: diff, reason: reasonText, timestamp: Date.now(), read: false
+                        });
+                    }
+                    
+                    cloudLog("手動修改", `修改了 [${res.value.name}] 的數據與權限`);
+                    Swal.fire({ title: '已儲存', icon: 'success', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false, background: '#0a1120', color: '#fff' });
+                }
+            });
+        };
+
+        // ==========================================
+        // 全服空投、系統公告、時間軸與匯出
+        // ==========================================
+        window.globalAirdrop = async function() {
+            Swal.fire({
+                title: '🎁 全服獎勵空投',
+                html: `
+                    <div class="text-left space-y-4 pt-2">
+                        <div><label class="text-xs text-sky-400 font-bold tracking-widest mb-1 block">發放數量 (EXP)</label><input id="airdrop-amount" type="number" class="cyber-input w-full p-3 rounded-xl text-white font-black" value="500"></div>
+                        <div><label class="text-xs text-amber-400 font-bold tracking-widest mb-1 block">發放理由 (將推播)</label><input id="airdrop-reason" type="text" class="cyber-input w-full p-3 rounded-xl text-white" placeholder="例如：系統維護補償"></div>
+                    </div>
+                `,
+                background: '#0a1120', color: '#fff', showCancelButton: true, confirmButtonText: '發射空投！', customClass: { confirmButton: 'bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black rounded-xl px-6 py-2.5', cancelButton: 'bg-zinc-800 rounded-xl px-6 py-2.5' },
+                preConfirm: () => ({ amount: parseInt(document.getElementById('airdrop-amount').value), reason: document.getElementById('airdrop-reason').value || "神秘獎勵" })
+            }).then(async (res) => {
+                if(res.isConfirmed) {
+                    const {amount, reason} = res.value;
+                    if(isNaN(amount) || amount <= 0) return;
+                    Swal.fire({ title: '批次寫入中...', didOpen: () => Swal.showLoading(), background: '#0a1120', color: '#fff' });
+                    try {
+                        // 防爆寫法：Firebase batch 一次最多 500 筆，做分塊處理
+                        const chunks = []; let i = 0; const size = 400;
+                        while(i < masterUserList.length) chunks.push(masterUserList.slice(i, i += size));
+                        
+                        for(const chunk of chunks) {
+                            const batch = writeBatch(db);
+                            chunk.forEach(u => batch.update(doc(db, "users", u.uid), { exp: (u.exp||0) + amount, rewardMsg: reason }));
+                            await batch.commit();
+                        }
+                        await cloudLog("全服空投", `發放 ${amount} EXP，理由：[${reason}]`);
+                        Swal.fire({title: '空投成功', text: `成功為 ${masterUserList.length} 人發放獎勵！`, icon: 'success', background: '#0a1120', color: '#fff'});
+                    } catch(e) { Swal.fire('錯誤', e.message, 'error'); }
+                }
+            });
+        };
+
+        window.manageAnnouncement = async function() {
+            const { value: text } = await Swal.fire({
+                title: '發布系統公告', input: 'textarea', inputPlaceholder: '輸入公告內容...', background: '#0a1120', color: '#fff', showCancelButton: true, confirmButtonColor: '#6366f1'
+            });
+            if (text) {
+                await addDoc(collection(db, "announcements"), { content: text, timestamp: Date.now(), author: currentUserEmail });
+                cloudLog("發布公告", text.substring(0, 20) + "...");
+                Swal.fire({title:'發布成功', text:'前端網站將顯示此公告', icon:'success', background: '#0a1120', color: '#fff'});
+            }
+        };
+
+        window.viewTimeline = async function(uid, name) {
+            Swal.fire({ title: `尋找 ${name} 的紀錄...`, didOpen: () => Swal.showLoading(), background: '#0a1120', color: '#fff' });
+            try {
+                // 從 system_logs 中反查包含此 UID 的紀錄 (簡易實作)
+                const q = query(collection(db, "system_logs"), orderBy("timestamp", "desc"), limit(100));
+                const snap = await getDocs(q);
+                let logsHtml = '';
+                snap.forEach(d => {
+                    const data = d.data();
+                    if(data.detail.includes(name) || data.detail.includes(uid)) {
+                        logsHtml += `<div class="mb-2 border-b border-white/10 pb-2 text-left text-xs"><span class="text-sky-400">[${new Date(data.timestamp).toLocaleString()}]</span> <span class="text-zinc-300">${data.action}: ${data.detail}</span></div>`;
+                    }
+                });
+                if(logsHtml === '') logsHtml = '<p class="text-zinc-500 py-4">近期無相關操作紀錄</p>';
+                Swal.fire({ title: `${name} 活動時間軸`, html: `<div class="max-h-60 overflow-y-auto no-scrollbar">${logsHtml}</div>`, background: '#0a1120', color: '#fff' });
+            } catch(e) { Swal.fire('錯誤', e.message, 'error'); }
+        };
+
+        window.exportCSV = function() {
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; 
+            csvContent += "UID,名稱,信箱,EXP,權限\n";
+            masterUserList.forEach(u => csvContent += `UID-${u.uid},"${u.name||''}","${u.email||''}",${u.exp||0},${u.role||'user'}\n`);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodeURI(csvContent)); link.setAttribute("download", `名單_${Date.now()}.csv`);
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            cloudLog("匯出資料", "下載了全站 CSV 名單");
+        };
+
+        // ==========================================
+        // AI 對話監控
+        // ==========================================
+        window.loadAIUsers = function() {
+            const listDiv = document.getElementById('ai-user-list');
+            const targetUsers = masterUserList.filter(u => u.role === 'admin' || u.role === 'senior');
+            if(targetUsers.length === 0) return listDiv.innerHTML = '<div class="text-center p-4 text-zinc-500">無監控對象</div>';
+
+            listDiv.innerHTML = targetUsers.map(u => `
+                <div onclick="window.viewUserChats('${u.uid}', '${u.name}')" class="p-3 mb-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 cursor-pointer border border-sky-500/20 transition-colors">
+                    <p class="font-bold text-white text-sm">${u.name}</p><p class="text-[10px] text-zinc-500">UID: ${u.uid.substring(0,6)} (${u.role})</p>
+                </div>
+            `).join('');
+        };
+
+        window.viewUserChats = async function(uid, name) {
+            const viewDiv = document.getElementById('ai-chat-view');
+            viewDiv.innerHTML = `<div class="h-full flex items-center justify-center"><i class="fa-solid fa-spinner fa-spin text-3xl text-sky-500"></i></div>`;
+            try {
+                const q = query(collection(db, "users", uid, "chat_history"), orderBy("timestamp", "desc"), limit(20));
+                const snap = await getDocs(q);
+                if(snap.empty) return viewDiv.innerHTML = `<div class="text-center text-zinc-500 py-10">目標尚無紀錄。</div>`;
+
+                let html = `<h4 class="text-sky-400 font-bold mb-4 border-b border-sky-500/20 pb-2">目標：${name} 的最近對話</h4><div class="space-y-4">`;
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    html += `
+                        <div class="bg-black/40 p-4 rounded-xl border border-white/5">
+                            <p class="text-[10px] text-zinc-500 mb-2">${new Date(data.timestamp).toLocaleString()}</p>
+                            <div class="mb-2"><span class="text-[10px] bg-sky-500/20 text-sky-400 px-2 py-0.5 rounded mr-2">用戶</span> <span class="text-sm text-white">${data.user_msg}</span></div>
+                            <div><span class="text-[10px] bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded mr-2">AI</span> <span class="text-sm text-zinc-300 line-clamp-2 hover:line-clamp-none cursor-pointer" title="點擊展開">${data.ai_reply}</span></div>
+                        </div>`;
+                });
+                viewDiv.innerHTML = html + `</div>`;
+            } catch(e) { viewDiv.innerHTML = `<div class="text-red-500 text-sm">無法讀取紀錄：${e.message}</div>`; }
+        };
+        window.resetUserPassword = async function(email) {
+            if(!email) return;
+            Swal.fire({
+                title: '發送密碼重設信', text: `確定要發送重設信件至 ${email} 嗎？`, icon: 'question', background: '#0a1120', color: '#fff', showCancelButton: true
+            }).then(async (res) => {
+                if(res.isConfirmed) {
+                    try {
+                        await sendPasswordResetEmail(auth, email);
+                        cloudLog("重設密碼", `發送密碼重設信件至 ${email}`);
+                        Swal.fire({title: '已發送', icon: 'success', background: '#0a1120', color: '#fff'});
+                    } catch(e) { Swal.fire('錯誤', e.message, 'error'); }
+                }
+            });
+        };
+    </script>
+</body>
+</html>

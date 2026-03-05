@@ -1,0 +1,342 @@
+/* ==========================================================================
+   老王專屬秘密基地 - 核心樣式表 (v19.0.0 完整版)
+   設計風格：玻璃擬態、科技感、電影級動態流光
+========================================================================== */
+
+:root {
+    --bg-deep: #030303;
+    --liquid-primary: #bae6fd; /* 主色：柔和淡藍 */
+    --liquid-secondary: #7dd3fc; /* 副色：天空淡藍 */
+    --glass-bg: rgba(12, 16, 22, 0.45); /* 帶有微藍調的玻璃背景 */
+    --glass-border: rgba(186, 230, 253, 0.15); /* 淡藍邊框 */
+    --glass-highlight: rgba(186, 230, 253, 0.3); /* 淡藍高光 */
+    --rank-1: #fbbf24;
+    --rank-2: #94a3b8;
+    --rank-3: #b45309;
+    --beam-progress: 0%;
+}
+
+/* --- 🌟 修復核心：將 html 與 body 分開，避免大螢幕錯誤垂直置中 --- */
+html {
+    background-color: var(--bg-deep) !important;
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+}
+
+body {
+    background-color: var(--bg-deep) !important;
+    color: #f4f4f5;
+    font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", sans-serif;
+    margin: 0;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start !important; /* 強制靠上對齊 */
+}
+/* 🌟 在 styles.css 隨便一個空白處加上這段，確保容器不會亂飄 */
+#page-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    width: 100%;
+}
+
+/* --- 滾動條美化 --- */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #030303; }
+::-webkit-scrollbar-thumb { background: #222; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #333; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* --- Markdown 樣式 (AI 回答排版) --- */
+.markdown-body {
+    color: #d4d4d8;
+    font-size: 15px;
+    line-height: 1.7;
+}
+.markdown-body p { margin-bottom: 1em; }
+.markdown-body h1, .markdown-body h2, .markdown-body h3 {
+    color: #fff;
+    font-weight: 900;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+}
+.markdown-body h3 { font-size: 1.1em; color: #38bdf8; }
+.markdown-body ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 1em; }
+.markdown-body ol { list-style-type: decimal; padding-left: 1.5em; margin-bottom: 1em; }
+.markdown-body li { margin-bottom: 0.25em; }
+.markdown-body strong { color: #fff; font-weight: bold; }
+.markdown-body code:not(pre code) {
+    background: rgba(56, 189, 248, 0.15);
+    color: #7dd3fc;
+    padding: 0.2em 0.4em;
+    border-radius: 6px;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.9em;
+}
+.code-block-wrapper {
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 1.5em;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.code-block-wrapper pre {
+    margin: 0 !important;
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+    border: none !important;
+    background: #121212 !important;
+    padding: 16px;
+    overflow-x: auto;
+    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+.markdown-body pre code {
+    font-family: 'Fira Code', monospace;
+    font-size: 13.5px;
+    background: transparent;
+    padding: 0;
+}
+
+/* --- 背景液態動畫 (Liquid Background) --- */
+.liquid-bg-container {
+    position: fixed;
+    inset: 0;
+    z-index: -3;
+    background-color: var(--bg-deep);
+    overflow: hidden;
+    transform: translateZ(0);
+}
+.ambient-orb {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.6;
+    filter: blur(60px);
+    animation: fluidDrift 20s infinite alternate ease-in-out;
+    will-change: transform;
+}
+.orb-1 {
+    width: 55vw; height: 55vw; top: -10%; left: -10%;
+    background: linear-gradient(135deg, var(--liquid-primary), var(--liquid-secondary));
+}
+.orb-2 {
+    width: 65vw; height: 65vw; bottom: -15%; right: -10%;
+    background: linear-gradient(135deg, #0ea5e9, #0369a1);
+    filter: blur(80px); animation-delay: -5s; animation-direction: alternate-reverse;
+}
+.orb-3 {
+    width: 45vw; height: 45vw; top: 30%; left: 25%;
+    background: radial-gradient(circle, rgba(56, 189, 248, 0.6), transparent);
+    filter: blur(70px); animation-duration: 25s;
+}
+@keyframes fluidDrift {
+    0% { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
+    50% { transform: translate3d(10vw, 8vh, 0) scale(1.05) rotate(90deg); }
+    100% { transform: translate3d(-8vw, 12vh, 0) scale(0.95) rotate(180deg); }
+}
+
+/* --- 核心 UI 組件 (Premium Card & Glass Element) --- */
+.premium-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-top: 1px solid var(--glass-highlight);
+    border-radius: 32px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.4s ease, box-shadow 0.4s ease, border-color 0.4s ease;
+}
+.premium-card::before {
+    content: '';
+    position: absolute; top: 0; left: -150%; width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+    transform: skewX(-25deg); transition: left 0.6s ease; pointer-events: none;
+}
+.premium-card:hover {
+    transform: translateY(-4px); border-color: rgba(56, 189, 248, 0.4);
+    box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.9), 0 0 25px -10px rgba(56, 189, 248, 0.3);
+}
+.premium-card:hover::before { left: 150%; }
+
+.glass-element {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glass-element:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(56, 189, 248, 0.5); }
+.glass-element:active { transform: scale(0.95); }
+
+/* --- 登入表單修復 (Auth Form Inputs) --- */
+.auth-input-group {
+    position: relative;
+    width: 100%;
+    margin-bottom: 1.5rem;
+}
+.auth-input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.4) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 16px;
+    padding: 16px 16px 16px 54px !important; /* 關鍵：強制留出圖示空間 */
+    color: #fff !important;
+    font-size: 15px;
+    outline: none;
+    box-sizing: border-box; /* 確保 padding 不會撐破容器 */
+    transition: all 0.3s ease;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+.auth-input:focus {
+    border-color: #38bdf8 !important;
+    background: rgba(0, 0, 0, 0.6) !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5), 0 0 15px rgba(56, 189, 248, 0.2);
+}
+.auth-icon {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #71717a;
+    pointer-events: none; /* 防止點擊圖示阻擋輸入 */
+    z-index: 10;
+    transition: color 0.3s ease;
+}
+.auth-input:focus + .auth-icon { color: #38bdf8; }
+
+/* --- Auth Modal Tabs (登入/註冊切換按鈕) --- */
+.auth-tab {
+    flex: 1; padding: .65rem .75rem; border-radius: .9rem;
+    font-weight: 900; letter-spacing: .18em; font-size: .85rem;
+    transition: transform .18s ease, box-shadow .18s ease, color .18s ease, background .18s ease, border-color .18s ease;
+    border: 1px solid rgba(255,255,255,.10);
+    color: rgba(228,228,231,.75); background: rgba(0,0,0,.10);
+}
+.auth-tab:hover { color: rgba(255,255,255,.95); transform: translateY(-1px); }
+.auth-tab.active {
+    color: #fff;
+    background: linear-gradient(90deg, rgba(56,189,248,.30), rgba(37,99,235,.22));
+    box-shadow: 0 10px 30px rgba(56,189,248,.10);
+    border-color: rgba(255,255,255,.14);
+}
+
+/* --- 導航欄 (Nav Dock) --- */
+.nav-dock {
+    background: rgba(12, 12, 12, 0.85); backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1); border-top: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 100px; padding: 10px 8px; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.9);
+}
+.nav-item {
+    flex: 1; color: rgba(255, 255, 255, 0.4);
+    transition: color 0.3s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); position: relative;
+}
+.nav-item:hover { color: rgba(255, 255, 255, 0.9); }
+.nav-item.active {
+    color: #38bdf8; transform: translateY(-6px) scale(1.1);
+    filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.6));
+}
+.nav-item.active::after {
+    content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
+    width: 6px; height: 6px; background: #0284c7; border-radius: 50%; box-shadow: 0 0 12px #38bdf8;
+}
+.nav-item:active { transform: scale(0.85); }
+
+
+.page { display: none !important; opacity: 0; }
+.page.active { display: block !important; animation: smoothReveal 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+@keyframes smoothReveal { 0% { opacity: 0; transform: translate3d(0, 20px, 0) scale(0.98); } 100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); } }
+.text-gradient-blue { background: linear-gradient(135deg, #bae6fd 0%, #38bdf8 50%, #0284c7 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+
+.btn-social { position: relative; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.2s ease; }
+.btn-social:active { transform: scale(0.92); }
+.btn-tiktok { background: rgba(20, 20, 20, 0.8); }
+.btn-tiktok:hover { border-color: #38bdf8; box-shadow: 0 0 15px rgba(56, 189, 248, 0.3); }
+.btn-ig { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
+.btn-ig:hover { box-shadow: 0 0 15px rgba(220, 39, 67, 0.5); }
+.btn-twitch { background: #9146FF; }
+.btn-twitch:hover { box-shadow: 0 0 15px rgba(145, 70, 255, 0.5); }
+.btn-discord { background: #5865F2; }
+
+/* --- 排行榜 (Leaderboard) --- */
+.rank-card { transition: all 0.3s ease; position: relative; overflow: hidden; }
+.rank-card:hover { transform: scale(1.02); }
+.rank-1 { border-color: rgba(251, 191, 36, 0.5); background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(0, 0, 0, 0.6) 100%); box-shadow: 0 0 20px rgba(251, 191, 36, 0.15); }
+.rank-2 { border-color: rgba(148, 163, 184, 0.4); background: linear-gradient(135deg, rgba(148, 163, 184, 0.1) 0%, rgba(0, 0, 0, 0.6) 100%); }
+.rank-3 { border-color: rgba(180, 83, 9, 0.4); background: linear-gradient(135deg, rgba(180, 83, 9, 0.1) 0%, rgba(0, 0, 0, 0.6) 100%); }
+.rank-text-1 { color: var(--rank-1); text-shadow: 0 0 10px rgba(251, 191, 36, 0.5); }
+.rank-text-2 { color: var(--rank-2); }
+.rank-text-3 { color: var(--rank-3); }
+
+/* --- SweetAlert2 覆寫 --- */
+.swal2-popup {
+    background: rgba(18, 18, 18, 0.95) !important; backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important; border-top: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 32px !important; color: #fff !important;
+}
+
+/* --- 動畫特效 (Animations) --- */
+@keyframes spin-slow { 100% { transform: rotate(360deg); } }
+.playing-record { animation: spin-slow 4s linear infinite; }
+
+@keyframes text-glitch { 0% { opacity: 0; transform: translateY(10px); } 20%, 80% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-10px); } }
+.boot-text { animation: text-glitch 1.5s ease-in-out infinite; }
+
+@keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+.recording { color: #ef4444 !important; animation: pulse-red 1.5s infinite; }
+
+/* --- [全新電影級] 成長軌跡 (Timeline Styles) --- */
+#timeline-wrapper {
+    position: relative; padding-top: 40px; padding-bottom: 60px; overflow: hidden; padding-left: 20px; min-height: 400px;
+}
+.timeline-beam {
+    position: absolute; left: 24px; top: 0; bottom: 0; width: 2px; background: rgba(255, 255, 255, 0.05); z-index: 1;
+}
+.timeline-beam::after {
+    content: ""; position: absolute; left: 0; top: 0; width: 100%; height: var(--beam-progress, 0%);
+    background: linear-gradient(to bottom, transparent, #38bdf8, #fff, #38bdf8, transparent); filter: drop-shadow(0 0 12px #38bdf8);
+}
+.timeline-item { position: relative; width: 100%; margin-bottom: 3rem; }
+
+.timeline-dot {
+    position: absolute; left: 24px; top: 50%; transform: translate(-50%, -50%);
+    width: 14px; height: 14px; border-radius: 50%; background: #1a1a1a;
+    border: 2px solid rgba(255, 255, 255, 0.2); z-index: 10;
+}
+
+.timeline-node-card {
+    opacity: 0;
+    transform: translateX(50px) scale(0.5) rotate(5deg);
+    background: rgba(15, 15, 15, 0.6); backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.03); border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px; box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.8);
+    padding: 24px;
+}
+
+/* 點亮時的極速強烈彈出回彈感 */
+.timeline-item.lit .timeline-node-card {
+    opacity: 1;
+    transform: translateX(0) scale(1) rotate(0deg);
+    transition: all 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border-top: 1px solid rgba(56, 189, 248, 0.6); border-color: rgba(56, 189, 248, 0.2);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9), inset 0 1px 20px rgba(56, 189, 248, 0.05);
+}
+.timeline-item.lit .timeline-dot {
+    background: #fff; border-color: #38bdf8;
+    box-shadow: 0 0 20px 4px rgba(56, 189, 248, 0.8), 0 0 40px rgba(56, 189, 248, 0.4);
+    transform: translate(-50%, -50%) scale(1.8);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* --- 專業版權頁尾 (Footer) --- */
+footer { background: linear-gradient(to top, #000 0%, #050505 100%); }
+
+/* --- 低耗能模式 --- */
+body.perf-mode *, body.perf-mode *::before, body.perf-mode *::after {
+    animation-duration: 0.001ms !important; animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important; scroll-behavior: auto !important;
+}
+body.perf-mode .backdrop-blur-xl, body.perf-mode .backdrop-blur-md { backdrop-filter: none !important; }
