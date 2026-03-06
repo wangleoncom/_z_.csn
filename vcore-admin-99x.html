@@ -3,12 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>V-CORE MAX | 老王基地終極工程中樞</title>
+    <title>V-CORE MAX Pro | 老王基地終極工程中樞</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = { theme: { extend: { colors: { primary: '#0ea5e9', bgdark: '#020617' } } } }
+        tailwind.config = { 
+            theme: { 
+                extend: { 
+                    colors: { primary: '#0ea5e9', bgdark: '#020617' },
+                    animation: { 'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite' }
+                } 
+            } 
+        }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -28,28 +35,42 @@
         .btn-action:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.4); }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
-        .nav-tab.active { background: rgba(14, 165, 233, 0.2); border-color: rgba(14, 165, 233, 0.5); color: #38bdf8; box-shadow: 0 0 15px rgba(14, 165, 233, 0.2); }
+        .nav-tab { transition: all 0.3s ease; }
+        .nav-tab.active { background: rgba(14, 165, 233, 0.2); border-color: rgba(14, 165, 233, 0.5); color: #38bdf8; box-shadow: inset 4px 0 0 0 #38bdf8, 0 0 15px rgba(14, 165, 233, 0.1); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .cheat-alert { animation: pulse-red 2s infinite; border-color: #ef4444 !important; }
         @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Swale2 Dark Theme Override */
+        .swal2-popup { background: rgba(15, 23, 42, 0.98) !important; border: 1px solid rgba(14, 165, 233, 0.3) !important; border-radius: 1.5rem !important; color: #fff !important; backdrop-filter: blur(20px); }
+        .swal2-title { color: #fff !important; }
+        .swal2-html-container { color: #cbd5e1 !important; }
     </style>
 </head>
 <body class="h-screen flex flex-col">
 
     <div class="bg-glow"></div>
 
-    <div id="login-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-[#020617]">
-        <div class="glass-card p-10 rounded-3xl w-full max-w-md text-center border-t-4 border-sky-500 shadow-[0_0_50px_rgba(14,165,233,0.1)]">
-            <i class="fa-solid fa-server text-6xl text-sky-400 mb-4 animate-pulse"></i>
+    <div id="login-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-[#020617] backdrop-blur-md transition-opacity duration-500">
+        <div class="glass-card p-10 rounded-3xl w-full max-w-md text-center border-t-4 border-sky-500 shadow-[0_0_50px_rgba(14,165,233,0.1)] relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-sky-400 to-transparent opacity-50"></div>
+            <i class="fa-solid fa-microchip text-6xl text-sky-400 mb-4 animate-pulse-fast drop-shadow-[0_0_15px_rgba(14,165,233,0.8)]"></i>
             <h1 class="text-3xl font-black tracking-widest text-white mb-2">V-CORE <span class="text-sky-500">MAX</span></h1>
-            <p class="text-sky-400/70 text-xs mb-8 tracking-widest">基地終極工程中樞 Pro</p>
-            <div class="space-y-4 text-left">
-                <input type="email" id="admin-email" class="cyber-input w-full px-5 py-4 rounded-xl text-sm" placeholder="工程師信箱">
-                <input type="password" id="admin-password" class="cyber-input w-full px-5 py-4 rounded-xl text-sm" placeholder="最高管理員密碼">
-                <button onclick="window.adminLogin()" class="w-full bg-gradient-to-r from-sky-600 to-sky-400 text-white font-black py-4 rounded-xl shadow-[0_0_20px_rgba(14,165,233,0.4)] mt-4 tracking-widest hover:scale-[1.02] transition-transform">
-                    <i class="fa-solid fa-fingerprint mr-2"></i> 驗證並啟動系統
+            <p class="text-sky-400/70 text-xs mb-8 tracking-widest font-mono border-b border-sky-500/20 pb-4">ENGINEERING TERMINAL v19.PRO</p>
+            <form onsubmit="event.preventDefault(); window.adminLogin();" class="space-y-4 text-left">
+                <div class="relative">
+                    <i class="fa-solid fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-sky-500/50"></i>
+                    <input type="email" id="admin-email" required class="cyber-input w-full pl-10 pr-5 py-4 rounded-xl text-sm" placeholder="工程師信箱">
+                </div>
+                <div class="relative">
+                    <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-sky-500/50"></i>
+                    <input type="password" id="admin-password" required class="cyber-input w-full pl-10 pr-5 py-4 rounded-xl text-sm" placeholder="最高管理員密碼">
+                </div>
+                <button type="submit" class="w-full bg-gradient-to-r from-sky-600 to-sky-400 text-white font-black py-4 rounded-xl shadow-[0_0_20px_rgba(14,165,233,0.4)] mt-4 tracking-widest hover:scale-[1.02] transition-transform">
+                    <i class="fa-solid fa-fingerprint mr-2"></i> 驗證身分
                 </button>
-            </div>
+            </form>
         </div>
     </div>
 
@@ -57,126 +78,189 @@
         
         <header class="h-20 glass-card border-b border-sky-500/30 flex items-center justify-between px-8 flex-shrink-0 z-50">
             <div class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-gradient-to-br from-sky-400 to-blue-600 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(14,165,233,0.5)]">
+                <div class="w-12 h-12 bg-gradient-to-br from-sky-400 to-blue-600 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(14,165,233,0.5)] border border-sky-300/50">
                     <i class="fa-solid fa-satellite-dish text-white text-xl"></i>
                 </div>
                 <div>
-                    <h2 class="text-xl font-black text-white tracking-widest">V-CORE <span class="text-sky-500">MAX</span> 監控矩陣</h2>
-                    <p class="text-[11px] text-emerald-400 mt-1 tracking-widest"><span class="animate-pulse mr-1">●</span>Firebase 即時同步中</p>
+                    <h2 class="text-xl font-black text-white tracking-widest">V-CORE <span class="text-sky-500">MAX</span></h2>
+                    <p class="text-[11px] text-emerald-400 mt-1 tracking-widest font-mono"><span class="animate-pulse mr-1 text-emerald-500">●</span>Firebase Secure Socket Connected</p>
                 </div>
             </div>
             <div class="flex items-center gap-3">
-                <button onclick="window.manageAnnouncement()" class="bg-indigo-500/20 text-indigo-400 border border-indigo-500/50 text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-indigo-500 hover:text-white transition-all">
-                    <i class="fa-solid fa-bullhorn"></i> 系統公告
+                <button onclick="window.manageAnnouncement()" class="bg-indigo-500/20 text-indigo-400 border border-indigo-500/50 text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-indigo-500 hover:text-white transition-all shadow-[0_0_10px_rgba(99,102,241,0.2)]">
+                    <i class="fa-solid fa-bullhorn mr-1"></i> 發布公告
                 </button>
-                <button onclick="window.forceUpdatePage()" class="bg-zinc-700/50 text-zinc-300 border border-zinc-500/50 text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-zinc-600 hover:text-white transition-all" title="無視快取強制重整">
-                    <i class="fa-solid fa-rotate-right"></i> 強制更新
+                <button onclick="window.forceUpdatePage()" class="bg-zinc-700/50 text-zinc-300 border border-zinc-500/50 text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-zinc-600 hover:text-white transition-all">
+                    <i class="fa-solid fa-rotate-right mr-1"></i> 強制更新
                 </button>
-                <button onclick="window.adminLogout()" class="text-xs font-black text-red-400 hover:text-white border border-red-500/40 px-5 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500 transition-all ml-2">
-                    登出
+                <div class="h-6 w-px bg-white/10 mx-2"></div>
+                <button onclick="window.adminLogout()" class="text-xs font-black text-red-400 hover:text-white border border-red-500/40 px-5 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500 transition-all">
+                    <i class="fa-solid fa-power-off mr-1"></i> 登出
                 </button>
             </div>
         </header>
 
         <div class="flex-1 flex overflow-hidden">
             <aside class="w-20 lg:w-64 glass-card border-r border-sky-500/20 flex flex-col p-4 flex-shrink-0 z-40">
-                <div class="flex-1 space-y-3 mt-4">
-                    <button onclick="window.switchTab('tab-analytics', this)" class="nav-tab active w-full flex items-center justify-center lg:justify-start gap-4 px-4 py-4 rounded-xl text-zinc-400 hover:bg-white/5 transition-all border border-transparent">
-                        <i class="fa-solid fa-chart-pie text-xl"></i><span class="hidden lg:block tracking-widest font-bold">數據分析儀表板</span>
+                <div class="text-[10px] text-zinc-500 font-mono tracking-widest mb-2 pl-2 hidden lg:block">SYSTEM MODULES</div>
+                <div class="flex-1 space-y-2">
+                    <button onclick="window.switchTab('tab-analytics', this)" class="nav-tab active w-full flex items-center justify-center lg:justify-start gap-4 px-4 py-3.5 rounded-xl text-zinc-400 hover:bg-white/5 border border-transparent">
+                        <i class="fa-solid fa-chart-pie text-lg"></i><span class="hidden lg:block tracking-widest font-bold text-sm">數據儀表板</span>
                     </button>
-                    <button onclick="window.switchTab('tab-users', this)" class="nav-tab w-full flex items-center justify-center lg:justify-start gap-4 px-4 py-4 rounded-xl text-zinc-400 hover:bg-white/5 transition-all border border-transparent">
-                        <i class="fa-solid fa-users-viewfinder text-xl"></i><span class="hidden lg:block tracking-widest font-bold">全站粉絲資料庫</span>
+                    <button onclick="window.switchTab('tab-users', this)" class="nav-tab w-full flex items-center justify-center lg:justify-start gap-4 px-4 py-3.5 rounded-xl text-zinc-400 hover:bg-white/5 border border-transparent">
+                        <i class="fa-solid fa-users-viewfinder text-lg"></i><span class="hidden lg:block tracking-widest font-bold text-sm">粉絲資料庫</span>
                     </button>
-                    <button onclick="window.switchTab('tab-ai-spy', this)" class="nav-tab w-full flex items-center justify-center lg:justify-start gap-4 px-4 py-4 rounded-xl text-zinc-400 hover:bg-white/5 transition-all border border-transparent">
-                        <i class="fa-solid fa-robot text-xl"></i><span class="hidden lg:block tracking-widest font-bold">AI 對話監控網</span>
+                    <button onclick="window.switchTab('tab-system-config', this)" class="nav-tab w-full flex items-center justify-center lg:justify-start gap-4 px-4 py-3.5 rounded-xl text-zinc-400 hover:bg-white/5 border border-transparent">
+                        <i class="fa-solid fa-gears text-lg"></i><span class="hidden lg:block tracking-widest font-bold text-sm">系統參數設置</span>
                     </button>
-                    <button onclick="window.switchTab('tab-logs', this)" class="nav-tab w-full flex items-center justify-center lg:justify-start gap-4 px-4 py-4 rounded-xl text-zinc-400 hover:bg-white/5 transition-all border border-transparent">
-                        <i class="fa-solid fa-shield-halved text-xl"></i><span class="hidden lg:block tracking-widest font-bold">雲端安全日誌</span>
+                    <button onclick="window.switchTab('tab-ai-spy', this)" class="nav-tab w-full flex items-center justify-center lg:justify-start gap-4 px-4 py-3.5 rounded-xl text-zinc-400 hover:bg-white/5 border border-transparent">
+                        <i class="fa-solid fa-user-secret text-lg"></i><span class="hidden lg:block tracking-widest font-bold text-sm">AI 互動監聽</span>
                     </button>
+                    <button onclick="window.switchTab('tab-logs', this)" class="nav-tab w-full flex items-center justify-center lg:justify-start gap-4 px-4 py-3.5 rounded-xl text-zinc-400 hover:bg-white/5 border border-transparent">
+                        <i class="fa-solid fa-shield-halved text-lg"></i><span class="hidden lg:block tracking-widest font-bold text-sm">安全與日誌</span>
+                    </button>
+                </div>
+                <div class="mt-auto border-t border-white/10 pt-4 pb-2 text-center hidden lg:block">
+                    <p class="text-[10px] text-zinc-500 font-mono">Logged in as</p>
+                    <p id="current-admin-email" class="text-xs text-sky-400 font-bold truncate px-2">admin@base</p>
                 </div>
             </aside>
 
-            <main class="flex-1 p-6 overflow-hidden flex flex-col relative">
+            <main class="flex-1 p-6 overflow-hidden flex flex-col relative bg-[#020617]/50">
                 
                 <div id="tab-analytics" class="content-panel flex-1 flex flex-col animate-[fadeIn_0.5s_ease]">
                     <h3 class="text-2xl font-black text-white tracking-widest mb-6"><i class="fa-solid fa-chart-line text-sky-500 mr-2"></i>大數據總覽</h3>
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                        <div class="glass-card p-6 rounded-2xl flex items-center justify-between border-t-2 border-sky-400">
+                        <div class="glass-card p-6 rounded-2xl flex items-center justify-between border-t-2 border-sky-400 hover:-translate-y-1 transition-transform">
                             <div><p class="text-xs text-zinc-400 font-bold tracking-widest mb-1">總註冊粉絲</p><p class="text-3xl font-black text-white" id="stat-total-users">0</p></div>
-                            <i class="fa-solid fa-users text-4xl text-sky-500/20"></i>
+                            <div class="w-12 h-12 rounded-full bg-sky-500/10 flex items-center justify-center"><i class="fa-solid fa-users text-2xl text-sky-500"></i></div>
                         </div>
-                        <div class="glass-card p-6 rounded-2xl flex items-center justify-between border-t-2 border-emerald-400">
+                        <div class="glass-card p-6 rounded-2xl flex items-center justify-between border-t-2 border-emerald-400 hover:-translate-y-1 transition-transform">
                             <div><p class="text-xs text-zinc-400 font-bold tracking-widest mb-1">全站產出 EXP</p><p class="text-3xl font-black text-white" id="stat-total-exp">0</p></div>
-                            <i class="fa-solid fa-star text-4xl text-emerald-500/20"></i>
+                            <div class="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center"><i class="fa-solid fa-star text-2xl text-emerald-500"></i></div>
                         </div>
-                        <div class="glass-card p-6 rounded-2xl flex items-center justify-between border-t-2 border-amber-400">
+                        <div class="glass-card p-6 rounded-2xl flex items-center justify-between border-t-2 border-amber-400 hover:-translate-y-1 transition-transform">
                             <div><p class="text-xs text-zinc-400 font-bold tracking-widest mb-1">今日活躍數</p><p class="text-3xl font-black text-white" id="stat-active-today">0</p></div>
-                            <i class="fa-solid fa-fire text-4xl text-amber-500/20"></i>
+                            <div class="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center"><i class="fa-solid fa-fire text-2xl text-amber-500"></i></div>
                         </div>
-                        <div id="cheat-indicator" class="glass-card p-6 rounded-2xl flex items-center justify-between border-t-2 border-zinc-500 transition-all">
-                            <div><p class="text-xs text-zinc-400 font-bold tracking-widest mb-1">防作弊偵測</p><p class="text-xl font-black text-zinc-500" id="stat-cheat-status">無異常</p></div>
-                            <i class="fa-solid fa-user-secret text-4xl text-zinc-500/20" id="cheat-icon"></i>
+                        <div id="cheat-indicator" class="glass-card p-6 rounded-2xl flex items-center justify-between border-t-2 border-zinc-500 transition-all hover:-translate-y-1">
+                            <div><p class="text-xs text-zinc-400 font-bold tracking-widest mb-1">防作弊雷達</p><p class="text-xl font-black text-zinc-500" id="stat-cheat-status">無異常</p></div>
+                            <div class="w-12 h-12 rounded-full bg-zinc-500/10 flex items-center justify-center" id="cheat-icon-bg"><i class="fa-solid fa-shield-cat text-2xl text-zinc-500" id="cheat-icon"></i></div>
                         </div>
                     </div>
-                    <div class="flex-1 glass-card rounded-2xl p-6 flex items-center justify-center">
-                        <div class="w-full max-w-lg"><canvas id="expChart"></canvas></div>
+                    <div class="flex-1 glass-card rounded-2xl p-6 flex flex-col md:flex-row gap-6">
+                        <div class="w-full md:w-1/2 flex items-center justify-center relative">
+                            <canvas id="expChart"></canvas>
+                        </div>
+                        <div class="w-full md:w-1/2 flex flex-col justify-center space-y-4">
+                            <h4 class="text-lg font-bold text-white border-b border-white/10 pb-2">階層分佈說明</h4>
+                            <div class="space-y-3">
+                                <div class="flex items-center gap-3"><span class="w-3 h-3 rounded-full bg-[#ef4444]"></span><p class="text-sm text-zinc-300"><b>基地守護者 (1000+ EXP)</b>：享有無限 AI 權限與特殊徽章。</p></div>
+                                <div class="flex items-center gap-3"><span class="w-3 h-3 rounded-full bg-[#fbbf24]"></span><p class="text-sm text-zinc-300"><b>基地常客 (301~999 EXP)</b>：可查看完整排行榜。</p></div>
+                                <div class="flex items-center gap-3"><span class="w-3 h-3 rounded-full bg-[#38bdf8]"></span><p class="text-sm text-zinc-300"><b>正式粉絲 (101~300 EXP)</b>：基礎互動與 AI 使用。</p></div>
+                                <div class="flex items-center gap-3"><span class="w-3 h-3 rounded-full bg-[#94a3b8]"></span><p class="text-sm text-zinc-300"><b>菜鳥/新粉 (0~100 EXP)</b>：剛註冊的潛力股。</p></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <div id="tab-users" class="content-panel hidden flex-1 flex flex-col animate-[fadeIn_0.5s_ease]">
-                    <div class="flex justify-between items-end gap-4 mb-4">
-                        <div class="flex gap-2">
-                            <button onclick="window.bulkAction('ban')" class="bg-red-500/20 text-red-400 border border-red-500/30 text-xs px-4 py-2 rounded-xl font-bold hover:bg-red-500 hover:text-white transition-all">批量封鎖</button>
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-4">
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="window.bulkAction('ban')" class="bg-red-500/20 text-red-400 border border-red-500/30 text-xs px-4 py-2 rounded-xl font-bold hover:bg-red-500 hover:text-white transition-all shadow-sm"><i class="fa-solid fa-ban mr-1"></i> 批量封鎖</button>
                             <button onclick="window.globalAirdrop()" class="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-black px-4 py-2 rounded-xl shadow-[0_0_15px_rgba(245,158,11,0.4)] hover:scale-105 transition-transform"><i class="fa-solid fa-parachute-box mr-1"></i> 全服空投</button>
-                            <button onclick="window.exportCSV()" class="bg-sky-500/20 text-sky-400 border border-sky-500/50 text-xs px-4 py-2 rounded-xl font-bold hover:bg-sky-500 hover:text-white transition-all">匯出 CSV</button>
+                            <button onclick="window.exportCSV()" class="bg-sky-500/20 text-sky-400 border border-sky-500/50 text-xs px-4 py-2 rounded-xl font-bold hover:bg-sky-500 hover:text-white transition-all"><i class="fa-solid fa-download mr-1"></i> 匯出 CSV</button>
                         </div>
-                        <div class="relative w-80">
+                        <div class="relative w-full md:w-80">
                             <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-sky-500"></i>
-                            <input type="text" id="search-input" oninput="window.filterUsers()" placeholder="輸入 UID、名稱或信箱過濾..." class="cyber-input w-full pl-12 pr-4 py-2 rounded-xl text-sm">
+                            <input type="text" id="search-input" oninput="window.filterUsers()" placeholder="輸入 UID、名稱或信箱過濾..." class="cyber-input w-full pl-12 pr-4 py-2.5 rounded-xl text-sm">
                         </div>
                     </div>
-                    <div class="flex-1 glass-card rounded-2xl overflow-hidden flex flex-col">
-                        <div class="flex-1 overflow-y-auto no-scrollbar">
+                    <div class="flex-1 glass-card rounded-2xl overflow-hidden flex flex-col shadow-lg border border-sky-500/20">
+                        <div class="flex-1 overflow-y-auto no-scrollbar relative">
                             <table class="w-full text-left border-collapse custom-table">
-                                <thead class="sticky top-0 z-10 bg-[#060e1a] shadow-md border-b border-sky-500/30">
-                                    <tr class="text-[11px] font-black text-sky-400 tracking-widest">
-                                        <th class="py-4 px-4 w-10 text-center"><input type="checkbox" id="select-all" onclick="window.toggleSelectAll()" class="cursor-pointer"></th>
+                                <thead class="sticky top-0 z-10 bg-[#060e1a]/95 backdrop-blur-md shadow-md border-b border-sky-500/30">
+                                    <tr class="text-[11px] font-black text-sky-400 tracking-widest uppercase">
+                                        <th class="py-4 px-4 w-10 text-center"><input type="checkbox" id="select-all" onclick="window.toggleSelectAll()" class="cursor-pointer w-4 h-4 accent-sky-500"></th>
                                         <th class="py-4 px-4">身分資訊</th>
-                                        <th class="py-4 px-4">聯繫信箱</th>
+                                        <th class="py-4 px-4 hidden md:table-cell">聯繫信箱</th>
                                         <th class="py-4 px-4 text-center">狀態</th>
                                         <th class="py-4 px-4 text-center">積分 (EXP)</th>
                                         <th class="py-4 px-4 text-right">執行操作</th>
                                     </tr>
                                 </thead>
-                                <tbody id="user-table-body" class="text-sm"></tbody>
+                                <tbody id="user-table-body" class="text-sm text-zinc-200"></tbody>
                             </table>
                         </div>
-                        <div class="py-3 text-center border-t border-sky-500/20 bg-black/40">
-                            <button onclick="window.loadMoreUsers()" class="text-sky-400 text-xs font-bold hover:text-white transition-colors">載入更多名單 <i class="fa-solid fa-chevron-down ml-1"></i></button>
-                            <p class="text-[10px] text-zinc-500 mt-1">目前顯示 <span id="display-count">0</span> 筆</p>
+                        <div class="py-3 text-center border-t border-sky-500/20 bg-black/60 flex justify-between items-center px-6">
+                            <p class="text-[11px] text-zinc-400 font-mono">Total visible: <span id="display-count" class="text-sky-400 font-bold">0</span></p>
+                            <button onclick="window.loadMoreUsers()" class="text-sky-400 text-xs font-bold hover:text-white transition-colors bg-sky-500/10 px-4 py-1.5 rounded-lg border border-sky-500/30">載入更多 <i class="fa-solid fa-chevron-down ml-1"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-system-config" class="content-panel hidden flex-1 flex flex-col animate-[fadeIn_0.5s_ease] overflow-y-auto no-scrollbar">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-black text-white tracking-widest"><i class="fa-solid fa-gears text-sky-500 mr-2"></i>系統核心參數設置</h3>
+                        <button onclick="window.saveSystemConfig()" class="bg-gradient-to-r from-emerald-500 to-green-500 text-white font-black px-6 py-2.5 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.4)] hover:scale-105 transition-transform"><i class="fa-solid fa-floppy-disk mr-2"></i> 儲存設定至雲端</button>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="glass-card rounded-2xl p-6 border-t-2 border-purple-500">
+                            <h4 class="text-lg font-bold text-white mb-2 flex items-center"><i class="fa-solid fa-key text-purple-400 mr-2"></i>AI 模組 API Keys 管理</h4>
+                            <p class="text-xs text-zinc-400 mb-6">前端網頁將自動讀取此處的金鑰進行輪替。留空則不啟用該模型。</p>
+                            
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="text-xs font-black text-sky-400 tracking-widest mb-2 block flex items-center"><img src="https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg" class="w-4 h-4 mr-1"> Gemini (視覺主力)</label>
+                                    <textarea id="config-gemini-keys" rows="3" class="cyber-input w-full p-3 rounded-xl text-sm font-mono placeholder-zinc-600" placeholder="一行一組 API Key..."></textarea>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-black text-orange-400 tracking-widest mb-2 block flex items-center"><i class="fa-solid fa-bolt mr-1"></i> Groq (極速文字)</label>
+                                    <textarea id="config-groq-keys" rows="3" class="cyber-input w-full p-3 rounded-xl text-sm font-mono placeholder-zinc-600" placeholder="一行一組 API Key..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="glass-card rounded-2xl p-6 border-t-2 border-sky-500 flex flex-col justify-center items-center text-center">
+                            <div class="w-20 h-20 rounded-full bg-sky-500/10 border border-sky-500/30 flex items-center justify-center mb-4">
+                                <i class="fa-solid fa-code-branch text-3xl text-sky-400"></i>
+                            </div>
+                            <h4 class="text-lg font-bold text-white mb-2">系統維護與進階權限</h4>
+                            <p class="text-sm text-zinc-400 mb-6">此區塊保留作為未來擴充：<br>「全站維護模式開關」、「每日 EXP 上限設定」及「動態徽章審核」。</p>
+                            <button disabled class="bg-zinc-800 text-zinc-500 px-6 py-2 rounded-xl cursor-not-allowed border border-zinc-700">模組尚未解鎖</button>
                         </div>
                     </div>
                 </div>
 
                 <div id="tab-ai-spy" class="content-panel hidden flex-1 flex flex-col animate-[fadeIn_0.5s_ease]">
-                    <h3 class="text-2xl font-black text-white tracking-widest mb-4"><i class="fa-solid fa-eye text-sky-500 mr-2"></i>AI 互動監聽網</h3>
-                    <p class="text-xs text-zinc-400 mb-4">目前系統僅追蹤具有 Admin/Senior 權限粉絲之對話紀錄以供安全分析。</p>
-                    <div class="flex-1 flex gap-4 overflow-hidden">
-                        <div class="w-1/3 glass-card rounded-2xl overflow-y-auto no-scrollbar p-2" id="ai-user-list"></div>
-                        <div class="w-2/3 glass-card rounded-2xl p-6 overflow-y-auto no-scrollbar bg-black/50" id="ai-chat-view">
-                            <div class="h-full flex items-center justify-center text-zinc-600">請從左側選擇一位目標對象</div>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-2xl font-black text-white tracking-widest"><i class="fa-solid fa-user-secret text-sky-500 mr-2"></i>AI 互動監聽網</h3>
+                        <div class="text-xs text-amber-400 bg-amber-500/10 px-3 py-1.5 rounded-lg border border-amber-500/30"><i class="fa-solid fa-triangle-exclamation mr-1"></i> 僅追蹤高階權限帳號</div>
+                    </div>
+                    <div class="flex-1 flex flex-col md:flex-row gap-4 overflow-hidden">
+                        <div class="w-full md:w-1/3 glass-card rounded-2xl overflow-y-auto no-scrollbar p-3 border border-sky-500/20" id="ai-user-list">
+                            </div>
+                        <div class="w-full md:w-2/3 glass-card rounded-2xl p-0 overflow-hidden flex flex-col border border-sky-500/20 relative">
+                            <div class="bg-[#060e1a] p-3 border-b border-sky-500/30 flex justify-between items-center">
+                                <span class="text-sm font-bold text-sky-400 tracking-widest" id="ai-chat-title">等待選擇目標...</span>
+                            </div>
+                            <div class="flex-1 overflow-y-auto p-6 no-scrollbar bg-black/40" id="ai-chat-view">
+                                <div class="h-full flex items-center justify-center text-zinc-600 font-mono text-sm"><i class="fa-solid fa-satellite fa-spin-pulse mr-2"></i> 請從左側指定追蹤目標</div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div id="tab-logs" class="content-panel hidden flex-1 flex flex-col animate-[fadeIn_0.5s_ease]">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-2xl font-black text-white tracking-widest"><i class="fa-solid fa-shield-halved text-sky-500 mr-2"></i>雲端安全日誌</h3>
-                        <button onclick="window.clearLogs()" class="text-xs text-red-400 hover:text-white border border-red-500/40 px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500 transition-all font-bold">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-black text-white tracking-widest"><i class="fa-solid fa-shield-halved text-sky-500 mr-2"></i>雲端安全操作日誌</h3>
+                        <button onclick="window.clearLogs()" class="text-xs text-red-400 hover:text-white border border-red-500/40 px-5 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500 transition-all font-black shadow-sm">
                             <i class="fa-solid fa-trash-can mr-1"></i> 徹底清空日誌
                         </button>
                     </div>
-                    <div class="flex-1 glass-card rounded-2xl p-6 overflow-y-auto no-scrollbar bg-black/40 font-mono text-xs" id="cloud-logs-container"></div>
+                    <div class="flex-1 glass-card rounded-2xl p-6 overflow-y-auto no-scrollbar bg-[#020617]/80 font-mono text-xs border border-white/5 relative" id="cloud-logs-container">
+                        </div>
                 </div>
 
             </main>
@@ -186,10 +270,9 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        // 使用 initializeFirestore 傳遞設定來解決 QUIC 錯誤
-        import { initializeFirestore, collection, onSnapshot, doc, updateDoc, query, orderBy, getDocs, writeBatch, addDoc, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        // 🚨 關鍵修復：使用 initializeFirestore 搭配 forceLongPolling 解決 QUIC 錯誤
+        import { initializeFirestore, collection, onSnapshot, doc, updateDoc, query, orderBy, getDocs, writeBatch, addDoc, limit, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Firebase 配置
         const firebaseConfig = {
             apiKey: "AIzaSyDdu8ag6liDwW0AXn3zccIR5a13g7WE-hM",
             authDomain: "oldwangbase.firebaseapp.com",
@@ -201,7 +284,7 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         
-        // 【重要】解決 net::ERR_QUIC_PROTOCOL_ERROR 斷線問題
+        // 強化資料庫連線穩定性
         const db = initializeFirestore(app, {
             experimentalForceLongPolling: true, 
             useFetchStreams: false 
@@ -213,13 +296,13 @@
         let expChartInstance = null;
         let currentUserEmail = "";
 
-        // 檢查權限錯誤的工具函數
+        // 工具：錯誤解析
         function checkPermissionError(error) {
             if(error.message && error.message.includes('Missing or insufficient permissions')) {
                 Swal.fire({
-                    title: '資料庫權限被拒',
-                    text: '請前往 Firebase Console -> Firestore -> Rules 將權限改為 allow read, write: if true; (或設定管理員規則)',
-                    icon: 'error', background: '#020617', color: '#fff'
+                    title: '資料庫權限拒絕',
+                    html: '請確認 Firebase Console 內的 Firestore 規則是否開放給 admin。<br><code class="text-xs text-sky-400 mt-2 block">allow read, write: if true; // 測試期</code>',
+                    icon: 'error'
                 });
                 return true;
             }
@@ -227,64 +310,111 @@
         }
 
         // ==========================================
-        // UI & 基礎功能
+        // 1. UI 切換與輔助功能
         // ==========================================
         window.switchTab = function(tabId, btn) {
             document.querySelectorAll('.content-panel').forEach(p => p.classList.add('hidden'));
             document.querySelectorAll('.nav-tab').forEach(b => {
-                b.classList.remove('active', 'bg-sky-500/20', 'border-sky-400/50', 'text-sky-400');
-                b.classList.add('text-zinc-400', 'border-transparent');
+                b.classList.remove('active');
             });
             document.getElementById(tabId).classList.remove('hidden');
-            btn.classList.remove('text-zinc-400', 'border-transparent');
-            btn.classList.add('active', 'bg-sky-500/20', 'border-sky-400/50', 'text-sky-400');
+            btn.classList.add('active');
             
             if(tabId === 'tab-ai-spy') loadAIUsers();
+            if(tabId === 'tab-system-config') loadSystemConfig();
         };
 
         window.forceUpdatePage = function() {
-            Swal.fire({ title: '清理快取並重整中...', showConfirmButton: false, background: '#020617', color: '#fff', didOpen: () => Swal.showLoading() });
-            // 使用時間戳參數無視瀏覽器快取強制重整
+            Swal.fire({ title: '刷新系統快取...', showConfirmButton: false, didOpen: () => Swal.showLoading() });
             const url = new URL(window.location.href);
             url.searchParams.set('forceReload', Date.now());
             window.location.href = url.toString();
         };
 
         // ==========================================
-        // 登入系統與日誌
+        // 2. 登入與基礎狀態監聽
         // ==========================================
         window.adminLogin = async function() {
             const email = document.getElementById('admin-email').value;
             const pass = document.getElementById('admin-password').value;
             if(!email || !pass) return;
-            Swal.fire({ title: '矩陣連線中...', showConfirmButton: false, background: '#020617', color: '#fff', didOpen: () => Swal.showLoading() });
+            Swal.fire({ title: '安全通道建立中...', showConfirmButton: false, didOpen: () => Swal.showLoading() });
             try {
                 await signInWithEmailAndPassword(auth, email, pass);
                 currentUserEmail = email;
                 await cloudLog("系統登入", "工程師已進入 V-CORE MAX 中樞。");
-            } catch (e) { Swal.fire({title:'存取被拒', text:'權限或密碼錯誤', icon:'error', background:'#020617', color:'#fff'}); }
+            } catch (e) { 
+                Swal.fire({title:'存取被拒', text:'權限或密碼錯誤。', icon:'error'}); 
+            }
         };
 
         window.adminLogout = async function() { 
-            await cloudLog("系統登出", "工程師登出。");
+            await cloudLog("系統登出", "工程師離線。");
             await signOut(auth); location.reload(); 
         };
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUserEmail = user.email;
-                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('current-admin-email').innerText = user.email;
+                document.getElementById('login-screen').classList.add('opacity-0', 'pointer-events-none');
+                setTimeout(() => document.getElementById('login-screen').classList.add('hidden'), 500);
                 document.getElementById('main-dashboard').classList.remove('hidden');
                 Swal.close();
+                
+                // 啟動各模組
                 startRealtimeSync();
                 startLogSync();
+                loadSystemConfig();
             }
         });
 
+        // ==========================================
+        // 3. 雲端系統設定 (System Config API Keys)
+        // ==========================================
+        async function loadSystemConfig() {
+            try {
+                const docRef = doc(db, "system_config", "api_keys");
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    document.getElementById('config-gemini-keys').value = (data.gemini || []).join('\n');
+                    document.getElementById('config-groq-keys').value = (data.groq || []).join('\n');
+                } else {
+                    // 若不存在則預設建立
+                    await setDoc(docRef, { gemini: [], groq: [] });
+                }
+            } catch(e) { console.warn("無法讀取 API Keys", e); }
+        }
+
+        window.saveSystemConfig = async function() {
+            Swal.fire({ title: '儲存中...', showConfirmButton: false, didOpen: () => Swal.showLoading() });
+            try {
+                const geminiInput = document.getElementById('config-gemini-keys').value;
+                const groqInput = document.getElementById('config-groq-keys').value;
+                
+                const geminiKeys = geminiInput.split('\n').map(k => k.trim()).filter(k => k !== '');
+                const groqKeys = groqInput.split('\n').map(k => k.trim()).filter(k => k !== '');
+                
+                await setDoc(doc(db, "system_config", "api_keys"), {
+                    gemini: geminiKeys,
+                    groq: groqKeys
+                }, { merge: true });
+                
+                await cloudLog("參數變更", `更新了 AI API Keys (Gemini: ${geminiKeys.length}組, Groq: ${groqKeys.length}組)`);
+                Swal.fire({title: '儲存成功', text: '前端服務將自動套用新的金鑰輪替', icon: 'success', timer: 2000, showConfirmButton: false});
+            } catch(e) {
+                Swal.fire('寫入失敗', e.message, 'error');
+            }
+        };
+
+        // ==========================================
+        // 4. 日誌系統
+        // ==========================================
         async function cloudLog(action, detail) {
             try {
-                await addDoc(collection(db, "system_logs"), { action: action, detail: detail, adminEmail: currentUserEmail, timestamp: Date.now() });
-            } catch(e) { console.warn("日誌寫入失敗", e); }
+                await addDoc(collection(db, "system_logs"), { action, detail, adminEmail: currentUserEmail, timestamp: Date.now() });
+            } catch(e) {}
         }
 
         function startLogSync() {
@@ -295,16 +425,16 @@
                 snapshot.forEach(doc => {
                     const data = doc.data();
                     const time = new Date(data.timestamp).toLocaleString();
-                    container.innerHTML += `<div class="mb-3 pb-3 border-b border-sky-500/20"><span class="text-sky-400">[${time}]</span> <span class="text-emerald-400">${data.adminEmail}</span> 執行了 <b class="text-white">${data.action}</b>：<span class="text-zinc-400">${data.detail}</span></div>`;
+                    container.innerHTML += `<div class="mb-3 pb-3 border-b border-white/5 hover:bg-white/5 p-2 rounded transition-colors"><span class="text-sky-500 w-40 inline-block">[${time}]</span> <span class="text-emerald-400 w-48 inline-block truncate align-bottom" title="${data.adminEmail}">${data.adminEmail}</span> <span class="text-zinc-400 mr-2">執行了</span> <b class="text-white px-2 py-0.5 bg-white/10 rounded mr-2">${data.action}</b> <span class="text-zinc-300">${data.detail}</span></div>`;
                 });
-            }, (error) => checkPermissionError(error));
+            }, checkPermissionError);
         }
 
         window.clearLogs = async function() {
-            Swal.fire({title: '確定清空所有日誌?', text:'此動作無法復原！', icon:'warning', background: '#020617', color: '#fff', showCancelButton: true, confirmButtonText: '徹底清空', confirmButtonColor: '#ef4444'})
+            Swal.fire({title: '確定清空所有日誌?', text:'此動作無法復原！', icon:'warning', showCancelButton: true, confirmButtonText: '徹底清空', confirmButtonColor: '#ef4444'})
             .then(async (res) => {
                 if(res.isConfirmed) {
-                    Swal.fire({ title: '刪除中...', didOpen: () => Swal.showLoading(), background: '#0a1120', color: '#fff' });
+                    Swal.fire({ title: '刪除中...', didOpen: () => Swal.showLoading() });
                     try {
                         const q = query(collection(db, "system_logs"), limit(500));
                         const snapshot = await getDocs(q);
@@ -312,18 +442,17 @@
                         snapshot.forEach(d => batch.delete(d.ref));
                         await batch.commit();
                         await cloudLog("清空日誌", "管理員執行了徹底清空日誌操作。");
-                        Swal.fire({title: '已清空', icon: 'success', background: '#0a1120', color: '#fff'});
+                        Swal.fire({title: '已清空', icon: 'success'});
                     } catch(e) { Swal.fire('錯誤', e.message, 'error'); }
                 }
             });
         }
 
         // ==========================================
-        // 核心資料庫與防作弊系統
+        // 5. 粉絲資料庫同步與防作弊偵測
         // ==========================================
         function startRealtimeSync() {
-            // 監聽前 1000 名粉絲以保持前端效能
-            const q = query(collection(db, "users"), orderBy("exp", "desc"), limit(1000));
+            const q = query(collection(db, "users"), orderBy("exp", "desc"), limit(2000));
             onSnapshot(q, (snapshot) => {
                 masterUserList = [];
                 let totalExp = 0; let activeToday = 0;
@@ -337,48 +466,50 @@
                     totalExp += exp;
                     if(data.lastCheckIn && data.lastCheckIn.includes(todayFormatted)) activeToday++;
                     
-                    // 【防作弊偵測邏輯】如果一般用戶 EXP 超過 10萬
-                    if(exp > 100000 && data.role !== 'admin' && data.role !== 'senior') {
+                    // 防護：非管理員但 EXP 暴衝 (>50,000)
+                    if(exp > 50000 && data.role !== 'admin' && data.role !== 'senior') {
                         cheaterDetected = data.name || doc.id;
                     }
                 });
                 
-                // 更新頂部數據板
-                document.getElementById('stat-total-users').innerText = masterUserList.length.toLocaleString() + (snapshot.size === 1000 ? '+' : '');
+                document.getElementById('stat-total-users').innerText = masterUserList.length.toLocaleString() + (snapshot.size === 2000 ? '+' : '');
                 document.getElementById('stat-total-exp').innerText = totalExp.toLocaleString();
                 document.getElementById('stat-active-today').innerText = activeToday.toLocaleString();
                 
-                // 觸發防作弊 UI
                 const cheatBox = document.getElementById('cheat-indicator');
                 const cheatStatus = document.getElementById('stat-cheat-status');
                 const cheatIcon = document.getElementById('cheat-icon');
+                const cheatIconBg = document.getElementById('cheat-icon-bg');
+                
                 if(cheaterDetected) {
                     cheatBox.classList.add('cheat-alert');
                     cheatStatus.innerText = `警告: ${cheaterDetected}`;
                     cheatStatus.classList.replace('text-zinc-500', 'text-red-500');
-                    cheatIcon.classList.replace('text-zinc-500/20', 'text-red-500/40');
+                    cheatIcon.classList.replace('text-zinc-500', 'text-red-500');
+                    cheatIconBg.classList.replace('bg-zinc-500/10', 'bg-red-500/20');
                 } else {
                     cheatBox.classList.remove('cheat-alert');
-                    cheatStatus.innerText = '無異常';
+                    cheatStatus.innerText = '系統安全';
                     cheatStatus.classList.replace('text-red-500', 'text-zinc-500');
-                    cheatIcon.classList.replace('text-red-500/40', 'text-zinc-500/20');
+                    cheatIcon.classList.replace('text-red-500', 'text-zinc-500');
+                    cheatIconBg.classList.replace('bg-red-500/20', 'bg-zinc-500/10');
                 }
 
                 updateChart();
                 renderTable();
-            }, (error) => checkPermissionError(error));
+            }, checkPermissionError);
         }
 
         function updateChart() {
             const ctx = document.getElementById('expChart');
             if(!ctx) return;
-            let ranges = { '0-100 (菜鳥)': 0, '101-500 (常客)': 0, '501-1000 (死忠)': 0, '1000+ (大老)': 0 };
+            let ranges = { '0~100 (菜鳥)': 0, '101~300 (正式)': 0, '301~999 (常客)': 0, '1000+ (守護者)': 0 };
             masterUserList.forEach(u => {
                 let e = u.exp || 0;
-                if(e <= 100) ranges['0-100 (菜鳥)']++;
-                else if(e <= 500) ranges['101-500 (常客)']++;
-                else if(e <= 1000) ranges['501-1000 (死忠)']++;
-                else ranges['1000+ (大老)']++;
+                if(e <= 100) ranges['0~100 (菜鳥)']++;
+                else if(e <= 300) ranges['101~300 (正式)']++;
+                else if(e <= 999) ranges['301~999 (常客)']++;
+                else ranges['1000+ (守護者)']++;
             });
 
             if(expChartInstance) expChartInstance.destroy();
@@ -386,20 +517,23 @@
                 type: 'doughnut',
                 data: {
                     labels: Object.keys(ranges),
-                    datasets: [{ data: Object.values(ranges), backgroundColor: ['#94a3b8', '#38bdf8', '#fbbf24', '#ef4444'], borderColor: '#020617', borderWidth: 2 }]
+                    datasets: [{ 
+                        data: Object.values(ranges), 
+                        backgroundColor: ['#64748b', '#38bdf8', '#fbbf24', '#ef4444'], 
+                        borderColor: '#020617', 
+                        borderWidth: 4,
+                        hoverOffset: 10
+                    }]
                 },
-                options: { plugins: { legend: { position: 'right', labels: { color: '#e2e8f0' } } }, maintainAspectRatio: false }
+                options: { 
+                    plugins: { legend: { position: 'right', labels: { color: '#e2e8f0', font: { family: 'Noto Sans TC' } } } }, 
+                    maintainAspectRatio: false,
+                    cutout: '75%'
+                }
             });
         }
 
-        // ==========================================
-        // 名單渲染、分頁與搜尋
-        // ==========================================
-        window.loadMoreUsers = function() {
-            renderUserLimit += 50;
-            renderTable();
-        };
-
+        window.loadMoreUsers = function() { renderUserLimit += 50; renderTable(); };
         window.filterUsers = function() { renderTable(); };
 
         function renderTable() {
@@ -408,7 +542,6 @@
             
             const tbody = document.getElementById('user-table-body');
             tbody.innerHTML = '';
-            
             const toRender = filtered.slice(0, renderUserLimit);
             document.getElementById('display-count').innerText = toRender.length;
 
@@ -417,23 +550,31 @@
                 const avatar = user.photoURL || `https://ui-avatars.com/api/?name=${safeName}&background=020617&color=0ea5e9`;
                 const email = user.email || '未綁定 / Google';
                 
-                let roleHtml = '<span class="text-sky-400">一般</span>';
-                if(user.role === 'admin') roleHtml = '<span class="text-red-400 font-bold">工程師</span>';
-                else if(user.role === 'senior') roleHtml = '<span class="text-amber-400 font-bold">老粉</span>';
-                else if(user.role === 'banned') roleHtml = '<span class="text-zinc-600 bg-zinc-800 px-2 rounded line-through">封鎖</span>';
+                let roleHtml = '<span class="text-sky-400 font-medium">粉絲</span>';
+                if(user.role === 'admin') roleHtml = '<span class="text-red-400 font-black border border-red-500/30 bg-red-500/10 px-2 py-0.5 rounded">工程師</span>';
+                else if(user.role === 'senior') roleHtml = '<span class="text-amber-400 font-bold border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 rounded">高階老粉</span>';
+                else if(user.role === 'banned') roleHtml = '<span class="text-zinc-500 bg-zinc-800/80 px-2 py-0.5 rounded line-through border border-zinc-600">已封鎖</span>';
 
                 tbody.innerHTML += `
-                    <tr class="${user.role === 'banned' ? 'opacity-50' : ''}">
-                        <td class="py-2 px-4 text-center"><input type="checkbox" class="user-cb cursor-pointer" value="${user.uid}"></td>
-                        <td class="py-2 px-4"><div class="flex items-center gap-3"><img src="${avatar}" class="w-8 h-8 rounded-full object-cover"><div><p class="font-bold">${safeName}</p><p class="text-[10px] text-zinc-500">UID-${user.uid.substring(0,8)}</p></div></div></td>
-                        <td class="py-2 px-4 font-mono text-sky-200/70 text-xs">${email}</td>
-                        <td class="py-2 px-4 text-center">${roleHtml}</td>
-                        <td class="py-2 px-4 text-center text-sky-400 font-black">${(user.exp || 0).toLocaleString()}</td>
-                        <td class="py-2 px-4 text-right space-x-1">
-                            <button onclick="window.viewTimeline('${user.uid}', '${safeName}')" class="btn-action bg-purple-500/20 text-purple-400 hover:bg-purple-500 hover:text-white" title="活動時間軸"><i class="fa-solid fa-clock-rotate-left"></i></button>
-                            <button onclick="window.editUserStats('${user.uid}', '${safeName}', ${user.exp || 0}, '${user.role || 'user'}')" class="btn-action bg-sky-500/20 text-sky-400 hover:bg-sky-500 hover:text-white" title="編輯數據與派信"><i class="fa-solid fa-pen"></i></button>
-                            <button onclick="window.resetUserPassword('${user.email}')" class="btn-action bg-amber-500/20 text-amber-400 hover:bg-amber-500 hover:text-white" title="發送重設密碼信件" ${user.email ? '' : 'disabled style="opacity:0.3"'}><i class="fa-solid fa-key"></i></button>
-                            <button onclick="window.banUser('${user.uid}', '${safeName}', '${user.role}')" class="btn-action bg-orange-500/20 text-orange-400 hover:bg-orange-500 hover:text-white" title="${user.role === 'banned' ? '解封' : '封鎖'}"><i class="fa-solid fa-ban"></i></button>
+                    <tr class="${user.role === 'banned' ? 'opacity-40 grayscale' : ''}">
+                        <td class="py-3 px-4 text-center"><input type="checkbox" class="user-cb cursor-pointer w-4 h-4 accent-sky-500" value="${user.uid}"></td>
+                        <td class="py-3 px-4">
+                            <div class="flex items-center gap-3">
+                                <img src="${avatar}" class="w-10 h-10 rounded-xl object-cover border border-white/10 shadow-sm">
+                                <div>
+                                    <p class="font-bold text-white">${safeName}</p>
+                                    <p class="text-[10px] text-zinc-500 font-mono mt-0.5">UID-${user.uid.substring(0,8)}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3 px-4 font-mono text-sky-200/70 text-[11px] hidden md:table-cell">${email}</td>
+                        <td class="py-3 px-4 text-center">${roleHtml}</td>
+                        <td class="py-3 px-4 text-center text-sky-400 font-black tracking-wider">${(user.exp || 0).toLocaleString()}</td>
+                        <td class="py-3 px-4 text-right space-x-1">
+                            <button onclick="window.viewUserDetail('${user.uid}', '${safeName}', ${user.exp||0})" class="btn-action bg-purple-500/20 text-purple-400 hover:bg-purple-500 hover:text-white border border-purple-500/30" title="高階查核 (歷史紀錄與成就)"><i class="fa-solid fa-id-card-clip"></i></button>
+                            <button onclick="window.editUserStats('${user.uid}', '${safeName}', ${user.exp || 0}, '${user.role || 'user'}')" class="btn-action bg-sky-500/20 text-sky-400 hover:bg-sky-500 hover:text-white border border-sky-500/30" title="編輯數據與派信"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button onclick="window.resetUserPassword('${user.email}')" class="btn-action bg-amber-500/20 text-amber-400 hover:bg-amber-500 hover:text-white border border-amber-500/30" title="發送密碼重設信" ${user.email ? '' : 'disabled style="opacity:0.2; cursor:not-allowed;"'}><i class="fa-solid fa-key"></i></button>
+                            <button onclick="window.banUser('${user.uid}', '${safeName}', '${user.role}')" class="btn-action ${user.role==='banned' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500' : 'bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500'} hover:text-white" title="${user.role === 'banned' ? '解封' : '封鎖'}"><i class="fa-solid ${user.role==='banned' ? 'fa-unlock' : 'fa-ban'}"></i></button>
                         </td>
                     </tr>
                 `;
@@ -441,7 +582,7 @@
         }
 
         // ==========================================
-        // 單一與批量操作 (Bulk)
+        // 6. 用戶操作 (查核、編輯、封鎖、信件)
         // ==========================================
         window.toggleSelectAll = function() {
             const isChecked = document.getElementById('select-all').checked;
@@ -450,19 +591,17 @@
 
         window.bulkAction = async function(actionType) {
             const selected = Array.from(document.querySelectorAll('.user-cb:checked')).map(cb => cb.value);
-            if(selected.length === 0) return Swal.fire({title: '未選取', text: '請先在列表中勾選用戶', icon: 'info', background: '#0a1120', color: '#fff'});
+            if(selected.length === 0) return Swal.fire({title: '未選取目標', text: '請在列表中勾選欲處理的帳號。', icon: 'warning'});
 
-            const res = await Swal.fire({title: '批量封鎖', text: `確定要將這 ${selected.length} 個帳號全部封鎖嗎？`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', background: '#0a1120', color: '#fff'});
+            const res = await Swal.fire({title: '批量封鎖警告', text: `此動作將瞬間封鎖 ${selected.length} 個帳號，確定執行？`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444'});
             if(res.isConfirmed) {
-                Swal.fire({ title: '寫入中...', didOpen: () => Swal.showLoading(), background: '#0a1120', color: '#fff' });
+                Swal.fire({ title: '寫入防護網中...', didOpen: () => Swal.showLoading() });
                 try {
                     const batch = writeBatch(db);
-                    selected.forEach(uid => {
-                        batch.update(doc(db, "users", uid), { role: 'banned' });
-                    });
+                    selected.forEach(uid => batch.update(doc(db, "users", uid), { role: 'banned' }));
                     await batch.commit();
-                    await cloudLog("批量操作", `執行了批量封鎖，共影響 ${selected.length} 個帳號。`);
-                    Swal.fire({title: '成功', text: '已全數封鎖', icon: 'success', background: '#0a1120', color: '#fff'});
+                    await cloudLog("批量操作", `執行了批量封鎖，影響 ${selected.length} 人。`);
+                    Swal.fire({title: '執行成功', icon: 'success'});
                 } catch(e) { Swal.fire('錯誤', e.message, 'error'); }
             }
         };
@@ -470,38 +609,41 @@
         window.banUser = async function(id, name, currentRole) {
             const isBanned = currentRole === 'banned';
             const newRole = isBanned ? 'user' : 'banned';
-            const actionText = isBanned ? '解除封鎖' : '封鎖 (限制權限)';
+            const actionText = isBanned ? '解除封鎖' : '封鎖 (褫奪權限)';
             Swal.fire({
-                title: `確定要 ${actionText} ${name} 嗎？`, icon: 'warning', background: '#0a1120', color: '#fff', showCancelButton: true, confirmButtonText: `確認${actionText}`, confirmButtonColor: isBanned ? '#10b981' : '#ef4444'
+                title: `即將 ${actionText}`, text:`目標：${name}`, icon: 'warning', showCancelButton: true, confirmButtonText: `確認執行`, confirmButtonColor: isBanned ? '#10b981' : '#ef4444'
             }).then(async (res) => {
                 if(res.isConfirmed) {
                     await updateDoc(doc(db, "users", id), { role: newRole });
-                    cloudLog("帳號狀態變更", `將 [${name}] 的狀態改為 ${newRole}`);
-                    Swal.fire({title: '執行成功', icon:'success', toast:true, position:'top-end', timer: 1500, showConfirmButton:false, background: '#0a1120', color: '#fff'});
+                    cloudLog("帳號防護變更", `將 [${name}] 改為 ${newRole}`);
+                    Swal.fire({title: '成功', icon:'success', toast:true, position:'top-end', timer: 1500, showConfirmButton:false});
                 }
             });
         };
 
         window.editUserStats = function(id, name, exp, role) {
             Swal.fire({
-                title: '數據覆寫與系統派信',
+                title: '<i class="fa-solid fa-pen-ruler text-sky-400"></i> 數據覆寫中心',
                 html: `
                     <div class="text-left space-y-4 pt-4">
-                        <div><label class="text-xs text-sky-500">名稱</label><input id="swal-name" class="cyber-input w-full p-2 rounded text-white" value="${name}"></div>
+                        <div><label class="text-[11px] font-bold tracking-widest text-sky-500 uppercase mb-1 block">顯示名稱</label><input id="swal-name" class="cyber-input w-full p-2.5 rounded-xl text-white font-bold" value="${name}"></div>
                         <div class="grid grid-cols-2 gap-4">
-                            <div><label class="text-xs text-emerald-400">EXP</label><input id="swal-exp" type="number" class="cyber-input w-full p-2 rounded text-white" value="${exp}"></div>
-                            <div><label class="text-xs text-amber-400">權限</label>
-                            <select id="swal-role" class="cyber-input w-full p-2 rounded text-white bg-black">
-                                <option value="user" ${role==='user'?'selected':''}>粉絲</option>
-                                <option value="senior" ${role==='senior'?'selected':''}>老粉</option>
+                            <div><label class="text-[11px] font-bold tracking-widest text-emerald-400 uppercase mb-1 block">經驗值 (EXP)</label><input id="swal-exp" type="number" class="cyber-input w-full p-2.5 rounded-xl text-white font-mono" value="${exp}"></div>
+                            <div><label class="text-[11px] font-bold tracking-widest text-amber-400 uppercase mb-1 block">系統身分</label>
+                            <select id="swal-role" class="cyber-input w-full p-2.5 rounded-xl text-white bg-black font-bold">
+                                <option value="user" ${role==='user'?'selected':''}>一般粉絲</option>
+                                <option value="senior" ${role==='senior'?'selected':''}>高階老粉</option>
                                 <option value="admin" ${role==='admin'?'selected':''}>工程師</option>
-                                <option value="banned" ${role==='banned'?'selected':''}>封鎖</option>
+                                <option value="banned" ${role==='banned'?'selected':''}>停權帳號</option>
                             </select></div>
                         </div>
-                        <div><label class="text-xs text-purple-400">附帶信件訊息 (將發送至該用戶信箱)</label><input id="swal-reason" class="cyber-input w-full p-2 rounded text-white" placeholder="若留空且數值變動，預設為「管理員後台資料變更」"></div>
+                        <div class="border-t border-white/10 pt-4 mt-2">
+                            <label class="text-[11px] font-bold tracking-widest text-purple-400 uppercase mb-1 block flex items-center"><i class="fa-solid fa-envelope mr-1"></i> 附帶基地信件 (可留空)</label>
+                            <input id="swal-reason" class="cyber-input w-full p-2.5 rounded-xl text-white text-sm" placeholder="說明變動原因，將推播給用戶...">
+                        </div>
                     </div>
                 `,
-                background: '#0a1120', color: '#fff', showCancelButton: true, confirmButtonText: '寫入並發送', customClass: { confirmButton: 'bg-sky-500 text-white rounded px-5 py-2' },
+                showCancelButton: true, confirmButtonText: '寫入並發送信件', customClass: { confirmButton: 'bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold rounded-xl px-5 py-2.5', cancelButton: 'bg-zinc-800 rounded-xl px-5 py-2.5' },
                 preConfirm: () => ({ 
                     name: document.getElementById('swal-name').value, 
                     exp: parseInt(document.getElementById('swal-exp').value), 
@@ -513,51 +655,111 @@
                     const diff = res.value.exp - exp;
                     await updateDoc(doc(db, "users", id), { name: res.value.name, exp: res.value.exp, role: res.value.role });
                     
-                    // 若有填寫原因或 EXP 確實有變動，發送系統信件
                     if (res.value.reason || diff !== 0) {
-                        const reasonText = res.value.reason || "管理員後台資料變更";
+                        const reasonText = res.value.reason || "管理員執行了後台資料變更";
                         await addDoc(collection(doc(db, "users", id), "exp_history"), {
                             amount: diff, reason: reasonText, timestamp: Date.now(), read: false
                         });
                     }
                     
-                    cloudLog("手動修改", `修改了 [${res.value.name}] 的數據與權限`);
-                    Swal.fire({ title: '已儲存', icon: 'success', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false, background: '#0a1120', color: '#fff' });
+                    cloudLog("手動修改", `覆寫了 [${res.value.name}] 的數據 (EXP: ${res.value.exp})`);
+                    Swal.fire({ title: '覆寫完畢', icon: 'success', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false });
+                }
+            });
+        };
+
+        window.viewUserDetail = async function(uid, name, exp) {
+            Swal.fire({ title: `解析 ${name} 的歷史軌跡...`, didOpen: () => Swal.showLoading() });
+            try {
+                // 抓取該用戶的 EXP 歷史紀錄信箱
+                const q = query(collection(db, "users", uid, "exp_history"), orderBy("timestamp", "desc"), limit(10));
+                const snap = await getDocs(q);
+                let logsHtml = '';
+                
+                if(snap.empty) {
+                    logsHtml = '<div class="text-center text-zinc-600 py-6 text-sm">此帳號尚無任何 EXP 變動明細</div>';
+                } else {
+                    snap.forEach(d => {
+                        const data = d.data();
+                        const colorClass = data.amount > 0 ? 'text-green-400' : (data.amount < 0 ? 'text-red-400' : 'text-zinc-400');
+                        const sign = data.amount > 0 ? '+' : '';
+                        logsHtml += `
+                            <div class="flex justify-between items-center mb-2 bg-black/40 p-3 rounded-xl border border-white/5">
+                                <div><p class="text-sm font-bold text-zinc-200">${data.reason}</p><p class="text-[10px] font-mono text-zinc-500">${new Date(data.timestamp).toLocaleString()}</p></div>
+                                <div class="text-base font-black ${colorClass}">${sign}${data.amount}</div>
+                            </div>`;
+                    });
+                }
+                
+                // 動態判定徽章預覽
+                let badgesHtml = '<div class="flex gap-2 flex-wrap mt-2">';
+                badgesHtml += `<span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded text-xs font-bold"><i class="fa-solid fa-seedling"></i> 初來乍到</span>`;
+                if(exp >= 100) badgesHtml += `<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-1 rounded text-xs font-bold"><i class="fa-solid fa-star"></i> 積分獵人</span>`;
+                if(exp >= 500) badgesHtml += `<span class="bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-2 py-1 rounded text-xs font-bold"><i class="fa-solid fa-crown"></i> 基地大老</span>`;
+                badgesHtml += '</div>';
+
+                Swal.fire({ 
+                    title: '<i class="fa-solid fa-fingerprint text-sky-400"></i> 高階查核報告', 
+                    html: `
+                        <div class="text-left mt-4 border-t border-white/10 pt-4">
+                            <div class="mb-4">
+                                <span class="text-[10px] font-bold tracking-widest text-sky-500 block mb-1">目前解鎖成就</span>
+                                ${badgesHtml}
+                            </div>
+                            <div class="mb-2"><span class="text-[10px] font-bold tracking-widest text-sky-500 block mb-2">最近十筆資金 (EXP) 流向</span></div>
+                            <div class="max-h-60 overflow-y-auto no-scrollbar space-y-1">${logsHtml}</div>
+                        </div>`, 
+                });
+            } catch(e) { Swal.fire('讀取失敗', e.message, 'error'); }
+        };
+
+        window.resetUserPassword = async function(email) {
+            Swal.fire({
+                title: '密碼重置程序', text: `確定要發送重設連結至 ${email}？`, icon: 'question', showCancelButton: true, confirmButtonColor: '#0ea5e9'
+            }).then(async (res) => {
+                if(res.isConfirmed) {
+                    try {
+                        await sendPasswordResetEmail(auth, email);
+                        cloudLog("重設密碼", `派發密碼重設信件至 ${email}`);
+                        Swal.fire({title: '已成功派送', icon: 'success'});
+                    } catch(e) { Swal.fire('派送失敗', e.message, 'error'); }
                 }
             });
         };
 
         // ==========================================
-        // 全服空投、系統公告、時間軸與匯出
+        // 7. 全站廣播與工具
         // ==========================================
         window.globalAirdrop = async function() {
             Swal.fire({
-                title: '🎁 全服獎勵空投',
+                title: '🎁 全局獎勵空投',
                 html: `
-                    <div class="text-left space-y-4 pt-2">
-                        <div><label class="text-xs text-sky-400 font-bold tracking-widest mb-1 block">發放數量 (EXP)</label><input id="airdrop-amount" type="number" class="cyber-input w-full p-3 rounded-xl text-white font-black" value="500"></div>
-                        <div><label class="text-xs text-amber-400 font-bold tracking-widest mb-1 block">發放理由 (將推播)</label><input id="airdrop-reason" type="text" class="cyber-input w-full p-3 rounded-xl text-white" placeholder="例如：系統維護補償"></div>
+                    <div class="text-left space-y-4 pt-2 border-t border-white/10 mt-2">
+                        <div><label class="text-[11px] font-bold tracking-widest text-sky-500 block mb-1">發放數量 (EXP)</label><input id="airdrop-amount" type="number" class="cyber-input w-full p-3 rounded-xl text-white font-black text-xl text-center" value="500"></div>
+                        <div><label class="text-[11px] font-bold tracking-widest text-amber-500 block mb-1">發放理由 (將推播至全服畫面)</label><input id="airdrop-reason" type="text" class="cyber-input w-full p-3 rounded-xl text-white" placeholder="例如：伺服器升級維護補償"></div>
                     </div>
                 `,
-                background: '#0a1120', color: '#fff', showCancelButton: true, confirmButtonText: '發射空投！', customClass: { confirmButton: 'bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black rounded-xl px-6 py-2.5', cancelButton: 'bg-zinc-800 rounded-xl px-6 py-2.5' },
-                preConfirm: () => ({ amount: parseInt(document.getElementById('airdrop-amount').value), reason: document.getElementById('airdrop-reason').value || "神秘獎勵" })
+                showCancelButton: true, confirmButtonText: '確認發射空投', customClass: { confirmButton: 'bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black rounded-xl px-6 py-2.5', cancelButton: 'bg-zinc-800 rounded-xl px-6 py-2.5' },
+                preConfirm: () => ({ amount: parseInt(document.getElementById('airdrop-amount').value), reason: document.getElementById('airdrop-reason').value || "系統特別空投獎勵" })
             }).then(async (res) => {
                 if(res.isConfirmed) {
                     const {amount, reason} = res.value;
-                    if(isNaN(amount) || amount <= 0) return;
-                    Swal.fire({ title: '批次寫入中...', didOpen: () => Swal.showLoading(), background: '#0a1120', color: '#fff' });
+                    if(isNaN(amount) || amount === 0) return;
+                    Swal.fire({ title: '雲端批次派送中...', didOpen: () => Swal.showLoading() });
                     try {
-                        // 防爆寫法：Firebase batch 一次最多 500 筆，做分塊處理
+                        // 批次寫入防爆 (Firestore limit 500/batch)
                         const chunks = []; let i = 0; const size = 400;
                         while(i < masterUserList.length) chunks.push(masterUserList.slice(i, i += size));
                         
                         for(const chunk of chunks) {
                             const batch = writeBatch(db);
-                            chunk.forEach(u => batch.update(doc(db, "users", u.uid), { exp: (u.exp||0) + amount, rewardMsg: reason }));
+                            chunk.forEach(u => {
+                                batch.update(doc(db, "users", u.uid), { exp: (u.exp||0) + amount, rewardMsg: reason });
+                            });
                             await batch.commit();
                         }
                         await cloudLog("全服空投", `發放 ${amount} EXP，理由：[${reason}]`);
-                        Swal.fire({title: '空投成功', text: `成功為 ${masterUserList.length} 人發放獎勵！`, icon: 'success', background: '#0a1120', color: '#fff'});
+                        Swal.fire({title: '空投成功', text: `成功覆蓋 ${masterUserList.length} 名粉絲。`, icon: 'success'});
                     } catch(e) { Swal.fire('錯誤', e.message, 'error'); }
                 }
             });
@@ -565,92 +767,64 @@
 
         window.manageAnnouncement = async function() {
             const { value: text } = await Swal.fire({
-                title: '發布系統公告', input: 'textarea', inputPlaceholder: '輸入公告內容...', background: '#0a1120', color: '#fff', showCancelButton: true, confirmButtonColor: '#6366f1'
+                title: '發佈基地系統公告', input: 'textarea', inputPlaceholder: '支援純文字，將自動轉換格式...', showCancelButton: true, confirmButtonText: '立即發佈', customClass: { input: 'bg-black/50 border-sky-500/30 text-white h-32 rounded-xl p-4' }
             });
             if (text) {
-                await addDoc(collection(db, "announcements"), { content: text, timestamp: Date.now(), author: currentUserEmail });
+                await addDoc(collection(db, "announcements"), { content: text, timestamp: Date.now(), author: "SYSTEM_CORE" });
                 cloudLog("發布公告", text.substring(0, 20) + "...");
-                Swal.fire({title:'發布成功', text:'前端網站將顯示此公告', icon:'success', background: '#0a1120', color: '#fff'});
+                Swal.fire({title:'發布成功', text:'用戶端將在下次連線時同步。', icon:'success'});
             }
-        };
-
-        window.viewTimeline = async function(uid, name) {
-            Swal.fire({ title: `尋找 ${name} 的紀錄...`, didOpen: () => Swal.showLoading(), background: '#0a1120', color: '#fff' });
-            try {
-                // 從 system_logs 中反查包含此 UID 的紀錄 (簡易實作)
-                const q = query(collection(db, "system_logs"), orderBy("timestamp", "desc"), limit(100));
-                const snap = await getDocs(q);
-                let logsHtml = '';
-                snap.forEach(d => {
-                    const data = d.data();
-                    if(data.detail.includes(name) || data.detail.includes(uid)) {
-                        logsHtml += `<div class="mb-2 border-b border-white/10 pb-2 text-left text-xs"><span class="text-sky-400">[${new Date(data.timestamp).toLocaleString()}]</span> <span class="text-zinc-300">${data.action}: ${data.detail}</span></div>`;
-                    }
-                });
-                if(logsHtml === '') logsHtml = '<p class="text-zinc-500 py-4">近期無相關操作紀錄</p>';
-                Swal.fire({ title: `${name} 活動時間軸`, html: `<div class="max-h-60 overflow-y-auto no-scrollbar">${logsHtml}</div>`, background: '#0a1120', color: '#fff' });
-            } catch(e) { Swal.fire('錯誤', e.message, 'error'); }
         };
 
         window.exportCSV = function() {
             let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; 
-            csvContent += "UID,名稱,信箱,EXP,權限\n";
+            csvContent += "UID,粉絲名稱,綁定信箱,目前EXP,系統權限\n";
             masterUserList.forEach(u => csvContent += `UID-${u.uid},"${u.name||''}","${u.email||''}",${u.exp||0},${u.role||'user'}\n`);
             const link = document.createElement("a");
-            link.setAttribute("href", encodeURI(csvContent)); link.setAttribute("download", `名單_${Date.now()}.csv`);
+            link.setAttribute("href", encodeURI(csvContent)); link.setAttribute("download", `VCORE_名單_${Date.now()}.csv`);
             document.body.appendChild(link); link.click(); document.body.removeChild(link);
-            cloudLog("匯出資料", "下載了全站 CSV 名單");
+            cloudLog("匯出資料", "下載了全站安全 CSV 名冊");
         };
 
         // ==========================================
-        // AI 對話監控
+        // 8. AI 對話監聽
         // ==========================================
         window.loadAIUsers = function() {
             const listDiv = document.getElementById('ai-user-list');
+            // 根據需求，這裡可以修改為過濾 'banned' 或是全部，目前依然追蹤高階帳號
             const targetUsers = masterUserList.filter(u => u.role === 'admin' || u.role === 'senior');
-            if(targetUsers.length === 0) return listDiv.innerHTML = '<div class="text-center p-4 text-zinc-500">無監控對象</div>';
+            if(targetUsers.length === 0) return listDiv.innerHTML = '<div class="text-center p-6 text-zinc-500 font-mono text-sm">目標範圍內無可監聽對象</div>';
 
             listDiv.innerHTML = targetUsers.map(u => `
-                <div onclick="window.viewUserChats('${u.uid}', '${u.name}')" class="p-3 mb-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 cursor-pointer border border-sky-500/20 transition-colors">
-                    <p class="font-bold text-white text-sm">${u.name}</p><p class="text-[10px] text-zinc-500">UID: ${u.uid.substring(0,6)} (${u.role})</p>
+                <div onclick="window.viewUserChats('${u.uid}', '${u.name}')" class="p-3 mb-2 rounded-xl bg-sky-500/5 hover:bg-sky-500/20 cursor-pointer border border-sky-500/10 hover:border-sky-500/40 transition-all">
+                    <p class="font-bold text-white text-sm flex justify-between"><span>${u.name}</span> <i class="fa-solid fa-chevron-right text-xs text-sky-500/50 mt-1"></i></p>
+                    <p class="text-[10px] text-zinc-500 font-mono mt-1">UID-${u.uid.substring(0,8)} [${u.role}]</p>
                 </div>
             `).join('');
         };
 
         window.viewUserChats = async function(uid, name) {
             const viewDiv = document.getElementById('ai-chat-view');
-            viewDiv.innerHTML = `<div class="h-full flex items-center justify-center"><i class="fa-solid fa-spinner fa-spin text-3xl text-sky-500"></i></div>`;
+            const titleDiv = document.getElementById('ai-chat-title');
+            titleDiv.innerHTML = `<i class="fa-solid fa-satellite-dish animate-pulse mr-2 text-red-500"></i>即時監聽: <span class="text-white">${name}</span>`;
+            viewDiv.innerHTML = `<div class="h-full flex items-center justify-center"><i class="fa-solid fa-circle-notch fa-spin text-4xl text-sky-500"></i></div>`;
             try {
                 const q = query(collection(db, "users", uid, "chat_history"), orderBy("timestamp", "desc"), limit(20));
                 const snap = await getDocs(q);
-                if(snap.empty) return viewDiv.innerHTML = `<div class="text-center text-zinc-500 py-10">目標尚無紀錄。</div>`;
+                if(snap.empty) return viewDiv.innerHTML = `<div class="text-center text-zinc-500 py-10 font-mono">神經網路中未尋獲該目標的對話紀錄。</div>`;
 
-                let html = `<h4 class="text-sky-400 font-bold mb-4 border-b border-sky-500/20 pb-2">目標：${name} 的最近對話</h4><div class="space-y-4">`;
+                let html = `<div class="space-y-4">`;
                 snap.forEach(doc => {
                     const data = doc.data();
                     html += `
-                        <div class="bg-black/40 p-4 rounded-xl border border-white/5">
-                            <p class="text-[10px] text-zinc-500 mb-2">${new Date(data.timestamp).toLocaleString()}</p>
-                            <div class="mb-2"><span class="text-[10px] bg-sky-500/20 text-sky-400 px-2 py-0.5 rounded mr-2">用戶</span> <span class="text-sm text-white">${data.user_msg}</span></div>
-                            <div><span class="text-[10px] bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded mr-2">AI</span> <span class="text-sm text-zinc-300 line-clamp-2 hover:line-clamp-none cursor-pointer" title="點擊展開">${data.ai_reply}</span></div>
+                        <div class="bg-[#020617]/80 p-4 rounded-xl border border-white/5 shadow-md">
+                            <p class="text-[10px] text-zinc-500 font-mono border-b border-white/5 pb-2 mb-3">${new Date(data.timestamp).toLocaleString()}</p>
+                            <div class="mb-3 pl-2 border-l-2 border-sky-500"><span class="text-[10px] text-sky-400 font-bold tracking-widest block mb-1">USER</span> <span class="text-sm text-white leading-relaxed">${data.user_msg}</span></div>
+                            <div class="pl-2 border-l-2 border-purple-500"><span class="text-[10px] text-purple-400 font-bold tracking-widest block mb-1">AI SYS</span> <span class="text-xs text-zinc-400 leading-relaxed block max-h-24 overflow-y-auto no-scrollbar">${data.ai_reply}</span></div>
                         </div>`;
                 });
                 viewDiv.innerHTML = html + `</div>`;
-            } catch(e) { viewDiv.innerHTML = `<div class="text-red-500 text-sm">無法讀取紀錄：${e.message}</div>`; }
-        };
-        window.resetUserPassword = async function(email) {
-            if(!email) return;
-            Swal.fire({
-                title: '發送密碼重設信', text: `確定要發送重設信件至 ${email} 嗎？`, icon: 'question', background: '#0a1120', color: '#fff', showCancelButton: true
-            }).then(async (res) => {
-                if(res.isConfirmed) {
-                    try {
-                        await sendPasswordResetEmail(auth, email);
-                        cloudLog("重設密碼", `發送密碼重設信件至 ${email}`);
-                        Swal.fire({title: '已發送', icon: 'success', background: '#0a1120', color: '#fff'});
-                    } catch(e) { Swal.fire('錯誤', e.message, 'error'); }
-                }
-            });
+            } catch(e) { viewDiv.innerHTML = `<div class="text-red-500 text-sm font-bold bg-red-500/10 p-4 rounded-xl border border-red-500/30">攔截失敗：${e.message}</div>`; }
         };
     </script>
 </body>

@@ -20,12 +20,23 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
     <meta name="description" content="老王專屬秘密基地 - 這裡記錄了老王的成長軌跡、Q&A 資料庫以及專屬粉絲互動區。">
     <meta name="keywords" content="老王, 秘密基地, TikTok, 直播, 粉絲認證">
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').then(reg => {
+                    console.log('[系統核心] Service Worker 註冊成功，接管網路層', reg.scope);
+                }).catch(err => {
+                    console.warn('[系統核心] Service Worker 註冊失敗', err);
+                });
+            });
+        }
+    </script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -69,12 +80,39 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // 確保所有需要的方法都打包給 window.firebaseApp，供 app.js 呼叫
+        // 導出給全局 app.js 使用
         window.firebaseApp = {
             app, auth, db,
             GoogleAuthProvider, signInWithPopup, signInAnonymously, signOut,
             createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile,
             doc, setDoc, getDoc, updateDoc, collection, query, orderBy, limit, getDocs, addDoc, where, onSnapshot
+        };
+
+        // 🌟 修復競態條件：在 Firebase 載入後立刻綁定 gainExp，不要等 window.onload
+        const originalGainExp = window.gainExp;
+        window.gainExp = async function(amount, silent = false, reason = "系統互動獎勵") {
+            window.appSettings = window.appSettings || { exp: 0 };
+            
+            // 本地更新
+            if (typeof originalGainExp === 'function') {
+                originalGainExp(amount, silent);
+            } else {
+                window.appSettings.exp += amount;
+                if(typeof window.updateExpUI === 'function') window.updateExpUI();
+            }
+            
+            // 若為正式登入成員，同步雲端並寫入信箱
+            if (window.firebaseApp && window.firebaseApp.auth.currentUser && !window.firebaseApp.auth.currentUser.isAnonymous) {
+                const user = window.firebaseApp.auth.currentUser;
+                if(typeof window.syncExpToFirebase === 'function') window.syncExpToFirebase(window.appSettings.exp);
+                
+                try {
+                    const historyRef = window.firebaseApp.collection(window.firebaseApp.doc(window.firebaseApp.db, "users", user.uid), "exp_history");
+                    await window.firebaseApp.addDoc(historyRef, {
+                        amount: amount, reason: reason, timestamp: Date.now(), read: false
+                    });
+                } catch (e) { console.warn("寫入信箱失敗", e); }
+            }
         };
 
         onAuthStateChanged(auth, async (user) => {
@@ -104,17 +142,16 @@
                                     Swal.fire({
                                         title: '🎁 收到系統空投！',
                                         html: `
-                                            <div class="bg-sky-500/10 border border-sky-500/30 p-4 rounded-xl mb-4 mt-2">
+                                            <div class="bg-sky-500/10 border border-sky-500/30 p-4 rounded-xl mb-4 mt-2 shadow-[inset_0_0_20px_rgba(56,189,248,0.2)]">
                                                 <p class="text-sm text-sky-100 leading-relaxed font-bold tracking-wide">「${msg}」</p>
                                             </div>
-                                            <div class="text-base text-zinc-300 tracking-wider">獲得 <b class="text-sky-400 text-2xl drop-shadow-[0_0_10px_rgba(56,189,248,0.8)] mx-1">+${diff}</b> EXP</div>
+                                            <div class="text-base text-zinc-300 tracking-wider">獲得 <b class="text-sky-400 text-3xl drop-shadow-[0_0_15px_rgba(56,189,248,0.8)] mx-2">+${diff}</b> EXP</div>
                                         `,
                                         background: 'rgba(10,16,28,0.95)',
                                         color: '#fff',
                                         confirmButtonText: '開心收下',
-                                        confirmButtonColor: '#38bdf8',
-                                        customClass: { confirmButton: 'text-sky-950 font-black tracking-widest rounded-xl px-8 py-3' },
-                                        backdrop: `rgba(0,0,0,0.8)`
+                                        customClass: { confirmButton: 'bg-gradient-to-r from-sky-400 to-blue-500 text-white font-black tracking-widest rounded-xl px-8 py-3 shadow-[0_0_15px_rgba(56,189,248,0.4)]' },
+                                        backdrop: `rgba(0,0,0,0.85)`
                                     });
                                 }
 
@@ -123,12 +160,11 @@
                                 window.appSettings.exp = userData.exp || 0;
                                 window.updateExpUI?.();
                                 
-                                // 🌟 解決無限空投 Bug 的關鍵：把同步後的分數強制存檔，打破無限迴圈
+                                // 打破無限迴圈：強制存檔
                                 if (typeof window.saveSettings === 'function') {
                                     window.saveSettings();
                                 }
                             } else {
-                                // 新用戶初次建立資料
                                 const fallbackName = user.displayName || "老王鐵粉";
                                 setDoc(userRef, {
                                     name: fallbackName,
@@ -148,20 +184,17 @@
                         if (!window.isLoggedIn && typeof window.openAuthModal === 'function') window.openAuthModal('login');
                     }, 1500); 
                 }
-            } catch (err) {
-                console.error("AuthState 監聽錯誤", err);
-            }
+            } catch (err) { console.error("AuthState 監聽錯誤", err); }
         });
     </script>
 
-    <link rel="stylesheet" href="styles.css?v=20.0.0">
+    <link rel="stylesheet" href="styles.css?v=22.0.0">
 </head>
 
-<body class="pb-[100px] pt-6 flex flex-col justify-start min-h-screen">
+<body class="pb-[100px] pt-6 flex flex-col justify-start min-h-screen relative">
     <div id="page-content" class="flex flex-col justify-start w-full" style="flex:1;">
 
-        <div id="splash"
-             class="fixed inset-0 z-[999] bg-[#030303] flex flex-col items-center justify-center transition-all duration-700">
+        <div id="splash" class="fixed inset-0 z-[999] bg-[#030303] flex flex-col items-center justify-center transition-all duration-700">
             <div class="relative w-40 h-40 mb-10 flex items-center justify-center">
                 <div class="absolute inset-0 rounded-full border-2 border-sky-500/30 animate-ping opacity-70"></div>
                 <div class="absolute inset-4 rounded-full bg-sky-500/10 animate-pulse blur-xl"></div>
@@ -181,7 +214,7 @@
             <div class="ambient-orb orb-3"></div>
         </div>
 
-        <header class="max-w-3xl mx-auto px-5 mb-6 flex justify-between items-center relative z-20">
+        <header class="max-w-3xl mx-auto px-5 mb-6 flex justify-between items-center relative z-20 w-full">
             <div class="flex items-center gap-4">
                 <div class="w-12 h-12 rounded-[18px] bg-sky-500/10 backdrop-blur-md flex items-center justify-center border border-sky-500/30 shadow-[0_0_20px_rgba(56,189,248,0.2)] transform -rotate-6 overflow-hidden">
                     <img src="avatar-main.jpg" onerror="this.src='https://ui-avatars.com/api/?name=王&background=000&color=fff'" alt="Logo" class="w-full h-full object-cover p-1 rounded-[16px]">
@@ -207,7 +240,7 @@
                     <span id="inbox-badge" class="hidden absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-[#030303] animate-pulse"></span>
                 </button>
                 <button id="btn-user-profile" onclick="window.toggleUserMenu()" class="hidden glass-element w-10 h-10 rounded-full overflow-hidden border border-sky-500/40 hover:border-sky-400 transition-all">
-                    <img id="header-user-avatar" src="" onerror="this.src='https://ui-avatars.com/api/?name=User&background=333&color=fff'" alt="用戶頭像" class="w-full h-full object-cover">
+                    <img id="header-user-avatar" src="avatar-main.jpg" onerror="this.src='https://ui-avatars.com/api/?name=User&background=333&color=fff'" alt="用戶頭像" class="w-full h-full object-cover">
                 </button>
                 <button onclick="window.toggleSettings()" class="glass-element w-10 h-10 rounded-full text-zinc-300 flex items-center justify-center hover:text-sky-400">
                     <i class="fa-solid fa-sliders text-lg"></i>
@@ -247,7 +280,7 @@
                             <span class="text-xs text-zinc-400 font-bold block mb-2 tracking-[0.2em]">專屬粉絲頭銜</span>
                             <span id="level-title" class="text-3xl font-black text-white tracking-wider drop-shadow-md">訪客</span>
                         </div>
-                        <span id="exp-text" class="glass-element text-xs font-mono text-sky-400 px-4 py-2 rounded-xl font-bold tracking-widest border border-sky-500/30 shadow-[0_0_10px_rgba(56,189,248,0.2)]">0 經驗值</span>
+                        <span id="exp-text" class="glass-element text-xs font-mono text-sky-400 px-4 py-2 rounded-xl font-bold tracking-widest border border-sky-500/30 shadow-[0_0_10px_rgba(56,189,248,0.2)]">0 EXP</span>
                     </div>
                     <div class="h-4 bg-black/80 rounded-full overflow-hidden border border-sky-500/20 relative z-10 p-0.5 shadow-[inset_0_0_10px_rgba(0,0,0,0.8)]">
                         <div id="exp-bar" class="h-full rounded-full bg-gradient-to-r from-sky-500 via-sky-400 to-sky-200 w-0 transition-all duration-1000 relative overflow-hidden shadow-[0_0_10px_rgba(56,189,248,0.5)]"> 
@@ -268,7 +301,7 @@
                         <div class="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-sky-500/20 group-hover:border-sky-500/50 transition-all duration-300 group-hover:-translate-y-1 group-hover:-rotate-3">
                             <i class="fa-solid fa-ticket text-2xl text-zinc-400 group-hover:text-sky-400 transition-colors"></i>
                         </div>
-                        <span class="text-sm font-bold text-zinc-300 group-hover:text-white tracking-widest">隨機抽Q&A</span>
+                        <span class="text-sm font-bold text-zinc-300 group-hover:text-white tracking-widest">神秘檔案庫</span>
                     </button>
                 </div>
 
@@ -293,31 +326,32 @@
             </section>
 
             <section id="page-leaderboard" class="page">
-    <div class="flex flex-col items-center w-full">
-        <h2 class="text-3xl font-black text-gradient-blue mb-8 text-center tracking-[0.25em] w-full">粉絲排行榜</h2>
-        <div class="premium-card p-5 mb-8 flex items-center justify-between border-sky-500/30 w-full max-w-md">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full border-2 border-sky-400/50 overflow-hidden">
-                    <img id="my-rank-avatar" src="avatar-main.jpg" onerror="this.src='https://ui-avatars.com/api/?name=Me&background=111&color=38bdf8'" class="w-full h-full object-cover">
-                </div>
-                <div>
-                    <div class="text-xs text-sky-400 font-mono mb-1">我的排名</div>
-                    <div id="my-rank-name" class="text-base font-bold text-white tracking-wider">尚未登入</div>
-                </div>
-            </div>
-            <div class="text-right">
-                <div class="text-2xl font-black text-white italic" id="my-rank-position">-</div>
-                <div class="text-xs text-zinc-400 font-mono" id="my-rank-exp">0 EXP</div>
-            </div>
-        </div>
-        <div id="leaderboard-list" class="space-y-4 w-full max-w-md"></div>
-        <div id="leaderboard-lock" class="bg-black border border-white/10 rounded-2xl w-full max-w-md flex text-zinc-400 p-6 mb-20 mt-4 shadow-lg" style="background-color: var(--glass-border);">
-            <div class="w-full">
-                <h2 class="text-lg font-bold mb-3 text-white flex items-center"><i class="fa-solid fa-lock text-sky-400 mr-2 text-xl"></i> 查詢排行榜需解鎖</h2>
-                <p class="text-sm text-zinc-400 leading-relaxed">只有登入正式會員，且 <span class="text-sky-400 font-bold">EXP 達到 300 (基地常客) 以上</span> 的粉絲，才能解鎖查詢完整的基地粉絲排行榜資訊喔！</p>
-            </div>
-        </div>
-    </div> </section>
+                <div class="flex flex-col items-center w-full">
+                    <h2 class="text-3xl font-black text-gradient-blue mb-8 text-center tracking-[0.25em] w-full">粉絲排行榜</h2>
+                    <div class="premium-card p-5 mb-8 flex items-center justify-between border-sky-500/30 w-full max-w-md">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-full border-2 border-sky-400/50 overflow-hidden">
+                                <img id="my-rank-avatar" src="avatar-main.jpg" onerror="this.src='https://ui-avatars.com/api/?name=Me&background=111&color=38bdf8'" class="w-full h-full object-cover">
+                            </div>
+                            <div>
+                                <div class="text-xs text-sky-400 font-mono mb-1">我的排名</div>
+                                <div id="my-rank-name" class="text-base font-bold text-white tracking-wider">尚未登入</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-black text-white italic" id="my-rank-position">-</div>
+                            <div class="text-xs text-zinc-400 font-mono" id="my-rank-exp">0 EXP</div>
+                        </div>
+                    </div>
+                    <div id="leaderboard-list" class="space-y-4 w-full max-w-md"></div>
+                    <div id="leaderboard-lock" class="bg-black border border-white/10 rounded-2xl w-full max-w-md flex text-zinc-400 p-6 mb-20 mt-4 shadow-lg" style="background-color: var(--glass-border);">
+                        <div class="w-full">
+                            <h2 class="text-lg font-bold mb-3 text-white flex items-center"><i class="fa-solid fa-lock text-sky-400 mr-2 text-xl"></i> 查詢排行榜需解鎖</h2>
+                            <p class="text-sm text-zinc-400 leading-relaxed">只有登入正式會員，且 <span class="text-sky-400 font-bold">EXP 達到 300 (基地常客) 以上</span> 的粉絲，才能解鎖查詢完整的基地粉絲排行榜資訊喔！</p>
+                        </div>
+                    </div>
+                </div> 
+            </section>
 
             <section id="page-ai" class="page relative h-[calc(100dvh-140px)] -mx-5 px-0 mt-2">
                 <div id="ai-loading-overlay" class="absolute inset-0 z-50 bg-[#030303]/95 backdrop-blur-2xl flex flex-col items-center justify-center hidden transition-opacity duration-500 opacity-0 rounded-[40px] mx-5">
@@ -328,7 +362,7 @@
                         <i class="fa-solid fa-microchip text-white absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-3xl drop-shadow-[0_0_15px_#fff]"></i>
                     </div>
                     <div class="h-8 overflow-hidden flex items-center justify-center w-64">
-                        <h3 id="ai-loading-text" class="text-sm font-mono font-bold tracking-[0.3em] text-sky-400 boot-text w-full text-center drop-shadow-[0_0_8px_rgba(56,189,248,0.8)]">系統核心初始化中...</h3>
+                        <h3 id="ai-loading-text" class="text-sm font-mono font-bold tracking-[0.3em] text-sky-400 boot-text w-full text-center drop-shadow-[0_0_8px_rgba(56,189,248,0.8)]">神經網路運算中...</h3>
                     </div>
                 </div>
 
@@ -342,7 +376,7 @@
                                 </div>
                             </div>
                             <h3 class="text-xl font-black tracking-[0.2em] mb-3 text-white drop-shadow-[0_0_10px_rgba(56,189,248,0.5)]">老王AI助手</h3>
-                            <p class="text-[11px] text-sky-400 font-mono tracking-wide mb-8 bg-sky-500/10 border border-sky-500/20 px-4 py-2 rounded-full shadow-[inset_0_0_10px_rgba(56,189,248,0.1)]">AI運算核心 ｜ 視覺圖片分析 ｜ 本地資料庫</p>
+                            <p class="text-[11px] text-sky-400 font-mono tracking-wide mb-8 bg-sky-500/10 border border-sky-500/20 px-4 py-2 rounded-full shadow-[inset_0_0_10px_rgba(56,189,248,0.1)]">視覺分析 ｜ 量子引擎 ｜ 基地機密庫</p>
                             <div id="chat-ai-chips" class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-md"></div>
                         </div>
                     </div>
@@ -356,7 +390,7 @@
                                 </div>
                                 <div class="flex-1"></div>
                                 <div class="flex items-center gap-3">
-                                    <div id="ai-status-text" class="text-[10px] text-zinc-400 font-mono tracking-widest flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]"></span>系統連線穩定連線中</div>
+                                    <div id="ai-status-text" class="text-[10px] text-zinc-400 font-mono tracking-widest flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]"></span>系統連線中</div>
                                     <div class="relative">
                                         <button onclick="if(typeof window.toggleAIDropdown === 'function') window.toggleAIDropdown(event);" class="flex items-center gap-2 text-xs bg-[#111] border border-[#333] px-3 py-2 rounded-xl hover:border-sky-500/50 hover:text-sky-400 transition-all font-mono text-zinc-300 shadow-md">
                                             <i class="fa-solid fa-microchip text-sky-500"></i>
@@ -393,7 +427,7 @@
 
             <section id="page-timeline" class="page">
                 <h2 class="text-3xl font-black text-gradient-blue mb-16 text-center tracking-[0.25em] drop-shadow-[0_0_15px_rgba(56,189,248,0.3)]">老王的成長軌跡</h2>
-                <div class="relative max-w-4xl mx-auto px-4 pb-20" id="timeline-wrapper">
+                <div class="relative max-w-4xl mx-auto px-4 pb-[50vh] pt-[10vh]" id="timeline-wrapper">
                     <div class="timeline-beam"><div class="timeline-scanner"></div></div>
                     <div id="timeline-nodes-container" class="relative z-10 w-full"></div>
                 </div>
@@ -469,7 +503,7 @@
                         </div>
                         <div>
                             <div class="text-white font-black tracking-[0.25em] text-lg">粉絲登入</div>
-                            <div class="text-zinc-400 text-xs font-mono tracking-widest mt-1">登入後可使用 AI / 同步 EXP / 抽Q&A系統</div>
+                            <div class="text-zinc-400 text-xs font-mono tracking-widest mt-1">登入後可使用 AI / 基地成就系統</div>
                         </div>
                     </div>
                     <div class="mt-7 flex items-center gap-2 p-1 rounded-2xl bg-black/40 border border-white/10 relative">
@@ -487,7 +521,6 @@
                             <input type="email" id="auth-email" required class="auth-input" placeholder="電子信箱 (Email)">
                             <i class="fa-solid fa-envelope auth-icon"></i>
                         </div>
-                        
                         <div class="auth-input-group mb-2">
                             <input type="password" id="auth-password" required class="auth-input" placeholder="密碼 (至少6碼)">
                             <i class="fa-solid fa-lock auth-icon"></i>
@@ -574,37 +607,9 @@
 
         <script>
             window.addEventListener('load', () => {
-                 const originalGainExp = window.gainExp;
-                 
-                 // 覆寫 gainExp 以支援寫入信箱日誌
-                 window.gainExp = async function(amount, silent = false, reason = "系統互動獎勵") {
-                     window.appSettings = window.appSettings || { exp: 0 };
-                     if (typeof originalGainExp === 'function') {
-                         originalGainExp(amount, silent);
-                     } else {
-                         window.appSettings.exp += amount;
-                         if(typeof window.updateExpUI === 'function') window.updateExpUI();
-                     }
-                     
-                     // 若為正式登入成員，同步雲端並寫入信箱
-                     if (window.firebaseApp && window.firebaseApp.auth.currentUser && !window.firebaseApp.auth.currentUser.isAnonymous) {
-                         const user = window.firebaseApp.auth.currentUser;
-                         if(typeof window.syncExpToFirebase === 'function') window.syncExpToFirebase(window.appSettings.exp);
-                         
-                         try {
-                             const historyRef = window.firebaseApp.collection(window.firebaseApp.doc(window.firebaseApp.db, "users", user.uid), "exp_history");
-                             await window.firebaseApp.addDoc(historyRef, {
-                                 amount: amount, reason: reason, timestamp: Date.now(), read: false
-                             });
-                         } catch (e) { console.warn("寫入信箱失敗", e); }
-                     }
-                 }
-                 
-                 // 延遲啟動即時監聽器 (避免影響首屏效能)
                  setTimeout(() => {
                     if(!window.firebaseApp) return;
                     
-                    // 1. 監聽全局公告廣播 (最新一筆)
                     const announceRef = window.firebaseApp.collection(window.firebaseApp.db, "announcements");
                     const qA = window.firebaseApp.query(announceRef, window.firebaseApp.orderBy("timestamp", "desc"), window.firebaseApp.limit(1));
                     let initialLoadA = true;
@@ -624,7 +629,6 @@
                         });
                     });
 
-                    // 2. 監聽未讀信箱紅點
                     window.firebaseApp.auth.onAuthStateChanged(user => {
                         if(user && !user.isAnonymous) {
                             document.getElementById('btn-inbox').classList.remove('hidden');
@@ -642,500 +646,11 @@
                     });
                 }, 2500);
             });
-
-            // 開啟基地信箱 UI
-            window.openInbox = async function() {
-                const user = window.firebaseApp?.auth?.currentUser;
-                if(!user || user.isAnonymous) return;
-                Swal.fire({ title: '讀取信件中...', background: 'rgba(10,16,28,0.95)', didOpen: () => Swal.showLoading() });
-                
-                try {
-                    const historyRef = window.firebaseApp.collection(window.firebaseApp.doc(window.firebaseApp.db, "users", user.uid), "exp_history");
-                    const q = window.firebaseApp.query(historyRef, window.firebaseApp.orderBy("timestamp", "desc"), window.firebaseApp.limit(20));
-                    const snapshot = await window.firebaseApp.getDocs(q);
-                    
-                    let html = '<div class="space-y-3 max-h-80 overflow-y-auto pr-2 text-left mt-4 no-scrollbar">';
-                    if(snapshot.empty) { html += '<div class="text-center text-zinc-500 py-6">信箱空空如也</div>'; } 
-                    else {
-                        snapshot.forEach(doc => {
-                            const data = doc.data();
-                            const colorClass = data.amount > 0 ? 'text-green-400' : 'text-red-400';
-                            const sign = data.amount > 0 ? '+' : '';
-                            html += `
-                                <div class="bg-white/5 border border-white/10 p-4 rounded-2xl flex justify-between items-center hover:bg-white/10 transition-colors">
-                                    <div>
-                                        <p class="text-sm font-bold text-white mb-1">${data.reason}</p>
-                                        <p class="text-[10px] text-zinc-500 font-mono">${new Date(data.timestamp).toLocaleString()}</p>
-                                    </div>
-                                    <div class="text-lg font-black ${colorClass}">${sign}${data.amount} EXP</div>
-                                </div>`;
-                            if(!data.read) window.firebaseApp.updateDoc(doc.ref, { read: true }); // 標記為已讀
-                        });
-                    }
-                    html += '</div>';
-                    document.getElementById('inbox-badge').classList.add('hidden'); // 消除紅點
-                    
-                    Swal.fire({
-                        title: '<i class="fa-solid fa-envelope-open-text text-sky-400 mr-2"></i> 基地專屬信箱',
-                        html: html, background: 'rgba(10,16,28,0.95)', color: '#fff',
-                        confirmButtonText: '關閉', customClass: { confirmButton: 'bg-sky-500 text-white rounded-xl px-6 py-2' }
-                    });
-                } catch(e) { Swal.fire('錯誤', '無法讀取信箱', 'error'); }
-            };
-
-            let isBgmPlaying = false;
-            window.toggleBGM = function () {
-                const audio = document.getElementById('bgm-audio');
-                const icon = document.getElementById('bgm-icon');
-                const btn = document.getElementById('bgm-btn');
-                if (!audio) return;
-                if (isBgmPlaying) {
-                    audio.pause();
-                    icon.className = "fa-solid fa-compact-disc text-lg";
-                    btn.classList.remove('text-sky-400', 'border-sky-500/50', 'shadow-[0_0_15px_rgba(56,189,248,0.3)]');
-                    btn.classList.add('text-zinc-400');
-                } else {
-                    audio.volume = 0;
-                    audio.play().catch(e => console.log('BGM Error:', e));
-                    let fadeIn = setInterval(() => { if (audio.volume < 0.25) audio.volume += 0.05; else clearInterval(fadeIn); }, 100);
-                    icon.className = "fa-solid fa-compact-disc text-lg playing-record";
-                    btn.classList.add('text-sky-400', 'border-sky-500/50', 'shadow-[0_0_15px_rgba(56,189,248,0.3)]');
-                    btn.classList.remove('text-zinc-400');
-                }
-                isBgmPlaying = !isBgmPlaying;
-            };
-
-            window.toggleSettings = function () {
-                const modal = document.getElementById('settings-modal');
-                const content = document.getElementById('settings-content');
-                if (modal.classList.contains('hidden')) {
-                    modal.classList.remove('hidden'); modal.classList.add('flex');
-                    setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
-                } else {
-                    modal.classList.add('opacity-0'); content.classList.add('scale-95');
-                    setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 300);
-                }
-            };
-
-            let isAIGenerating = false;
-            window.toggleAIAction = function () {
-                if (!isAIGenerating) {
-                    if (typeof window.sendAIMessage === 'function') window.sendAIMessage();
-                } else {
-                    if (typeof window.stopAIGeneration === 'function') window.stopAIGeneration();
-                }
-            };
-
-            let currentAuthMode = 'login';
-            window.openAuthModal = function (mode) { 
-                if(mode) currentAuthMode = mode; 
-                try{ window.switchAuthMode(currentAuthMode);}catch(e){}
-                const modal = document.getElementById('auth-modal');
-                const content = document.getElementById('auth-content');
-                modal.classList.remove('hidden'); modal.classList.add('flex');
-                const closeBtn = document.getElementById('auth-close-btn');
-                if (closeBtn) closeBtn.style.display = 'flex';
-                setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
-            }
-            
-            window.closeAuthModal = function () {
-                const modal = document.getElementById('auth-modal');
-                const content = document.getElementById('auth-content');
-                modal.classList.add('opacity-0'); content.classList.add('scale-95');
-                setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 300);
-            }
-
-            window.switchAuthMode = function (mode) {
-                currentAuthMode = mode;
-                const tabLogin = document.getElementById('tab-login'); const tabRegister = document.getElementById('tab-register');
-                const fieldName = document.getElementById('field-name'); const nameInput = document.getElementById('auth-name'); const btnSubmit = document.getElementById('btn-auth-submit');
-                if (tabLogin && tabRegister) { tabLogin.classList.toggle('active', mode === 'login'); tabRegister.classList.toggle('active', mode === 'register'); }
-                const isLogin = (mode === 'login');
-                if (fieldName) fieldName.classList.toggle('hidden', isLogin);
-                if (nameInput) { if (isLogin) nameInput.removeAttribute('required'); else nameInput.setAttribute('required', 'true'); }
-                if (btnSubmit) btnSubmit.innerText = isLogin ? '確認登入' : '建立專屬帳號';
-            }
-
-            window.switchAuthMode('login');
-
-            window.handleAuthSubmit = async function (e) {
-                e.preventDefault();
-                if (!window.firebaseApp) return alert("系統載入中，請稍候...");
-                const email = document.getElementById('auth-email').value;
-                const password = document.getElementById('auth-password').value;
-                const name = document.getElementById('auth-name').value;
-                Swal.fire({ title: currentAuthMode === 'login' ? '登入驗證中...' : '建立帳號中...', allowOutsideClick: false, background: 'rgba(18,18,18,0.95)', color: '#fff', didOpen: () => { Swal.showLoading(); } });
-
-                try {
-                    if (currentAuthMode === 'login') {
-                        const result = await window.firebaseApp.signInWithEmailAndPassword(window.firebaseApp.auth, email, password);
-                        const userDoc = await window.firebaseApp.getDoc(window.firebaseApp.doc(window.firebaseApp.db, "users", result.user.uid));
-                        const displayName = userDoc.exists() && userDoc.data().name ? userDoc.data().name : "老王鐵粉";
-                        Swal.fire({ title: '登入成功', text: `歡迎回來，${displayName}！`, icon: 'success', background: 'rgba(18,18,18,0.95)', color: '#fff', timer: 1500, showConfirmButton: false }).then(() => {
-                            window.isLoggedIn = true; window.closeAuthModal(); window.updateHeaderToLoggedIn(displayName);
-                        });
-                    } else {
-                        const result = await window.firebaseApp.createUserWithEmailAndPassword(window.firebaseApp.auth, email, password);
-                        const finalName = name.trim() || "新粉絲";
-                        await window.firebaseApp.setDoc(window.firebaseApp.doc(window.firebaseApp.db, "users", result.user.uid), { name: finalName, email: email, exp: 0, role: 'user', createdAt: new Date().toISOString() });
-                        Swal.fire({ title: '註冊成功 🎉', text: `專屬帳號建立完畢，歡迎加入基地，${finalName}！`, icon: 'success', background: 'rgba(18,18,18,0.95)', color: '#fff', timer: 2000, showConfirmButton: false }).then(() => {
-                            window.isLoggedIn = true; window.closeAuthModal(); window.updateHeaderToLoggedIn(finalName);
-                        });
-                    }
-                } catch (error) {
-                    let errorMsg = "發生未知錯誤，請稍後再試。";
-                    switch (error.code) {
-                        case 'auth/email-already-in-use': errorMsg = "這個信箱已經被註冊過囉！"; break;
-                        case 'auth/invalid-email': errorMsg = "信箱格式好像怪怪的，請檢查一下。"; break;
-                        case 'auth/weak-password': errorMsg = "密碼太弱了，請至少輸入 6 個字元喔。"; break;
-                        case 'auth/user-not-found': errorMsg = "找不到這個帳號，要不要先註冊？"; break;
-                        case 'auth/wrong-password': errorMsg = "密碼輸入錯誤，請再試一次。"; break;
-                        case 'auth/invalid-credential': errorMsg = "帳號或密碼錯誤。"; break;
-                    }
-                    Swal.fire({ title: currentAuthMode === 'login' ? '登入失敗' : '註冊失敗', text: errorMsg, icon: 'error', background: 'rgba(18,18,18,0.95)', color: '#fff' });
-                }
-            };
-
-window.loginWithGoogle = async function () {
-            if (!window.firebaseApp) return alert("系統載入中，請稍候...");
-            try {
-                const provider = new window.firebaseApp.GoogleAuthProvider();
-                await window.firebaseApp.signInWithPopup(window.firebaseApp.auth, provider);
-                window.closeAuthModal();
-            } catch (error) {
-                if (error.code === 'auth/popup-closed-by-user' || error.message.includes('Cross-Origin')) {
-                    Swal.fire({ 
-                        title: '本地開發環境限制', 
-                        html: '<p class="text-sm text-zinc-300">因為 Live Server 的安全性設定擋住了 Google 彈窗。<br><br>請放心，這<b class="text-sky-400">只會在本地端測試時發生</b>。只要將網站部署到正式伺服器就能正常使用 Google 登入！<br><br>目前測試請先使用「信箱密碼」或「訪客模式」。</p>', 
-                        icon: 'warning', 
-                        background: 'rgba(18,18,18,0.95)', 
-                        color: '#fff' 
-                    });
-                } else {
-                    Swal.fire({ title: '登入發動失敗', text: error.message, icon: 'error', background: 'rgba(18,18,18,0.95)', color: '#fff' });
-                }
-            }
-        };
-
-        window.loginAsGuest = async function() {
-            if(!window.firebaseApp) return alert("系統載入中，請稍候...");
-            
-            Swal.fire({ title: '配發訪客憑證中...', allowOutsideClick: false, background: 'rgba(18,18,18,0.95)', color: '#fff', didOpen: () => { Swal.showLoading(); } });
-
-            try {
-                const result = await window.firebaseApp.signInAnonymously(window.firebaseApp.auth);
-                Swal.fire({ 
-                    title: '進入基地', 
-                    text: '已使用訪客身分進入，注意清除瀏覽器資料後積分可能會消失喔！', 
-                    icon: 'info', background: 'rgba(18,18,18,0.95)', color: '#fff', timer: 2000, showConfirmButton: false 
-                }).then(() => {
-                    window.isLoggedIn = true;
-                    window.closeAuthModal(); 
-                });
-            } catch(error) {
-                Swal.fire({ title: '登入失敗', text: error.message, icon: 'error', background: 'rgba(18,18,18,0.95)', color: '#fff' });
-            }
-        };
-
-            window.updateHeaderToLoggedIn = function (username) {
-                document.getElementById('btn-login-trigger').classList.add('hidden');
-                const userProfileBtn = document.getElementById('btn-user-profile');
-                userProfileBtn.classList.remove('hidden'); userProfileBtn.classList.add('flex');
-                const myRankName = document.getElementById('my-rank-name');
-                if (myRankName) myRankName.innerText = username || "會員";
-                if(typeof window.loadLeaderboard === 'function') window.loadLeaderboard();
-            };
-
-            // 【重點修改】：忘記密碼與強化個人帳號中心
-            window.handleForgotPassword = function() {
-                Swal.fire({
-                    title: '<i class="fa-solid fa-key text-sky-400 mb-2 block text-3xl"></i>忘記密碼？',
-                    html: '<p class="text-zinc-300 text-sm mt-2">為了保護基地帳號的安全，目前密碼重置需要由人工協助處理。<br><br>請聯絡工程師 <b class="text-sky-400">王岦恩 (Wangleon)</b> 來為您重置密碼！</p>',
-                    background: 'rgba(18,18,18,0.95)',
-                    color: '#fff',
-                    confirmButtonText: '<i class="fa-solid fa-envelope mr-2"></i>Email 工程師',
-                    showCancelButton: true,
-                    cancelButtonText: '取消',
-                    customClass: { confirmButton: 'bg-sky-500 text-white font-bold w-full mb-2', cancelButton: 'bg-zinc-700 w-full' }
-                }).then((result) => {
-                    if(result.isConfirmed) {
-                        window.open('mailto:wangleon26@gmail.com?subject=老王秘密基地 - 密碼重置申請', '_blank');
-                    }
-                });
-            };
-
-           window.toggleUserMenu = function () {
-    const user = window.firebaseApp && window.firebaseApp.auth ? window.firebaseApp.auth.currentUser : null;
-    if (!user) return;
-
-    const isGuest = user.isAnonymous;
-    // 判斷是否為 Google 登入
-    const isGoogleLogin = user.providerData && user.providerData.some(p => p.providerId === 'google.com');
-    
-    let emailDisplay = "未綁定 (訪客模式)";
-    if (!isGuest && user.email) {
-        // 如果是 Google 登入，加上專屬 Icon
-        emailDisplay = isGoogleLogin 
-            ? `<i class="fa-brands fa-google text-red-400 mr-1"></i> ${user.email}` 
-            : user.email;
-    }
-
-    const uid = user.uid;
-    const guestNotice = isGuest ? `<p class="text-xs text-yellow-500 mt-2"><i class="fa-solid fa-triangle-exclamation"></i> 您目前是訪客，建議登出並註冊正式帳號以永久保存積分。</p>` : '';
-    
-    // 如果是信箱註冊，才顯示「忘記密碼」的提示區塊；Google 登入或訪客則隱藏
-    const uidWarningBlock = (!isGuest && !isGoogleLogin) ? `
-        <div class="bg-red-500/10 border border-red-500/30 p-3 rounded-xl mt-3 shadow-[inset_0_0_15px_rgba(239,68,68,0.1)]">
-            <p class="text-xs text-red-400 font-black mb-1"><i class="fa-solid fa-triangle-exclamation"></i> 重要：請務必記住帳號UID</p>
-            <p class="text-xs text-zinc-300 leading-relaxed">若未來忘記密碼，工程師必須核對您的 <b class="text-sky-400 tracking-wider">UID-${uid.substring(0, 8).toUpperCase()}</b> 才能人工幫您重置，<b class="text-white">請截圖妥善保存！</b></p>
-        </div>
-    ` : '';
-
-    Swal.fire({
-        title: '<i class="fa-solid fa-crown text-amber-400 mr-2"></i> 個人帳號中心',
-        html: `
-            <div class="text-left space-y-4 mt-6">
-                <div class="bg-white/5 border border-white/10 p-4 rounded-2xl space-y-3">
-                    <div class="flex items-center justify-between border-b border-white/5 pb-2">
-                        <span class="text-zinc-400 text-xs font-bold">連線狀態</span>
-                        <span class="text-green-400 text-xs font-black tracking-widest"><span class="w-2 h-2 inline-block rounded-full bg-green-500 animate-pulse mr-1"></span>已連線</span>
-                    </div>
-                    <div class="flex items-center justify-between border-b border-white/5 pb-2">
-                        <span class="text-zinc-400 text-xs font-bold">綁定信箱</span>
-                        <span class="text-sky-300 text-xs font-medium">${emailDisplay}</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-zinc-400 text-xs font-bold">帳號UID</span>
-                        <span class="text-zinc-300 text-xs font-mono font-bold tracking-widest">UID-${uid.substring(0, 8).toUpperCase()}</span>
-                    </div>
-                </div>
-                ${guestNotice}
-                ${uidWarningBlock}
-                
-                <button onclick="window.logoutUser()" class="w-full bg-red-500/10 border border-red-500/30 text-red-400 py-4 rounded-2xl font-black tracking-widest hover:bg-red-500 hover:text-white transition-all shadow-[0_5px_15px_rgba(239,68,68,0.2)] mt-4">
-                    <i class="fa-solid fa-right-from-bracket mr-2"></i> 登出帳號
-                </button>
-            </div>
-        `,
-        background: 'rgba(18,18,18,0.95)', color: '#fff', showConfirmButton: false, showCloseButton: true,
-        customClass: { popup: 'border border-[#444] rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.8)]', closeButton: 'text-zinc-400 hover:text-white mt-2 mr-2' }
-    });
-};
-
-            // 【新增】：積分畫面更新邏輯 (解決看不見積分增加的問題)
-window.updateExpUI = function() {
-    const expText = document.getElementById('exp-text');
-    const expBar = document.getElementById('exp-bar');
-    const levelTitle = document.getElementById('level-title');
-    
-    let exp = window.appSettings ? (window.appSettings.exp || 0) : 0;
-    if(expText) expText.innerText = `${exp} 經驗值`;
-    
-    let level = "訪客";
-    let progress = 0;
-    if (exp >= 1000) { level = "👑 基地守護者"; progress = 100; }
-    else if (exp >= 300) { level = "🌟 基地常客"; progress = Math.min((exp / 1000) * 100, 100); }
-    else if (exp >= 100) { level = "✨ 正式粉絲"; progress = Math.min((exp / 300) * 100, 100); }
-    else if (exp > 0) { level = "🌱 初階粉絲"; progress = Math.min((exp / 100) * 100, 100); }
-    else { level = window.isLoggedIn ? "新粉絲" : "訪客"; progress = 0; }
-    
-    if(levelTitle) levelTitle.innerText = level;
-    if(expBar) expBar.style.width = `${progress}%`;
-    
-    const myRankExp = document.getElementById('my-rank-exp');
-    if(myRankExp) myRankExp.innerText = `${exp} EXP`;
-};
-
-// 【強化】：Google 登入，攔截 Live Server 的 COOP 錯誤並給予提示
-window.loginWithGoogle = async function () {
-    if (!window.firebaseApp) return alert("系統載入中，請稍候...");
-    try {
-        const provider = new window.firebaseApp.GoogleAuthProvider();
-        await window.firebaseApp.signInWithPopup(window.firebaseApp.auth, provider);
-        window.closeAuthModal();
-    } catch (error) {
-        // 專門抓取 Live Server 的 COOP 阻擋錯誤
-        if (error.code === 'auth/popup-closed-by-user' || error.message.includes('Cross-Origin')) {
-            Swal.fire({ 
-                title: '本地開發環境限制', 
-                html: '<p class="text-sm text-zinc-300">因為 Live Server 的安全性設定擋住了 Google 彈窗。<br><br>請放心，這<b class="text-sky-400">只會在本地端測試時發生</b>。只要將網站部署到正式伺服器就能正常使用 Google 登入！<br><br>目前測試請先使用「信箱密碼」或「訪客模式」。</p>', 
-                icon: 'warning', 
-                background: 'rgba(18,18,18,0.95)', 
-                color: '#fff' 
-            });
-        } else {
-            Swal.fire({ title: '登入發動失敗', text: error.message, icon: 'error', background: 'rgba(18,18,18,0.95)', color: '#fff' });
-        }
-    }
-};
-
-window.handleForgotPassword = function() {
-    Swal.fire({
-        title: '<i class="fa-solid fa-key text-sky-400 mb-2 block text-3xl"></i>忘記密碼？',
-        html: '<p class="text-zinc-300 text-sm mt-2">為了保護帳號安全，目前需由人工協助重置。<br><br>請聯絡工程師 <b class="text-sky-400">王岦恩</b>，並提供您的<b class="text-red-400">粉絲編號 (UID)</b> 以核對身分！</p>',
-        background: 'rgba(18,18,18,0.95)',
-        color: '#fff',
-        confirmButtonText: '<i class="fa-solid fa-envelope mr-2"></i>Email 工程師',
-        showCancelButton: true,
-        cancelButtonText: '取消',
-        customClass: { confirmButton: 'bg-sky-500 text-white font-bold w-full mb-2', cancelButton: 'bg-zinc-700 w-full' }
-    }).then((result) => {
-        if(result.isConfirmed) {
-            window.open('mailto:wangleon26@gmail.com?subject=老王秘密基地 - 密碼重置申請', '_blank');
-        }
-    });
-};
-
-// 【強化】：加入要求用戶記住 UUID 的紅字警告
-window.toggleUserMenu = function () {
-    const user = window.firebaseApp && window.firebaseApp.auth ? window.firebaseApp.auth.currentUser : null;
-    if (!user) return;
-
-    const isGuest = user.isAnonymous;
-    const email = isGuest ? "未綁定 (訪客模式)" : (user.email || "使用 Google 授權登入");
-    const uid = user.uid;
-    const guestNotice = isGuest ? `<p class="text-xs text-yellow-500 mt-2"><i class="fa-solid fa-triangle-exclamation"></i> 您目前是訪客，建議登出並註冊正式帳號以永久保存積分。</p>` : '';
-    
-    // 加入強烈警告區塊
-    const uidWarningBlock = !isGuest ? `
-        <div class="bg-red-500/10 border border-red-500/30 p-3 rounded-xl mt-3 shadow-[inset_0_0_15px_rgba(239,68,68,0.1)]">
-            <p class="text-xs text-red-400 font-black mb-1"><i class="fa-solid fa-triangle-exclamation"></i> 重要：請務必記住粉絲編號</p>
-            <p class="text-xs text-zinc-300 leading-relaxed">若未來忘記密碼，工程師必須核對您的 <b class="text-sky-400 tracking-wider">UID-${uid.substring(0, 8).toUpperCase()}</b> 才能人工幫您重置，<b class="text-white">請截圖妥善保存！</b></p>
-        </div>
-    ` : '';
-
-    Swal.fire({
-        title: '<i class="fa-solid fa-crown text-amber-400 mr-2"></i> 個人帳號中心',
-        html: `
-            <div class="text-left space-y-4 mt-6">
-                <div class="bg-white/5 border border-white/10 p-4 rounded-2xl space-y-3">
-                    <div class="flex items-center justify-between border-b border-white/5 pb-2">
-                        <span class="text-zinc-400 text-xs font-bold">連線狀態</span>
-                        <span class="text-green-400 text-xs font-black tracking-widest"><span class="w-2 h-2 inline-block rounded-full bg-green-500 animate-pulse mr-1"></span>已連線</span>
-                    </div>
-                    <div class="flex items-center justify-between border-b border-white/5 pb-2">
-                        <span class="text-zinc-400 text-xs font-bold">綁定信箱</span>
-                        <span class="text-sky-300 text-xs font-medium">${email}</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-zinc-400 text-xs font-bold">粉絲編號</span>
-                        <span class="text-zinc-300 text-xs font-mono font-bold tracking-widest">UID-${uid.substring(0, 8).toUpperCase()}</span>
-                    </div>
-                </div>
-                ${guestNotice}
-                ${uidWarningBlock}
-                
-                <button onclick="window.logoutUser()" class="w-full bg-red-500/10 border border-red-500/30 text-red-400 py-4 rounded-2xl font-black tracking-widest hover:bg-red-500 hover:text-white transition-all shadow-[0_5px_15px_rgba(239,68,68,0.2)] mt-4">
-                    <i class="fa-solid fa-right-from-bracket mr-2"></i> 登出帳號
-                </button>
-            </div>
-        `,
-        background: 'rgba(18,18,18,0.95)',
-        color: '#fff',
-        showConfirmButton: false,
-        showCloseButton: true,
-        customClass: { popup: 'border border-[#444] rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.8)]', closeButton: 'text-zinc-400 hover:text-white mt-2 mr-2' }
-    });
-};
-
-            window.logoutUser = async function () {
-                if (!window.firebaseApp) return;
-                try {
-                    await window.firebaseApp.signOut(window.firebaseApp.auth);
-                    window.isLoggedIn = false;
-                    Swal.fire({ title: '已成功登出', icon: 'success', background: 'rgba(18,18,18,0.95)', color: '#fff', timer: 1500, showConfirmButton: false }).then(() => {
-                        document.getElementById('btn-login-trigger').classList.remove('hidden');
-                        const userProfileBtn = document.getElementById('btn-user-profile');
-                        userProfileBtn.classList.add('hidden'); userProfileBtn.classList.remove('flex');
-                        
-                        const myRankName = document.getElementById('my-rank-name');
-                        if (myRankName) myRankName.innerText = "尚未登入";
-                        
-                        document.getElementById('my-rank-position').innerText = "-";
-                        document.getElementById('my-rank-exp').innerText = "0 EXP";
-                        document.getElementById('leaderboard-list').innerHTML = '';
-                        document.getElementById('leaderboard-lock').style.display = 'flex';
-
-                        window.appSettings.exp = 0;
-                        if (typeof window.updateExpUI === 'function') window.updateExpUI();
-                        
-                        // 登出後自動跳出登入視窗
-                        window.openAuthModal('login');
-                    });
-                } catch (error) { console.error("登出失敗", error); }
-            };
-
-            window.syncExpToFirebase = async function (newExp) {
-                const user = window.firebaseApp && window.firebaseApp.auth ? window.firebaseApp.auth.currentUser : null;
-                if (user && !user.isAnonymous) {
-                    try {
-                        const userRef = window.firebaseApp.doc(window.firebaseApp.db, "users", user.uid);
-                        await window.firebaseApp.updateDoc(userRef, { exp: newExp });
-                    } catch (e) { console.warn("同步 EXP 失敗", e); }
-                }
-            }
-
-            window.loadLeaderboard = async function () {
-                if (!window.firebaseApp || !window.firebaseApp.auth.currentUser) return;
-                const currentUser = window.firebaseApp.auth.currentUser;
-                let currentExp = window.appSettings ? (window.appSettings.exp || 0) : 0;
-                const lockElement = document.getElementById('leaderboard-lock');
-                const listElement = document.getElementById('leaderboard-list');
-                const myRankPos = document.getElementById('my-rank-position');
-                const myRankExp = document.getElementById('my-rank-exp');
-
-                if (myRankExp) myRankExp.innerText = `${currentExp} EXP`;
-
-                if (currentUser.isAnonymous || currentExp < 300) {
-                    if (lockElement) lockElement.style.display = 'flex';
-                    if (listElement) listElement.innerHTML = '';
-                } else {
-                    if (lockElement) lockElement.style.display = 'none';
-                    if (listElement) listElement.innerHTML = '<div class="text-center text-zinc-500 py-4"><i class="fa-solid fa-spinner fa-spin text-2xl text-sky-500 mb-2 block"></i>讀取資料中...</div>';
-
-                    try {
-                        const usersRef = window.firebaseApp.collection(window.firebaseApp.db, "users");
-                        const q = window.firebaseApp.query(usersRef, window.firebaseApp.orderBy("exp", "desc"), window.firebaseApp.limit(10));
-                        const querySnapshot = await window.firebaseApp.getDocs(q);
-
-                        let html = ''; let rank = 1; let foundMe = false;
-                        querySnapshot.forEach((docSnap) => {
-                            const data = docSnap.data();
-                            const isMe = docSnap.id === currentUser.uid;
-                            if (isMe) { foundMe = true; if (myRankPos) myRankPos.innerText = `第 ${rank} 名`; }
-
-                            let rankClass = ''; let textClass = 'text-zinc-500'; let crownHTML = '';
-                            if (rank === 1) { rankClass = 'rank-1'; textClass = 'rank-text-1'; crownHTML = '<div class="absolute -top-2 -right-2 text-amber-400 text-xs transform rotate-12"><i class="fa-solid fa-crown"></i></div>'; } 
-                            else if (rank === 2) { rankClass = 'rank-2'; textClass = 'rank-text-2'; }
-                            else if (rank === 3) { rankClass = 'rank-3'; textClass = 'rank-text-3'; }
-
-                            let avatarUrl = data.photoURL || `https://ui-avatars.com/api/?name=${data.name}&background=111&color=fff`;
-                            html += `
-                            <div class="glass-element rank-card ${rankClass} p-4 rounded-2xl flex items-center justify-between ${isMe ? 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]' : ''}">
-                                <div class="flex items-center gap-4">
-                                    <div class="w-8 text-center text-xl font-black ${textClass}">${rank}</div>
-                                    <div class="w-10 h-10 rounded-full border-2 border-white/20 overflow-hidden relative bg-black">
-                                        <img src="${avatarUrl}" class="w-full h-full object-cover">
-                                        ${crownHTML}
-                                    </div>
-                                    <div class="font-bold ${isMe ? 'text-sky-400' : 'text-white'}">${data.name} ${isMe ? '<span class="text-xs text-sky-500 bg-sky-500/20 px-1.5 py-0.5 rounded ml-1">你</span>' : ''}</div>
-                                </div>
-                                <div class="text-right"><div class="text-[12px] font-black text-sky-400">${data.exp || 0} EXP</div></div>
-                            </div>`;
-                            rank++;
-                        });
-                        if (!foundMe && myRankPos) myRankPos.innerText = "10名外";
-                        if (listElement) listElement.innerHTML = html;
-                    } catch (error) {
-                        if (listElement) listElement.innerHTML = '<div class="text-center text-red-500 py-4 text-sm bg-red-500/10 rounded-xl border border-red-500/30 p-4">連線失敗，請確認已啟用 Google Cloud Firestore API。</div>';
-                    }
-                }
-            }
         </script>
 
-        <script src="zcsn_qa.js?v=20.0.0"></script>
-        <script src="zcsn_quiz.js?v=20.0.0"></script>
-        <script src="app.js?v=20.0.0"></script>
+        <script src="zcsn_qa.js?v=22.0.0"></script>
+        <script src="zcsn_quiz.js?v=22.0.0"></script>
+        <script src="app.js?v=22.0.0"></script>
 
         <audio id="bgm-audio" loop preload="none">
             <source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3" type="audio/mpeg">

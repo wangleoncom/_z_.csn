@@ -1,6 +1,6 @@
 /* ==========================================================================
-   老王專屬秘密基地 - 核心樣式表 (v19.0.0 完整版)
-   設計風格：玻璃擬態、科技感、電影級動態流光
+   老王專屬秘密基地 - 核心樣式表 (v22.0.0 完整版)
+   設計風格：玻璃擬態、科技感、電影級動態流光、進階成就系統
 ========================================================================== */
 
 :root {
@@ -16,7 +16,7 @@
     --beam-progress: 0%;
 }
 
-/* --- 🌟 修復核心：將 html 與 body 分開，避免大螢幕錯誤垂直置中 --- */
+/* --- 🌟 核心結構修復 --- */
 html {
     background-color: var(--bg-deep) !important;
     -webkit-tap-highlight-color: transparent;
@@ -34,7 +34,7 @@ body {
     flex-direction: column;
     justify-content: flex-start !important; /* 強制靠上對齊 */
 }
-/* 🌟 在 styles.css 隨便一個空白處加上這段，確保容器不會亂飄 */
+
 #page-content {
     display: flex;
     flex-direction: column;
@@ -183,11 +183,11 @@ body {
     background: rgba(0, 0, 0, 0.4) !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
     border-radius: 16px;
-    padding: 16px 16px 16px 54px !important; /* 關鍵：強制留出圖示空間 */
+    padding: 16px 16px 16px 54px !important;
     color: #fff !important;
     font-size: 15px;
     outline: none;
-    box-sizing: border-box; /* 確保 padding 不會撐破容器 */
+    box-sizing: border-box;
     transition: all 0.3s ease;
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
 }
@@ -202,7 +202,7 @@ body {
     top: 50%;
     transform: translateY(-50%);
     color: #71717a;
-    pointer-events: none; /* 防止點擊圖示阻擋輸入 */
+    pointer-events: none;
     z-index: 10;
     transition: color 0.3s ease;
 }
@@ -245,7 +245,6 @@ body {
 }
 .nav-item:active { transform: scale(0.85); }
 
-
 .page { display: none !important; opacity: 0; }
 .page.active { display: block !important; animation: smoothReveal 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
 @keyframes smoothReveal { 0% { opacity: 0; transform: translate3d(0, 20px, 0) scale(0.98); } 100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); } }
@@ -270,6 +269,51 @@ body {
 .rank-text-1 { color: var(--rank-1); text-shadow: 0 0 10px rgba(251, 191, 36, 0.5); }
 .rank-text-2 { color: var(--rank-2); }
 .rank-text-3 { color: var(--rank-3); }
+
+/* --- 進階成就徽章系統 (Advanced Badges UI) --- */
+.badge-tier-base {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.badge-tier-base:hover { 
+    transform: scale(1.15) translateY(-3px); 
+    z-index: 10; 
+}
+
+/* 基礎層級徽章 */
+.badge-tier-bronze { background: rgba(180, 83, 9, 0.1); border-color: rgba(180, 83, 9, 0.4); color: #fb923c; box-shadow: 0 0 10px rgba(180, 83, 9, 0.2); }
+.badge-tier-silver { background: rgba(148, 163, 184, 0.1); border-color: rgba(148, 163, 184, 0.4); color: #cbd5e1; box-shadow: 0 0 10px rgba(148, 163, 184, 0.2); }
+.badge-tier-gold { background: rgba(251, 191, 36, 0.1); border-color: rgba(251, 191, 36, 0.5); color: #fbbf24; box-shadow: 0 0 15px rgba(251, 191, 36, 0.3); }
+
+/* 傳奇動態流光徽章 (最高階級專用) */
+.badge-tier-legendary {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(168, 85, 247, 0.15));
+    border-color: rgba(239, 68, 68, 0.6);
+    color: #f87171;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+    animation: legendaryGlow 3s infinite alternate;
+}
+.badge-tier-legendary::before {
+    content: ''; 
+    position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+    background: conic-gradient(transparent, rgba(239, 68, 68, 0.4), transparent 30%);
+    animation: spin-slow 4s linear infinite;
+    pointer-events: none;
+}
+.badge-tier-legendary i {
+    position: relative;
+    z-index: 2;
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.5));
+}
+
+@keyframes legendaryGlow {
+    0% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.4), inset 0 0 10px rgba(168, 85, 247, 0.2); border-color: rgba(239, 68, 68, 0.5); }
+    100% { box-shadow: 0 0 30px rgba(168, 85, 247, 0.6), inset 0 0 20px rgba(239, 68, 68, 0.4); border-color: rgba(168, 85, 247, 0.8); }
+}
 
 /* --- SweetAlert2 覆寫 --- */
 .swal2-popup {

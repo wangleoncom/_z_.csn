@@ -1,20 +1,55 @@
 {
+  "name": "老王專屬秘密基地 - V-CORE",
   "short_name": "老王基地",
-  "name": "老王專屬秘密基地",
+  "description": "老王的專屬粉絲互動基地，結合 AI 助手、等級成就系統與動態時間軸，打造最酷的科技社群體驗。",
+  "lang": "zh-TW",
+  "dir": "ltr",
+  "start_url": "./?source=pwa",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#030303",
+  "background_color": "#030303",
+  "categories": ["entertainment", "social", "utilities"],
   "icons": [
     {
       "src": "avatar-main.jpg",
       "sizes": "192x192",
-      "type": "image/jpeg"
+      "type": "image/jpeg",
+      "purpose": "any"
     },
     {
       "src": "avatar-main.jpg",
       "sizes": "512x512",
-      "type": "image/jpeg"
+      "type": "image/jpeg",
+      "purpose": "any maskable"
     }
   ],
-  "start_url": ".",
-  "display": "standalone",
-  "theme_color": "#030303",
-  "background_color": "#030303"
+  "shortcuts": [
+    {
+      "name": "每日簽到",
+      "short_name": "簽到",
+      "description": "立即進入基地進行每日簽到獲取 EXP",
+      "url": "./?action=checkin",
+      "icons": [
+        {
+          "src": "avatar-main.jpg",
+          "sizes": "192x192",
+          "type": "image/jpeg"
+        }
+      ]
+    },
+    {
+      "name": "呼叫 AI 助手",
+      "short_name": "AI 助手",
+      "description": "開啟老王專屬 AI 系統進行互動",
+      "url": "./?tab=page-ai",
+      "icons": [
+        {
+          "src": "avatar-main.jpg",
+          "sizes": "192x192",
+          "type": "image/jpeg"
+        }
+      ]
+    }
+  ]
 }

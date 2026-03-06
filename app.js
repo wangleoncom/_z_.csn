@@ -19,25 +19,22 @@ const PremiumSwal = Swal.mixin({
 });
 
 const CHANGELOG = [
+    { ver: '22.0.0', date: '2026-03-06', items: [
+        'V-CORE MAX 系統架構重構與後台介接完畢',
+        '動態 AI 算力實裝：高等級粉絲享有更高的 AI 呼叫上限與特定權限',
+        'AI 視覺防呆：上傳圖片自動強制切換至 Gemini 視覺神經引擎',
+        '傳奇徽章解鎖：新增 1000 EXP「基地守護者」動態流光成就'
+    ]},
     { ver: '21.0.0', date: '2026-03-06', items: [
-        '系統效能與快取機制全面升級',
-        '修復畫面排版往下掉的問題',
-        '修正圖片預載入的全域變數錯誤',
+        '系統效能與快取機制全面升級 (Stale-While-Revalidate)',
+        '修復畫面排版往下掉的問題，確保全裝置完美垂直置中',
+        '修正圖片預載入的全域變數錯誤，防禦空投無限重整 Bug',
         '實裝成就徽章解鎖與動態卡片生成'
     ]},
     { ver: '20.0.0', date: '2026-03-05', items: [
         '強制所有人重新登入驗證身分',
         '全新等級系統：解鎖「基地守護者」等高級頭銜',
-        'AI 功能權限升級：僅限正式成員使用',
-        '針對工程師與特定粉絲開啟「雲端對話同步」功能',
-        '新增問題回報管道：可直接私訊老王或 Email 工程師'
-    ]},
-    { ver: '18.1.1', date: '2026-03-04', items: [
-        '修正 Firebase Auth 模組載入（getAuth / onAuthStateChanged 不再報錯）',
-        '修正登入視窗重複按鈕與「首次開啟未登入自動彈窗」',
-        '成長軌跡改為「滑到哪裡亮到哪裡」的捲動觸發顯示',
-        '頁尾改為永遠貼齊頁面底部（短頁不漂浮）',
-        'AI 分頁鎖定判斷修正（未登入不可進入/送出）'
+        '針對工程師與特定粉絲開啟「雲端對話同步」功能'
     ]}
 ];
 
@@ -119,7 +116,7 @@ window.setQaPerPage = function(value){
 let dynamicApiKeys = { gemini: [], groq: [] };
 const qaData = window.QA_DB || window.wangQuiz_DB || []; 
 const quizData = window.QUIZ_DB || window.wangQuiz_DB || [];
-const STORAGE_KEY = 'wangAppConfig_V19_PRO';
+const STORAGE_KEY = 'wangAppConfig_V22_PRO';
 
 window.appSettings = Object.assign({ 
     exp: 0, 
@@ -136,7 +133,6 @@ let currentAIEngine = 'auto';
 let aiMemory = []; 
 let currentAbortController = null; 
 let currentAttachedImageBase64 = null; 
-let hasShownAIWarning = false; 
 
 function escapeForInlineHandler(str) {
     if (!str) return "";
@@ -575,23 +571,34 @@ window.initTimelineAnimation = function() {
 };
 window.triggerTimelineAnimation = window.initTimelineAnimation;
 
+// 🌟🌟🌟 [重點升級] 動態 AI 算力防呆機制
 function checkRateLimit() {
     const today = new Date().toDateString();
+    const exp = window.appSettings.exp || 0;
+    
+    // 定義動態上限
+    let dailyLimit = 20; // 預設訪客或初階粉絲
+    if (exp >= 1000) dailyLimit = 999; // 基地守護者近乎無限
+    else if (exp >= 300) dailyLimit = 100; // 基地常客
+    else if (exp >= 100) dailyLimit = 50;  // 正式粉絲
+
     if (window.appSettings.aiLimitDate !== today) {
         window.appSettings.aiLimitDate = today;
         window.appSettings.aiUsageCount = 0;
     }
-    if (window.appSettings.aiUsageCount >= 50) {
+    
+    if (window.appSettings.aiUsageCount >= dailyLimit) {
         PremiumSwal.fire({
             title: '能量耗盡 💤',
-            text: 'AI助手今天處理了太多訊息，系統需要冷卻一下。請明天再來找我吧！',
+            text: `你目前的等級每日 AI 呼叫上限為 ${dailyLimit} 次。快去解鎖成就提升 EXP 吧！`,
             icon: 'warning',
-            confirmButtonText: '明天見'
+            confirmButtonText: '明天再來'
         });
         return false;
     }
+    
     window.appSettings.aiUsageCount++;
-    window.saveSettings();
+    if (typeof window.saveSettings === 'function') window.saveSettings();
     return true;
 }
 
@@ -624,7 +631,7 @@ function stopRecordingUI() {
 
 window.toggleVoiceReply = function() {
     window.appSettings.voiceReply = !window.appSettings.voiceReply;
-    window.saveSettings();
+    if (typeof window.saveSettings === 'function') window.saveSettings();
     updateVoiceReplyUI();
     playClickSound();
     
@@ -757,10 +764,11 @@ window.handleAIFileUpload = function(event) {
         if(preview) preview.src = currentAttachedImageBase64;
         if(container) container.classList.remove('hidden');
         
-        if(currentAIEngine === 'groq' || currentAIEngine === 'local') {
+        // 🌟🌟🌟 [重點升級] AI視覺防呆提示
+        if(currentAIEngine === 'groq' || currentAIEngine === 'local' || currentAIEngine === 'auto') {
             PremiumSwal.fire({
                 title: '已掛載視覺模組',
-                text: '偵測到您上傳了圖片，稍後發送時，系統將自動為您切換至「視覺神經 (Gemini)」來解析圖片喔！',
+                text: '偵測到您上傳了圖片！稍後發送時，系統將強勢切換至「視覺神經 (Gemini)」來解析您的圖片喔！',
                 icon: 'info',
                 timer: 2500,
                 showConfirmButton: false
@@ -857,7 +865,8 @@ ${contextData}`;
         if (aiMemory.length > 20) aiMemory = aiMemory.slice(aiMemory.length - 20);
 
         let activeEngine = currentAIEngine;
-        if (activeEngine === 'auto' || (currentAttachedImageBase64 && activeEngine === 'groq')) {
+        // 🌟🌟🌟 [重點升級] AI 視覺防呆：只要有圖片，無視用戶原本設定，強制切換至 Gemini
+        if (activeEngine === 'auto' || (currentAttachedImageBase64 && activeEngine !== 'gemini')) {
             activeEngine = currentAttachedImageBase64 ? 'gemini' : 'groq';
         }
 
@@ -1183,7 +1192,7 @@ window.showTermsOfService = function() {
 };
 
 // ==========================================
-// 🏆 基地成就與徽章系統 (Achievement System)
+// 🏆 基地傳奇成就與徽章系統 (Achievement System)
 // ==========================================
 
 const ACHIEVEMENTS_DB = [
@@ -1193,7 +1202,7 @@ const ACHIEVEMENTS_DB = [
         desc: '成功註冊並進入秘密基地', 
         icon: 'fa-seedling', 
         colorClass: 'text-emerald-400', 
-        bgClass: 'bg-emerald-500/10', 
+        bgClass: 'badge-tier-bronze', 
         borderClass: 'border-emerald-500/30',
         condition: () => window.isLoggedIn 
     },
@@ -1203,7 +1212,7 @@ const ACHIEVEMENTS_DB = [
         desc: '累積獲得超過 100 EXP', 
         icon: 'fa-star', 
         colorClass: 'text-amber-400', 
-        bgClass: 'bg-amber-500/10', 
+        bgClass: 'badge-tier-silver', 
         borderClass: 'border-amber-500/30',
         condition: () => (window.appSettings && window.appSettings.exp >= 100) 
     },
@@ -1223,9 +1232,20 @@ const ACHIEVEMENTS_DB = [
         desc: '累積獲得超過 500 EXP', 
         icon: 'fa-crown', 
         colorClass: 'text-yellow-400', 
-        bgClass: 'bg-yellow-500/20', 
+        bgClass: 'badge-tier-gold', 
         borderClass: 'border-yellow-500/50',
         condition: () => (window.appSettings && window.appSettings.exp >= 500) 
+    },
+    // 🌟🌟🌟 [重點升級] 傳奇流光特效成就徽章對接
+    { 
+        id: 'guardian', 
+        name: '基地守護者', 
+        desc: '累積獲得超過 1000 EXP，尊榮無限特權', 
+        icon: 'fa-shield-halved', 
+        colorClass: 'text-red-400', 
+        bgClass: 'badge-tier-legendary', // 對接 styles.css 的極致流光特效
+        borderClass: 'border-red-500/50',
+        condition: () => (window.appSettings && window.appSettings.exp >= 1000) 
     },
     { 
         id: 'night_owl', 
@@ -1428,5 +1448,335 @@ window.gachaQuote = window.gachaQuote || function() {
             color: '#fff',
             customClass: { confirmButton: 'bg-sky-500 text-white rounded-xl px-6 py-2' }
         });
+    });
+};
+
+// ==========================================
+// 🔌 UI 互動與 Firebase 登入狀態管理模組
+// ==========================================
+window.openInbox = async function() {
+    const user = window.firebaseApp?.auth?.currentUser;
+    if(!user || user.isAnonymous) return;
+    PremiumSwal.fire({ title: '讀取信件中...', background: 'rgba(10,16,28,0.95)', didOpen: () => Swal.showLoading() });
+    
+    try {
+        const historyRef = window.firebaseApp.collection(window.firebaseApp.doc(window.firebaseApp.db, "users", user.uid), "exp_history");
+        const q = window.firebaseApp.query(historyRef, window.firebaseApp.orderBy("timestamp", "desc"), window.firebaseApp.limit(20));
+        const snapshot = await window.firebaseApp.getDocs(q);
+        
+        let html = '<div class="space-y-3 max-h-80 overflow-y-auto pr-2 text-left mt-4 no-scrollbar">';
+        if(snapshot.empty) { html += '<div class="text-center text-zinc-500 py-6">信箱空空如也</div>'; } 
+        else {
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const colorClass = data.amount > 0 ? 'text-green-400' : 'text-red-400';
+                const sign = data.amount > 0 ? '+' : '';
+                html += `
+                    <div class="bg-white/5 border border-white/10 p-4 rounded-2xl flex justify-between items-center hover:bg-white/10 transition-colors">
+                        <div>
+                            <p class="text-sm font-bold text-white mb-1">${data.reason}</p>
+                            <p class="text-[10px] text-zinc-500 font-mono">${new Date(data.timestamp).toLocaleString()}</p>
+                        </div>
+                        <div class="text-lg font-black ${colorClass}">${sign}${data.amount} EXP</div>
+                    </div>`;
+                if(!data.read) window.firebaseApp.updateDoc(doc.ref, { read: true });
+            });
+        }
+        html += '</div>';
+        const badge = document.getElementById('inbox-badge');
+        if(badge) badge.classList.add('hidden');
+        
+        PremiumSwal.fire({
+            title: '<i class="fa-solid fa-envelope-open-text text-sky-400 mr-2"></i> 基地專屬信箱',
+            html: html, background: 'rgba(10,16,28,0.95)', color: '#fff', confirmButtonText: '關閉'
+        });
+    } catch(e) { PremiumSwal.fire('錯誤', '無法讀取信箱', 'error'); }
+};
+
+let isBgmPlaying = false;
+window.toggleBGM = function () {
+    const audio = document.getElementById('bgm-audio');
+    const icon = document.getElementById('bgm-icon');
+    const btn = document.getElementById('bgm-btn');
+    if (!audio) return;
+    if (isBgmPlaying) {
+        audio.pause();
+        icon.className = "fa-solid fa-compact-disc text-lg";
+        btn.classList.remove('text-sky-400', 'border-sky-500/50', 'shadow-[0_0_15px_rgba(56,189,248,0.3)]');
+        btn.classList.add('text-zinc-400');
+    } else {
+        audio.volume = 0;
+        audio.play().catch(e => console.log('BGM Error:', e));
+        let fadeIn = setInterval(() => { if (audio.volume < 0.25) audio.volume += 0.05; else clearInterval(fadeIn); }, 100);
+        icon.className = "fa-solid fa-compact-disc text-lg playing-record";
+        btn.classList.add('text-sky-400', 'border-sky-500/50', 'shadow-[0_0_15px_rgba(56,189,248,0.3)]');
+        btn.classList.remove('text-zinc-400');
+    }
+    isBgmPlaying = !isBgmPlaying;
+};
+
+window.toggleSettings = function () {
+    const modal = document.getElementById('settings-modal');
+    const content = document.getElementById('settings-content');
+    if (modal.classList.contains('hidden')) {
+        modal.classList.remove('hidden'); modal.classList.add('flex');
+        setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
+    } else {
+        modal.classList.add('opacity-0'); content.classList.add('scale-95');
+        setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 300);
+    }
+};
+
+let isAIGenerating = false;
+window.toggleAIAction = function () {
+    if (!isAIGenerating) {
+        if (typeof window.sendAIMessage === 'function') window.sendAIMessage();
+    } else {
+        if (typeof window.stopAIGeneration === 'function') window.stopAIGeneration();
+    }
+};
+
+let currentAuthMode = 'login';
+window.openAuthModal = function (mode) { 
+    if(mode) currentAuthMode = mode; 
+    try{ window.switchAuthMode(currentAuthMode);}catch(e){}
+    const modal = document.getElementById('auth-modal');
+    const content = document.getElementById('auth-content');
+    modal.classList.remove('hidden'); modal.classList.add('flex');
+    setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
+}
+
+window.closeAuthModal = function () {
+    const modal = document.getElementById('auth-modal');
+    const content = document.getElementById('auth-content');
+    modal.classList.add('opacity-0'); content.classList.add('scale-95');
+    setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 300);
+}
+
+window.switchAuthMode = function (mode) {
+    currentAuthMode = mode;
+    const tabLogin = document.getElementById('tab-login'); const tabRegister = document.getElementById('tab-register');
+    const fieldName = document.getElementById('field-name'); const nameInput = document.getElementById('auth-name'); const btnSubmit = document.getElementById('btn-auth-submit');
+    if (tabLogin && tabRegister) { tabLogin.classList.toggle('active', mode === 'login'); tabRegister.classList.toggle('active', mode === 'register'); }
+    const isLogin = (mode === 'login');
+    if (fieldName) fieldName.classList.toggle('hidden', isLogin);
+    if (nameInput) { if (isLogin) nameInput.removeAttribute('required'); else nameInput.setAttribute('required', 'true'); }
+    if (btnSubmit) btnSubmit.innerText = isLogin ? '確認登入' : '建立專屬帳號';
+}
+
+window.handleAuthSubmit = async function (e) {
+    e.preventDefault();
+    if (!window.firebaseApp) return alert("系統載入中，請稍候...");
+    const email = document.getElementById('auth-email').value;
+    const password = document.getElementById('auth-password').value;
+    const name = document.getElementById('auth-name').value;
+    PremiumSwal.fire({ title: currentAuthMode === 'login' ? '登入驗證中...' : '建立帳號中...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+    try {
+        if (currentAuthMode === 'login') {
+            const result = await window.firebaseApp.signInWithEmailAndPassword(window.firebaseApp.auth, email, password);
+            const userDoc = await window.firebaseApp.getDoc(window.firebaseApp.doc(window.firebaseApp.db, "users", result.user.uid));
+            const displayName = userDoc.exists() && userDoc.data().name ? userDoc.data().name : "老王鐵粉";
+            PremiumSwal.fire({ title: '登入成功', text: `歡迎回來，${displayName}！`, icon: 'success', timer: 1500, showConfirmButton: false }).then(() => {
+                window.isLoggedIn = true; window.closeAuthModal(); window.updateHeaderToLoggedIn(displayName);
+            });
+        } else {
+            const result = await window.firebaseApp.createUserWithEmailAndPassword(window.firebaseApp.auth, email, password);
+            const finalName = name.trim() || "新粉絲";
+            await window.firebaseApp.setDoc(window.firebaseApp.doc(window.firebaseApp.db, "users", result.user.uid), { name: finalName, email: email, exp: 0, role: 'user', createdAt: new Date().toISOString() });
+            PremiumSwal.fire({ title: '註冊成功 🎉', text: `專屬帳號建立完畢，歡迎加入基地，${finalName}！`, icon: 'success', timer: 2000, showConfirmButton: false }).then(() => {
+                window.isLoggedIn = true; window.closeAuthModal(); window.updateHeaderToLoggedIn(finalName);
+            });
+        }
+    } catch (error) {
+        let errorMsg = "發生未知錯誤，請稍後再試。";
+        switch (error.code) {
+            case 'auth/email-already-in-use': errorMsg = "這個信箱已經被註冊過囉！"; break;
+            case 'auth/invalid-email': errorMsg = "信箱格式好像怪怪的，請檢查一下。"; break;
+            case 'auth/weak-password': errorMsg = "密碼太弱了，請至少輸入 6 個字元喔。"; break;
+            case 'auth/user-not-found': errorMsg = "找不到這個帳號，要不要先註冊？"; break;
+            case 'auth/wrong-password': errorMsg = "密碼輸入錯誤，請再試一次。"; break;
+            case 'auth/invalid-credential': errorMsg = "帳號或密碼錯誤。"; break;
+        }
+        PremiumSwal.fire({ title: currentAuthMode === 'login' ? '登入失敗' : '註冊失敗', text: errorMsg, icon: 'error' });
+    }
+};
+
+window.loginWithGoogle = async function () {
+    if (!window.firebaseApp) return alert("系統載入中，請稍候...");
+    try {
+        const provider = new window.firebaseApp.GoogleAuthProvider();
+        await window.firebaseApp.signInWithPopup(window.firebaseApp.auth, provider);
+        window.closeAuthModal();
+    } catch (error) {
+        if (error.code === 'auth/popup-closed-by-user' || error.message.includes('Cross-Origin')) {
+            PremiumSwal.fire({ title: '本地開發環境限制', html: '<p class="text-sm text-zinc-300">因為 Live Server 的安全性設定擋住了 Google 彈窗。<br>這只會在本地端測試時發生，上線後就能正常使用！</p>', icon: 'warning' });
+        } else {
+            PremiumSwal.fire({ title: '登入失敗', text: error.message, icon: 'error' });
+        }
+    }
+};
+
+window.loginAsGuest = async function() {
+    if(!window.firebaseApp) return alert("系統載入中，請稍候...");
+    PremiumSwal.fire({ title: '配發訪客憑證中...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+    try {
+        const result = await window.firebaseApp.signInAnonymously(window.firebaseApp.auth);
+        PremiumSwal.fire({ title: '進入基地', text: '已使用訪客身分進入，注意清除瀏覽器資料後積分可能會消失喔！', icon: 'info', timer: 2000, showConfirmButton: false }).then(() => {
+            window.isLoggedIn = true; window.closeAuthModal(); 
+        });
+    } catch(error) { PremiumSwal.fire({ title: '登入失敗', text: error.message, icon: 'error' }); }
+};
+
+window.updateHeaderToLoggedIn = function (username) {
+    document.getElementById('btn-login-trigger').classList.add('hidden');
+    const userProfileBtn = document.getElementById('btn-user-profile');
+    if(userProfileBtn) { userProfileBtn.classList.remove('hidden'); userProfileBtn.classList.add('flex'); }
+    const myRankName = document.getElementById('my-rank-name');
+    if (myRankName) myRankName.innerText = username || "會員";
+    if(typeof window.loadLeaderboard === 'function') window.loadLeaderboard();
+};
+
+window.handleForgotPassword = function() {
+    PremiumSwal.fire({
+        title: '<i class="fa-solid fa-key text-sky-400 mb-2 block text-3xl"></i>忘記密碼？',
+        html: '<p class="text-zinc-300 text-sm mt-2">請聯絡工程師並提供您的<b class="text-red-400">粉絲編號 (UID)</b> 以核對身分！</p>',
+        confirmButtonText: '<i class="fa-solid fa-envelope mr-2"></i>Email 工程師',
+        showCancelButton: true, cancelButtonText: '取消'
+    }).then((result) => {
+        if(result.isConfirmed) window.open('mailto:wangleon26@gmail.com?subject=老王秘密基地 - 密碼重置申請', '_blank');
+    });
+};
+
+window.toggleUserMenu = function () {
+    const user = window.firebaseApp && window.firebaseApp.auth ? window.firebaseApp.auth.currentUser : null;
+    if (!user) return;
+    const isGuest = user.isAnonymous;
+    const email = isGuest ? "未綁定 (訪客模式)" : (user.email || "使用 Google 授權登入");
+    const uid = user.uid;
+    
+    PremiumSwal.fire({
+        title: '<i class="fa-solid fa-crown text-amber-400 mr-2"></i> 個人帳號中心',
+        html: `
+            <div class="text-left space-y-4 mt-6">
+                <div class="bg-white/5 border border-white/10 p-4 rounded-2xl space-y-3">
+                    <div class="flex items-center justify-between border-b border-white/5 pb-2"><span class="text-zinc-400 text-xs font-bold">綁定信箱</span><span class="text-sky-300 text-xs font-medium">${email}</span></div>
+                    <div class="flex items-center justify-between"><span class="text-zinc-400 text-xs font-bold">粉絲編號</span><span class="text-zinc-300 text-xs font-mono font-bold tracking-widest">UID-${uid.substring(0, 8).toUpperCase()}</span></div>
+                </div>
+                <button onclick="window.logoutUser()" class="w-full bg-red-500/10 border border-red-500/30 text-red-400 py-4 rounded-2xl font-black tracking-widest hover:bg-red-500 hover:text-white transition-all mt-4">登出帳號</button>
+            </div>
+        `,
+        showConfirmButton: false, showCloseButton: true
+    });
+};
+
+window.logoutUser = async function () {
+    if (!window.firebaseApp) return;
+    try {
+        await window.firebaseApp.signOut(window.firebaseApp.auth);
+        window.isLoggedIn = false;
+        PremiumSwal.fire({ title: '已成功登出', icon: 'success', timer: 1500, showConfirmButton: false }).then(() => {
+            document.getElementById('btn-login-trigger').classList.remove('hidden');
+            const userProfileBtn = document.getElementById('btn-user-profile');
+            if(userProfileBtn){ userProfileBtn.classList.add('hidden'); userProfileBtn.classList.remove('flex'); }
+            window.appSettings.exp = 0;
+            if (typeof window.updateExpUI === 'function') window.updateExpUI();
+            window.openAuthModal('login');
+        });
+    } catch (error) { console.error("登出失敗", error); }
+};
+
+window.syncExpToFirebase = async function (newExp) {
+    const user = window.firebaseApp && window.firebaseApp.auth ? window.firebaseApp.auth.currentUser : null;
+    if (user && !user.isAnonymous) {
+        try {
+            const userRef = window.firebaseApp.doc(window.firebaseApp.db, "users", user.uid);
+            await window.firebaseApp.updateDoc(userRef, { exp: newExp });
+        } catch (e) {}
+    }
+}
+
+window.loadLeaderboard = async function () {
+    if (!window.firebaseApp || !window.firebaseApp.auth.currentUser) return;
+    const currentUser = window.firebaseApp.auth.currentUser;
+    let currentExp = window.appSettings ? (window.appSettings.exp || 0) : 0;
+    const lockElement = document.getElementById('leaderboard-lock');
+    const listElement = document.getElementById('leaderboard-list');
+    const myRankPos = document.getElementById('my-rank-position');
+
+    if (currentUser.isAnonymous || currentExp < 300) {
+        if (lockElement) lockElement.style.display = 'flex';
+        if (listElement) listElement.innerHTML = '';
+    } else {
+        if (lockElement) lockElement.style.display = 'none';
+        if (listElement) listElement.innerHTML = '<div class="text-center text-zinc-500 py-4"><i class="fa-solid fa-spinner fa-spin text-2xl text-sky-500 mb-2 block"></i>讀取資料中...</div>';
+
+        try {
+            const usersRef = window.firebaseApp.collection(window.firebaseApp.db, "users");
+            const q = window.firebaseApp.query(usersRef, window.firebaseApp.orderBy("exp", "desc"), window.firebaseApp.limit(10));
+            const querySnapshot = await window.firebaseApp.getDocs(q);
+
+            let html = ''; let rank = 1; let foundMe = false;
+            querySnapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                const isMe = docSnap.id === currentUser.uid;
+                if (isMe) { foundMe = true; if (myRankPos) myRankPos.innerText = `第 ${rank} 名`; }
+                let rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : '';
+                let avatarUrl = data.photoURL || `https://ui-avatars.com/api/?name=${data.name}&background=111&color=fff`;
+                html += `
+                <div class="glass-element rank-card ${rankClass} p-4 rounded-2xl flex items-center justify-between mb-3 ${isMe ? 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]' : ''}">
+                    <div class="flex items-center gap-4">
+                        <div class="w-8 text-center text-xl font-black text-zinc-500">${rank}</div>
+                        <div class="w-10 h-10 rounded-full border-2 border-white/20 overflow-hidden bg-black"><img src="${avatarUrl}" class="w-full h-full object-cover"></div>
+                        <div class="font-bold ${isMe ? 'text-sky-400' : 'text-white'}">${data.name}</div>
+                    </div>
+                    <div class="text-right"><div class="text-[12px] font-black text-sky-400">${data.exp || 0} EXP</div></div>
+                </div>`;
+                rank++;
+            });
+            if (!foundMe && myRankPos) myRankPos.innerText = "10名外";
+            if (listElement) listElement.innerHTML = html;
+        } catch (error) {}
+    }
+}
+
+// --- V-CORE 工程師直連系統 (粉絲端邏輯) ---
+window.contactEngineer = function() {
+    if (!window.isLoggedIn || window.firebaseApp.auth.currentUser.isAnonymous) {
+        return PremiumSwal.fire('權限不足', '請先登入正式帳號才能聯絡工程師喔！', 'warning');
+    }
+    
+    PremiumSwal.fire({
+        title: '<i class="fa-solid fa-envelope-circle-check text-sky-400 mr-2"></i> 聯絡基地工程師',
+        html: `
+            <div class="text-left space-y-4 mt-2">
+                <p class="text-xs text-zinc-400 leading-relaxed font-mono">有系統 Bug、帳號問題或想對工程師告白？<br>請在下方輸入訊息，工程師會親自回覆到您的信箱。</p>
+                <textarea id="support-msg" class="cyber-input w-full p-4 rounded-2xl text-white text-sm h-32 resize-none" placeholder="請描述您的問題..."></textarea>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: '發送訊息',
+        cancelButtonText: '取消',
+        preConfirm: () => {
+            const msg = document.getElementById('support-msg').value.trim();
+            if (!msg) { Swal.showValidationMessage('內容不能為空喔！'); return false; }
+            return msg;
+        }
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            Swal.fire({ title: '傳輸中...', didOpen: () => Swal.showLoading() });
+            try {
+                const user = window.firebaseApp.auth.currentUser;
+                await window.firebaseApp.addDoc(window.firebaseApp.collection(window.firebaseApp.db, "support_tickets"), {
+                    uid: user.uid,
+                    name: window.appSettings.name || user.displayName || "匿名粉絲",
+                    email: user.email,
+                    message: result.value,
+                    status: 'pending', // pending, replied
+                    timestamp: Date.now()
+                });
+                PremiumSwal.fire('發送成功', '訊息已送達工程師終端，請留意信箱回覆！', 'success');
+            } catch(e) { PremiumSwal.fire('發送失敗', e.message, 'error'); }
+        }
     });
 };
