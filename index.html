@@ -3,11 +3,10 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#030303">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#020617">
 
-    <title>老王專屬秘密基地</title>
+    <title>老王專屬秘密基地 | V-CORE</title>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
@@ -24,13 +23,29 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
     <meta name="description" content="老王專屬秘密基地 - 這裡記錄了老王的成長軌跡、Q&A 資料庫以及專屬粉絲互動區。">
-    <meta name="keywords" content="老王, 秘密基地, TikTok, 直播, 粉絲認證">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'shine': 'shine 2s infinite',
+                        'float': 'float 3s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        shine: { '0%': { transform: 'translateX(-100%)' }, '100%': { transform: 'translateX(100%)' } },
+                        float: { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-5px)' } }
+                    }
+                }
+            }
+        }
+    </script>
 
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js').then(reg => {
-                    console.log('[系統核心] Service Worker 註冊成功，接管網路層', reg.scope);
+                    console.log('[系統核心] Service Worker 註冊成功，網路層已由 V-CORE 接管');
                 }).catch(err => {
                     console.warn('[系統核心] Service Worker 註冊失敗', err);
                 });
@@ -41,30 +56,11 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import {
-            getAuth,
-            onAuthStateChanged,
-            GoogleAuthProvider,
-            signInWithPopup,
-            signInAnonymously,
-            signOut,
-            createUserWithEmailAndPassword,
-            signInWithEmailAndPassword,
-            updateProfile
+            getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInAnonymously, signOut,
+            createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import {
-            getFirestore,
-            doc,
-            setDoc,
-            getDoc,
-            updateDoc,
-            collection,
-            query,
-            orderBy,
-            limit,
-            getDocs,
-            addDoc,
-            where,
-            onSnapshot
+            getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, orderBy, limit, getDocs, addDoc, where, onSnapshot
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -80,7 +76,6 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // 導出給全局 app.js 使用
         window.firebaseApp = {
             app, auth, db,
             GoogleAuthProvider, signInWithPopup, signInAnonymously, signOut,
@@ -88,95 +83,93 @@
             doc, setDoc, getDoc, updateDoc, collection, query, orderBy, limit, getDocs, addDoc, where, onSnapshot
         };
 
-        // 🌟 修復競態條件：在 Firebase 載入後立刻綁定 gainExp，不要等 window.onload
-        const originalGainExp = window.gainExp;
         window.gainExp = async function(amount, silent = false, reason = "系統互動獎勵") {
             window.appSettings = window.appSettings || { exp: 0 };
+            window.appSettings.exp += amount;
+            if (typeof window.updateExpUI === 'function') window.updateExpUI();
             
-            // 本地更新
-            if (typeof originalGainExp === 'function') {
-                originalGainExp(amount, silent);
-            } else {
-                window.appSettings.exp += amount;
-                if(typeof window.updateExpUI === 'function') window.updateExpUI();
+            if (!silent && typeof Swal !== 'undefined') {
+                const isPositive = amount > 0;
+                Swal.fire({
+                    toast: true, position: 'top-end',
+                    icon: isPositive ? 'success' : 'info',
+                    title: `${isPositive ? '+' : ''}${amount} EXP`,
+                    text: reason,
+                    showConfirmButton: false, timer: 2000,
+                    background: 'rgba(10, 20, 35, 0.95)', color: '#fff'
+                });
             }
             
-            // 若為正式登入成員，同步雲端並寫入信箱
             if (window.firebaseApp && window.firebaseApp.auth.currentUser && !window.firebaseApp.auth.currentUser.isAnonymous) {
                 const user = window.firebaseApp.auth.currentUser;
-                if(typeof window.syncExpToFirebase === 'function') window.syncExpToFirebase(window.appSettings.exp);
-                
                 try {
-                    const historyRef = window.firebaseApp.collection(window.firebaseApp.doc(window.firebaseApp.db, "users", user.uid), "exp_history");
-                    await window.firebaseApp.addDoc(historyRef, {
-                        amount: amount, reason: reason, timestamp: Date.now(), read: false
-                    });
-                } catch (e) { console.warn("寫入信箱失敗", e); }
+                    const userRef = doc(db, "users", user.uid);
+                    await updateDoc(userRef, { exp: window.appSettings.exp });
+                    const historyRef = collection(userRef, "exp_history");
+                    await addDoc(historyRef, { amount: amount, reason: reason, timestamp: Date.now(), read: false });
+                } catch (e) { console.warn("雲端同步失敗", e); }
             }
+            if (typeof window.saveSettings === 'function') window.saveSettings();
         };
 
         onAuthStateChanged(auth, async (user) => {
             try {
                 if (user) {
                     window.isLoggedIn = true;
-                    window.closeAuthModal?.();
+                    if (typeof window.closeAuthModal === 'function') window.closeAuthModal();
 
                     if (user.isAnonymous) {
-                        window.updateHeaderToLoggedIn?.("訪客");
+                        if (typeof window.updateHeaderToLoggedIn === 'function') window.updateHeaderToLoggedIn("訪客");
                     } else {
                         const userRef = doc(db, "users", user.uid);
-                        
-                        // 即時監聽自己的雲端資料 (空投通知核心)
                         onSnapshot(userRef, (docSnap) => {
                             if (docSnap.exists()) {
                                 const userData = docSnap.data();
                                 window.userRole = userData.role || 'user'; 
-                                window.updateHeaderToLoggedIn?.(userData.name || user.displayName || "老王鐵粉");
+                                window.appSettings.customTitle = userData.customTitle || "";
+                                window.appSettings.hasAura = userData.hasAura || false;
+
+                                if (typeof window.updateHeaderToLoggedIn === 'function') {
+                                    window.updateHeaderToLoggedIn(userData.name || user.displayName || "老王鐵粉");
+                                }
                                 
-                                // 判斷是否為後台發送的空投或修改
                                 const localExp = window.appSettings?.exp || 0;
                                 if (userData.exp > localExp && localExp !== 0) {
                                     const diff = userData.exp - localExp;
-                                    const msg = userData.rewardMsg || "系統特別發放獎勵"; 
-                                    
+                                    const msg = userData.rewardMsg || "系統發放特別獎勵"; 
+                                    if(typeof window.playSuccessSound === 'function') window.playSuccessSound();
                                     Swal.fire({
-                                        title: '🎁 收到系統空投！',
+                                        title: '🎁 接收到系統空投！',
                                         html: `
-                                            <div class="bg-sky-500/10 border border-sky-500/30 p-4 rounded-xl mb-4 mt-2 shadow-[inset_0_0_20px_rgba(56,189,248,0.2)]">
-                                                <p class="text-sm text-sky-100 leading-relaxed font-bold tracking-wide">「${msg}」</p>
+                                            <div class="bg-gradient-to-r from-sky-500/10 to-blue-500/10 border border-sky-400/30 p-5 rounded-2xl mb-5 mt-3 shadow-[inset_0_0_20px_rgba(56,189,248,0.15)] relative overflow-hidden">
+                                                <div class="absolute -top-10 -right-10 w-20 h-20 bg-sky-400/20 blur-2xl rounded-full"></div>
+                                                <p class="text-sm text-sky-100 leading-relaxed font-bold tracking-widest relative z-10">「${msg}」</p>
                                             </div>
-                                            <div class="text-base text-zinc-300 tracking-wider">獲得 <b class="text-sky-400 text-3xl drop-shadow-[0_0_15px_rgba(56,189,248,0.8)] mx-2">+${diff}</b> EXP</div>
+                                            <div class="text-base text-zinc-300 tracking-wider">數據庫已同步增加 <b class="text-amber-400 text-4xl drop-shadow-[0_0_15px_rgba(251,191,36,0.6)] mx-2 font-black">+${diff}</b> EXP</div>
                                         `,
-                                        background: 'rgba(10,16,28,0.95)',
+                                        background: 'rgba(6, 14, 26, 0.98)',
                                         color: '#fff',
-                                        confirmButtonText: '開心收下',
-                                        customClass: { confirmButton: 'bg-gradient-to-r from-sky-400 to-blue-500 text-white font-black tracking-widest rounded-xl px-8 py-3 shadow-[0_0_15px_rgba(56,189,248,0.4)]' },
-                                        backdrop: `rgba(0,0,0,0.85)`
+                                        confirmButtonText: '接收積分',
+                                        customClass: { confirmButton: 'bg-gradient-to-r from-amber-400 to-orange-500 text-black font-black tracking-widest rounded-xl px-10 py-3 shadow-[0_0_20px_rgba(251,191,36,0.4)] hover:scale-105 transition-transform' },
                                     });
                                 }
 
-                                // 同步最新數值到本地
-                                window.appSettings = window.appSettings || { exp: 0 };
                                 window.appSettings.exp = userData.exp || 0;
-                                window.updateExpUI?.();
+                                if (typeof window.updateExpUI === 'function') window.updateExpUI();
+                                if (typeof window.saveSettings === 'function') window.saveSettings();
                                 
-                                // 打破無限迴圈：強制存檔
-                                if (typeof window.saveSettings === 'function') {
-                                    window.saveSettings();
-                                }
                             } else {
                                 const fallbackName = user.displayName || "老王鐵粉";
                                 setDoc(userRef, {
-                                    name: fallbackName,
-                                    exp: (window.appSettings?.exp ?? 0),
-                                    role: 'user', 
-                                    photoURL: user.photoURL || "",
-                                    createdAt: new Date().toISOString()
+                                    name: fallbackName, exp: (window.appSettings?.exp ?? 0),
+                                    role: 'user', photoURL: user.photoURL || "", createdAt: new Date().toISOString()
                                 }, { merge: true });
                                 window.userRole = 'user';
-                                window.updateHeaderToLoggedIn?.(fallbackName);
+                                if (typeof window.updateHeaderToLoggedIn === 'function') window.updateHeaderToLoggedIn(fallbackName);
                             }
-                        });
+                        }, (error) => { console.warn("連線拒絕", error.message); });
+                        
+                        if (typeof window.initGlobalTicketNotifications === 'function') window.initGlobalTicketNotifications(user.uid);
                     }
                 } else {
                     window.isLoggedIn = false;
@@ -184,27 +177,27 @@
                         if (!window.isLoggedIn && typeof window.openAuthModal === 'function') window.openAuthModal('login');
                     }, 1500); 
                 }
-            } catch (err) { console.error("AuthState 監聽錯誤", err); }
+            } catch (err) { console.error("Auth錯誤", err); }
         });
     </script>
 
-    <link rel="stylesheet" href="styles.css?v=22.0.0">
+    <link rel="stylesheet" href="styles.css?v=24.1.0">
 </head>
 
-<body class="pb-[100px] pt-6 flex flex-col justify-start min-h-screen relative">
+<body class="pb-[100px] pt-6 flex flex-col justify-start min-h-screen relative font-sans">
     <div id="page-content" class="flex flex-col justify-start w-full" style="flex:1;">
 
-        <div id="splash" class="fixed inset-0 z-[999] bg-[#030303] flex flex-col items-center justify-center transition-all duration-700">
+        <div id="splash" class="fixed inset-0 z-[999] bg-[#020617] flex flex-col items-center justify-center transition-all duration-700">
             <div class="relative w-40 h-40 mb-10 flex items-center justify-center">
-                <div class="absolute inset-0 rounded-full border-2 border-sky-500/30 animate-ping opacity-70"></div>
+                <div class="absolute inset-0 rounded-full border-2 border-sky-400/30 animate-ping opacity-70"></div>
                 <div class="absolute inset-4 rounded-full bg-sky-500/10 animate-pulse blur-xl"></div>
-                <div class="relative z-10 w-28 h-28 rounded-3xl bg-[#111] backdrop-blur-md flex items-center justify-center border border-sky-500/50 shadow-[0_0_30px_rgba(56,189,248,0.4)] transform rotate-3 overflow-hidden">
+                <div class="relative z-10 w-28 h-28 rounded-3xl bg-[#0a1120] backdrop-blur-md flex items-center justify-center border border-sky-500/50 shadow-[0_0_30px_rgba(56,189,248,0.4)] transform rotate-3 overflow-hidden">
                     <img src="avatar-main.jpg" onerror="this.src='https://ui-avatars.com/api/?name=王&background=000&color=fff'" alt="Logo" class="w-full h-full object-cover p-1 rounded-[22px]">
                 </div>
             </div>
-            <h1 class="text-3xl font-black tracking-[0.4em] text-gradient-blue mb-8 ml-3">系統啟動中</h1>
-            <div class="w-24 h-1 bg-black/80 rounded-full overflow-hidden border border-white/10">
-                <div class="h-full bg-gradient-to-r from-sky-600 to-sky-300 w-full animate-[pulse_1.5s_ease-in-out_infinite]"></div>
+            <h1 class="text-3xl font-black tracking-[0.4em] text-sky-400 mb-8 ml-3 drop-shadow-[0_0_10px_rgba(56,189,248,0.5)]">系統啟動中</h1>
+            <div class="w-32 h-1.5 bg-black/80 rounded-full overflow-hidden border border-white/10 shadow-inner">
+                <div class="h-full bg-gradient-to-r from-sky-600 via-sky-300 to-sky-600 w-full animate-[shine_1.5s_ease-in-out_infinite] bg-[length:200%_auto]"></div>
             </div>
         </div>
 
@@ -215,93 +208,106 @@
         </div>
 
         <header class="max-w-3xl mx-auto px-5 mb-6 flex justify-between items-center relative z-20 w-full">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-[18px] bg-sky-500/10 backdrop-blur-md flex items-center justify-center border border-sky-500/30 shadow-[0_0_20px_rgba(56,189,248,0.2)] transform -rotate-6 overflow-hidden">
+            <div class="flex items-center gap-4 group cursor-pointer" onclick="window.switchTab('page-home', document.querySelector('.nav-item'))">
+                <div class="w-12 h-12 rounded-[18px] bg-sky-500/10 backdrop-blur-md flex items-center justify-center border border-sky-500/30 shadow-[0_0_20px_rgba(56,189,248,0.2)] transform -rotate-6 overflow-hidden group-hover:rotate-0 transition-transform duration-300">
                     <img src="avatar-main.jpg" onerror="this.src='https://ui-avatars.com/api/?name=王&background=000&color=fff'" alt="Logo" class="w-full h-full object-cover p-1 rounded-[16px]">
                 </div>
                 <div class="flex flex-col">
-                    <span class="font-black text-white tracking-[0.2em] text-lg">老王秘密基地</span>
+                    <span class="font-black text-white tracking-[0.2em] text-lg group-hover:text-sky-300 transition-colors">老王秘密基地</span>
                     <div id="live-status" class="hidden items-center gap-1.5 mt-0.5">
                         <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_#ef4444]"></span>
-                        <span class="text-[10px] text-red-400 font-bold tracking-widest">直播中</span>
+                        <span class="text-[10px] text-red-400 font-bold tracking-widest">信號連接中</span>
                     </div>
                 </div>
             </div>
 
             <div class="flex items-center gap-3">
-                <button onclick="window.toggleBGM()" id="bgm-btn" class="glass-element w-10 h-10 rounded-full text-zinc-400 flex items-center justify-center hover:text-sky-400 relative group" title="播放基地音樂">
+                <button onclick="if(typeof window.openSupportModal === 'function') window.openSupportModal();" class="glass-element w-10 h-10 rounded-full text-zinc-300 flex items-center justify-center hover:text-sky-400 relative hover:shadow-[0_0_15px_rgba(56,189,248,0.3)] transition-all">
+                    <i class="fa-solid fa-headset text-lg"></i>
+                </button>
+                <button onclick="if(typeof window.toggleBGM === 'function') window.toggleBGM();" id="bgm-btn" class="glass-element w-10 h-10 rounded-full text-zinc-400 flex items-center justify-center hover:text-sky-400 relative transition-all">
                     <i id="bgm-icon" class="fa-solid fa-compact-disc text-lg"></i>
                 </button>
-                <button id="btn-login-trigger" onclick="window.openAuthModal()" class="glass-element px-4 py-2 rounded-full text-xs font-bold text-sky-400 hover:text-white hover:bg-sky-500/20 transition-all flex items-center gap-2">
-                    <i class="fa-solid fa-user"></i> 登入
+                <button id="btn-login-trigger" onclick="if(typeof window.openAuthModal === 'function') window.openAuthModal('login');" class="glass-element px-5 py-2.5 rounded-full text-xs font-black text-sky-400 hover:text-white hover:bg-sky-500 hover:border-sky-400 transition-all flex items-center gap-2 shadow-md">
+                    <i class="fa-solid fa-user-astronaut"></i> 啟動授權
                 </button>
-                <button onclick="window.openInbox()" id="btn-inbox" class="hidden glass-element w-10 h-10 rounded-full text-zinc-300 flex items-center justify-center hover:text-sky-400 relative" title="基地信箱">
+                <button onclick="if(typeof window.openInbox === 'function') window.openInbox();" id="btn-inbox" class="hidden glass-element w-10 h-10 rounded-full text-zinc-300 flex items-center justify-center hover:text-sky-400 relative hover:shadow-[0_0_15px_rgba(56,189,248,0.3)] transition-all">
                     <i class="fa-solid fa-envelope text-lg"></i>
-                    <span id="inbox-badge" class="hidden absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-[#030303] animate-pulse"></span>
+                    <span id="inbox-badge" class="hidden absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-[#020617] animate-pulse shadow-[0_0_8px_#ef4444]"></span>
                 </button>
-                <button id="btn-user-profile" onclick="window.toggleUserMenu()" class="hidden glass-element w-10 h-10 rounded-full overflow-hidden border border-sky-500/40 hover:border-sky-400 transition-all">
+                <button id="btn-user-profile" onclick="if(typeof window.toggleUserMenu === 'function') window.toggleUserMenu();" class="hidden glass-element w-10 h-10 rounded-full overflow-hidden border border-sky-500/40 hover:border-sky-400 transition-all shadow-md hover:shadow-[0_0_15px_rgba(56,189,248,0.4)]">
                     <img id="header-user-avatar" src="avatar-main.jpg" onerror="this.src='https://ui-avatars.com/api/?name=User&background=333&color=fff'" alt="用戶頭像" class="w-full h-full object-cover">
                 </button>
-                <button onclick="window.toggleSettings()" class="glass-element w-10 h-10 rounded-full text-zinc-300 flex items-center justify-center hover:text-sky-400">
+                <button onclick="if(typeof window.toggleSettings === 'function') window.toggleSettings();" class="glass-element w-10 h-10 rounded-full text-zinc-300 flex items-center justify-center hover:text-sky-400 hover:shadow-[0_0_15px_rgba(56,189,248,0.3)] transition-all">
                     <i class="fa-solid fa-sliders text-lg"></i>
                 </button>
             </div>
         </header>
 
         <main class="w-full max-w-3xl mx-auto px-5 relative z-10 flex flex-col justify-start mb-auto" id="main-container">
+            
             <section id="page-home" class="page active">
                 <article class="premium-card p-8 flex flex-col md:flex-row items-center gap-8 mb-8">
                     <div class="relative group">
-                        <div class="w-40 h-40 rounded-full p-1 bg-gradient-to-br from-sky-300 to-sky-500 relative z-10 shadow-[0_15px_30px_rgba(56,189,248,0.3)] animate-[pulse_3s_infinite]">
-                            <img src="avatar-main.jpg" onerror="this.src='https://ui-avatars.com/api/?name=王&background=111&color=38bdf8'" alt="老王頭像" class="w-full h-full rounded-full object-cover border-4 border-[#030303]">
+                        <div class="w-40 h-40 rounded-full p-1.5 bg-gradient-to-br from-sky-300 to-sky-600 relative z-10 shadow-[0_15px_30px_rgba(56,189,248,0.4)] animate-[pulse_3s_infinite]">
+                            <img src="avatar-main.jpg" onerror="this.src='https://ui-avatars.com/api/?name=王&background=111&color=38bdf8'" alt="老王頭像" class="w-full h-full rounded-full object-cover border-4 border-[#020617]">
                         </div>
                     </div>
                     <div class="text-center md:text-left flex-1 z-10 w-full">
-                        <h2 class="text-5xl font-black text-gradient-blue tracking-widest mb-4">老王</h2>
+                        <h2 class="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-sky-200 to-sky-500 tracking-widest mb-4">老王</h2>
                         <div class="flex flex-wrap gap-3 justify-center md:justify-start mb-6">
-                            <p class="glass-element px-5 py-2 rounded-full text-xs font-mono text-zinc-200 tracking-wider"><i class="fa-solid fa-ruler-vertical text-sky-400 mr-1.5"></i> 身高: 169cm</p>
-                            <p class="glass-element px-5 py-2 rounded-full text-xs font-mono text-zinc-200 tracking-wider"><i class="fa-solid fa-cake-candles text-sky-400 mr-1.5"></i> 年齡: 19歲</p>
+                            <p class="glass-element px-5 py-2.5 rounded-full text-xs font-mono font-bold text-zinc-200 tracking-wider shadow-sm"><i class="fa-solid fa-ruler-vertical text-sky-400 mr-2"></i>身高: 169cm</p>
+                            <p class="glass-element px-5 py-2.5 rounded-full text-xs font-mono font-bold text-zinc-200 tracking-wider shadow-sm"><i class="fa-solid fa-cake-candles text-sky-400 mr-2"></i>年齡: 19歲</p>
                         </div>
                         <nav class="flex flex-wrap gap-3 justify-center md:justify-start" aria-label="社群連結">
-                            <a href="https://www.tiktok.com/@z.knccc" target="_blank" rel="noopener noreferrer" class="btn-social btn-tiktok px-5 py-2.5 rounded-xl text-xs font-bold text-white"><i class="fa-brands fa-tiktok mr-1.5"></i> TikTok</a>
-                            <a href="https://www.instagram.com/_z.csn/" target="_blank" rel="noopener noreferrer" class="btn-social btn-ig px-5 py-2.5 rounded-xl text-xs font-bold text-white"><i class="fa-brands fa-instagram mr-1.5"></i> Instagram</a>
-                            <a href="https://m.twitch.tv/z_knc" target="_blank" rel="noopener noreferrer" class="btn-social btn-twitch px-5 py-2.5 rounded-xl text-xs font-bold text-white"><i class="fa-brands fa-twitch mr-1.5"></i> Twitch</a>
-                            <a href="https://discord.gg/bAfDcy46Dp" target="_blank" rel="noopener noreferrer" class="btn-social btn-discord px-5 py-2.5 rounded-xl text-xs font-bold text-white"><i class="fa-brands fa-discord mr-1.5"></i> Discord</a>
+                            <a href="https://www.tiktok.com/@z.knccc" target="_blank" rel="noopener noreferrer" class="btn-social btn-tiktok px-6 py-3 rounded-xl text-xs font-black text-white shadow-md hover:-translate-y-1"><i class="fa-brands fa-tiktok mr-2 text-sm"></i> TikTok</a>
+                            <a href="https://www.instagram.com/_z.csn/" target="_blank" rel="noopener noreferrer" class="btn-social btn-ig px-6 py-3 rounded-xl text-xs font-black text-white shadow-md hover:-translate-y-1"><i class="fa-brands fa-instagram mr-2 text-sm"></i> Instagram</a>
+                            <a href="https://m.twitch.tv/z_knc" target="_blank" rel="noopener noreferrer" class="btn-social btn-twitch px-6 py-3 rounded-xl text-xs font-black text-white shadow-md hover:-translate-y-1"><i class="fa-brands fa-twitch mr-2 text-sm"></i> Twitch</a>
+                            <a href="https://discord.gg/bAfDcy46Dp" target="_blank" rel="noopener noreferrer" class="btn-social btn-discord px-6 py-3 rounded-xl text-xs font-black text-white shadow-md hover:-translate-y-1"><i class="fa-brands fa-discord mr-2 text-sm"></i> Discord</a>
                         </nav>
                     </div>
                 </article>
 
                 <div id="home-ai-chips" class="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-md mb-8 mx-auto md:mx-0"></div>
 
-                <article class="premium-card p-8 flex flex-col justify-center relative mb-8 overflow-hidden group">
-                    <div class="absolute -right-8 -bottom-8 opacity-5 transform rotate-12 pointer-events-none transition-transform group-hover:scale-110"><i class="fa-solid fa-shield-halved text-9xl"></i></div>
-                    <div class="flex justify-between items-end mb-5 relative z-10">
+                <article class="premium-card p-10 flex flex-col justify-center relative mb-8 overflow-hidden group border-t-2 border-t-sky-400">
+                    <div class="absolute -right-8 -bottom-8 opacity-5 transform rotate-12 pointer-events-none transition-transform duration-700 group-hover:scale-125 group-hover:-rotate-12"><i class="fa-solid fa-shield-halved text-[150px]"></i></div>
+                    <div class="flex justify-between items-end mb-6 relative z-10">
                         <div>
-                            <span class="text-xs text-zinc-400 font-bold block mb-2 tracking-[0.2em]">專屬粉絲頭銜</span>
-                            <span id="level-title" class="text-3xl font-black text-white tracking-wider drop-shadow-md">訪客</span>
+                            <span class="text-xs text-sky-200/60 font-black block mb-2 tracking-[0.25em] uppercase">目前頭銜</span>
+                            <span id="level-title" class="text-3xl font-black text-white tracking-wider drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">訪客</span>
                         </div>
-                        <span id="exp-text" class="glass-element text-xs font-mono text-sky-400 px-4 py-2 rounded-xl font-bold tracking-widest border border-sky-500/30 shadow-[0_0_10px_rgba(56,189,248,0.2)]">0 EXP</span>
+                        <span id="exp-text" class="bg-sky-500/10 text-sm font-mono text-sky-400 px-5 py-2.5 rounded-xl font-black tracking-widest border border-sky-500/40 shadow-[0_0_15px_rgba(56,189,248,0.2)]">0 EXP</span>
                     </div>
-                    <div class="h-4 bg-black/80 rounded-full overflow-hidden border border-sky-500/20 relative z-10 p-0.5 shadow-[inset_0_0_10px_rgba(0,0,0,0.8)]">
-                        <div id="exp-bar" class="h-full rounded-full bg-gradient-to-r from-sky-500 via-sky-400 to-sky-200 w-0 transition-all duration-1000 relative overflow-hidden shadow-[0_0_10px_rgba(56,189,248,0.5)]"> 
-                            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full animate-[shine_2s_infinite]"></div>
+                    <div class="h-5 bg-[#020617] rounded-full overflow-hidden border border-sky-500/30 relative z-10 p-1 shadow-inner">
+                        <div id="exp-bar" class="h-full rounded-full bg-gradient-to-r from-sky-600 via-sky-400 to-sky-200 w-0 transition-all duration-1000 relative overflow-hidden shadow-[0_0_15px_rgba(56,189,248,0.6)]"> 
+                            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full animate-[shine_2s_infinite]"></div>
                         </div>
                     </div>
-                    <div id="badges-container" class="mt-6 flex gap-3 flex-wrap"></div>
+                    <div id="badges-container" class="mt-8 flex gap-4 flex-wrap relative z-10"></div>
                 </article>
 
-                <div class="grid grid-cols-2 gap-4 mb-12">
-                    <button onclick="if(typeof window.dailyCheckIn === 'function') window.dailyCheckIn();" class="glass-element rounded-[32px] p-6 flex flex-col items-center justify-center gap-4 group cursor-pointer relative">
-                        <div class="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-sky-500/20 group-hover:border-sky-500/50 transition-all duration-300 group-hover:-translate-y-1 group-hover:rotate-3">
-                            <i class="fa-solid fa-calendar-check text-2xl text-zinc-400 group-hover:text-sky-400 transition-colors"></i>
+                <div class="grid grid-cols-3 gap-3 mb-12">
+                    <button onclick="if(typeof window.dailyCheckIn === 'function') window.dailyCheckIn();" class="glass-element rounded-[28px] p-5 flex flex-col items-center justify-center gap-3 group cursor-pointer relative overflow-hidden">
+                        <div class="w-12 h-12 rounded-xl bg-[#020617]/50 border border-white/10 flex items-center justify-center group-hover:border-sky-500/50 transition-all shadow-md group-hover:-translate-y-1">
+                            <i class="fa-solid fa-calendar-check text-xl text-zinc-400 group-hover:text-sky-400"></i>
                         </div>
-                        <span class="text-sm font-bold text-zinc-300 group-hover:text-white tracking-widest">每日簽到</span>
+                        <span class="text-[11px] font-black text-zinc-300 group-hover:text-white tracking-widest">系統簽到</span>
                     </button>
-                    <button onclick="if(typeof window.gachaQuote === 'function') window.gachaQuote();" class="glass-element rounded-[32px] p-6 flex flex-col items-center justify-center gap-4 group cursor-pointer relative">
-                        <div class="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-sky-500/20 group-hover:border-sky-500/50 transition-all duration-300 group-hover:-translate-y-1 group-hover:-rotate-3">
-                            <i class="fa-solid fa-ticket text-2xl text-zinc-400 group-hover:text-sky-400 transition-colors"></i>
+
+                    <button onclick="if(typeof window.gachaQuote === 'function') window.gachaQuote();" class="glass-element rounded-[28px] p-5 flex flex-col items-center justify-center gap-3 group cursor-pointer relative overflow-hidden">
+                        <div class="w-12 h-12 rounded-xl bg-[#020617]/50 border border-white/10 flex items-center justify-center group-hover:border-purple-500/50 transition-all shadow-md group-hover:-translate-y-1">
+                            <i class="fa-solid fa-ticket text-xl text-zinc-400 group-hover:text-purple-400"></i>
                         </div>
-                        <span class="text-sm font-bold text-zinc-300 group-hover:text-white tracking-widest">神秘檔案庫</span>
+                        <span class="text-[11px] font-black text-zinc-300 group-hover:text-white tracking-widest">抽檔案庫</span>
+                    </button>
+
+                    <button onclick="if(typeof window.openExpStore === 'function') window.openExpStore();" class="glass-element rounded-[28px] p-5 flex flex-col items-center justify-center gap-3 group cursor-pointer relative overflow-hidden border-amber-500/30 bg-amber-500/5">
+                        <div class="absolute inset-0 bg-amber-500/0 group-hover:bg-amber-500/10 transition-colors"></div>
+                        <div class="w-12 h-12 rounded-xl bg-[#020617]/50 border border-amber-500/30 flex items-center justify-center group-hover:border-amber-400 transition-all shadow-[0_0_15px_rgba(251,191,36,0.2)] group-hover:-translate-y-1">
+                            <i class="fa-solid fa-store text-xl text-amber-400"></i>
+                        </div>
+                        <span class="text-[11px] font-black text-amber-200 group-hover:text-white tracking-widest relative z-10">積分商城</span>
                     </button>
                 </div>
 
@@ -309,10 +315,10 @@
 
                 <section aria-labelledby="qa-heading">
                     <div class="mb-8 relative">
-                        <h3 id="qa-heading" class="text-sm font-bold text-zinc-400 mb-5 tracking-[0.15em] pl-2 flex items-center"><i class="fa-solid fa-magnifying-glass text-sky-400 mr-2.5 text-lg"></i> 基地解密庫</h3>
-                        <div class="premium-card p-3 rounded-2xl flex items-center gap-4 relative z-20 focus-within:border-sky-500/60 focus-within:shadow-[0_0_20px_rgba(56,189,248,0.2)]">
-                            <div class="pl-4 text-sky-500/70 text-lg"><i class="fa-solid fa-terminal"></i></div>
-                            <input type="text" id="qa-search" oninput="if(typeof window.handleSearchInput === 'function') window.handleSearchInput()" placeholder="輸入關鍵字 (例如: 身高、生日)..." class="w-full bg-transparent border-none outline-none text-base text-white py-2 pr-4 font-medium placeholder-zinc-500">
+                        <h3 id="qa-heading" class="text-sm font-black text-sky-300 mb-5 tracking-[0.2em] pl-2 flex items-center uppercase"><i class="fa-solid fa-magnifying-glass text-sky-400 mr-3 text-lg drop-shadow-[0_0_5px_rgba(56,189,248,0.8)]"></i> 基地解密庫 Database</h3>
+                        <div class="premium-card p-4 rounded-3xl flex items-center gap-4 relative z-20 focus-within:border-sky-400 focus-within:shadow-[0_0_25px_rgba(56,189,248,0.3)] bg-black/40">
+                            <div class="pl-4 text-sky-500/70 text-xl"><i class="fa-solid fa-terminal"></i></div>
+                            <input type="text" id="qa-search" oninput="if(typeof window.handleSearchInput === 'function') window.handleSearchInput()" placeholder="輸入關鍵字檢索資料 (例如: 身高、生日)..." class="w-full bg-transparent border-none outline-none text-base text-white py-2 pr-4 font-bold placeholder-zinc-600 tracking-wide">
                         </div>
                     </div>
                     <div id="qa-list" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
@@ -321,13 +327,13 @@
             </section>
 
             <section id="page-announcements" class="page">
-                <h2 class="text-3xl font-black text-gradient-blue mb-10 text-center tracking-[0.25em]">基地公告板</h2>
+                <h2 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-sky-200 to-sky-500 mb-10 text-center tracking-[0.25em]">基地公告板</h2>
                 <div id="announcements-list" class="space-y-6"></div>
             </section>
 
             <section id="page-leaderboard" class="page">
                 <div class="flex flex-col items-center w-full">
-                    <h2 class="text-3xl font-black text-gradient-blue mb-8 text-center tracking-[0.25em] w-full">粉絲排行榜</h2>
+                    <h2 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-sky-200 to-sky-500 mb-8 text-center tracking-[0.25em] w-full">粉絲排行榜</h2>
                     <div class="premium-card p-5 mb-8 flex items-center justify-between border-sky-500/30 w-full max-w-md">
                         <div class="flex items-center gap-4">
                             <div class="w-12 h-12 rounded-full border-2 border-sky-400/50 overflow-hidden">
@@ -340,83 +346,86 @@
                         </div>
                         <div class="text-right">
                             <div class="text-2xl font-black text-white italic" id="my-rank-position">-</div>
-                            <div class="text-xs text-zinc-400 font-mono" id="my-rank-exp">0 EXP</div>
+                            <div class="text-xs text-sky-200/60 font-mono" id="my-rank-exp">0 EXP</div>
                         </div>
                     </div>
                     <div id="leaderboard-list" class="space-y-4 w-full max-w-md"></div>
-                    <div id="leaderboard-lock" class="bg-black border border-white/10 rounded-2xl w-full max-w-md flex text-zinc-400 p-6 mb-20 mt-4 shadow-lg" style="background-color: var(--glass-border);">
+                    <div id="leaderboard-lock" class="bg-black/80 border border-sky-500/20 rounded-2xl w-full max-w-md flex text-zinc-400 p-6 mb-20 mt-4 shadow-lg backdrop-blur-md">
                         <div class="w-full">
                             <h2 class="text-lg font-bold mb-3 text-white flex items-center"><i class="fa-solid fa-lock text-sky-400 mr-2 text-xl"></i> 查詢排行榜需解鎖</h2>
-                            <p class="text-sm text-zinc-400 leading-relaxed">只有登入正式會員，且 <span class="text-sky-400 font-bold">EXP 達到 300 (基地常客) 以上</span> 的粉絲，才能解鎖查詢完整的基地粉絲排行榜資訊喔！</p>
+                            <p class="text-sm text-sky-100/70 leading-relaxed">只有登入正式會員，且 <span class="text-sky-400 font-bold">EXP 達到 300 (基地常客) 以上</span> 的粉絲，才能解鎖查詢完整的基地粉絲排行榜資訊喔！</p>
                         </div>
                     </div>
                 </div> 
             </section>
 
             <section id="page-ai" class="page relative h-[calc(100dvh-140px)] -mx-5 px-0 mt-2">
-                <div id="ai-loading-overlay" class="absolute inset-0 z-50 bg-[#030303]/95 backdrop-blur-2xl flex flex-col items-center justify-center hidden transition-opacity duration-500 opacity-0 rounded-[40px] mx-5">
-                    <div class="relative w-24 h-24 mb-8">
-                        <div class="absolute inset-0 rounded-full border-t-4 border-l-4 border-sky-300 animate-[spin_1.5s_linear_infinite] shadow-[0_0_30px_rgba(186,230,253,0.5)]"></div>
-                        <div class="absolute inset-3 rounded-full border-b-4 border-r-4 border-sky-500 animate-[spin_1s_reverse_infinite] shadow-[0_0_20px_rgba(56,189,248,0.5)]"></div>
-                        <div class="absolute inset-6 rounded-full bg-gradient-to-r from-sky-200 to-sky-400 animate-ping opacity-50"></div>
-                        <i class="fa-solid fa-microchip text-white absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-3xl drop-shadow-[0_0_15px_#fff]"></i>
+                <div class="flex flex-col h-full relative bg-[#020617]/95 backdrop-blur-2xl overflow-hidden rounded-[40px] border border-sky-500/20 shadow-[0_0_50px_rgba(0,0,0,0.8)] mx-5">
+                    
+                    <div class="h-[70px] border-b border-sky-500/20 bg-gradient-to-r from-sky-900/20 to-transparent flex items-center justify-between px-6 flex-shrink-0 z-20 shadow-sm">
+                        <div class="flex items-center gap-4">
+                            <div class="relative w-10 h-10 rounded-full border border-sky-400/50 overflow-hidden bg-black shadow-[0_0_15px_rgba(56,189,248,0.3)]">
+                                <img src="avatar-ai.jpg" onerror="this.src='avatar-profile.jpg'" class="w-full h-full object-cover">
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-black text-white tracking-widest">老王專屬系統核心</h4>
+                                <p class="text-[10px] text-emerald-400 font-mono flex items-center mt-0.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse mr-1.5"></span>神經網路連線穩定</p>
+                            </div>
+                        </div>
+                        
+                        <div class="relative">
+                            <button onclick="if(typeof window.toggleAIDropdown === 'function') window.toggleAIDropdown(event);" class="flex items-center gap-2 text-xs bg-black/60 border border-sky-500/30 px-3 py-2 rounded-xl hover:border-sky-400 hover:text-sky-300 transition-all font-mono text-zinc-300 shadow-md">
+                                <i class="fa-solid fa-microchip text-sky-400"></i>
+                                <span id="ai-dropdown-display" class="font-bold tracking-wider hidden md:inline">🔮 自動切換</span>
+                                <i id="ai-dropdown-arrow" class="fa-solid fa-chevron-down transition-transform duration-300 md:ml-1 text-[10px]"></i>
+                            </button>
+                            <div id="ai-dropdown-menu" class="hidden absolute top-full right-0 mt-3 w-60 bg-[#060e1a]/95 backdrop-blur-xl border border-sky-500/30 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.9)] overflow-hidden transition-all duration-300 opacity-0 scale-95 origin-top-right z-50">
+                                <button onclick="if(typeof window.selectAIEngine === 'function') window.selectAIEngine('auto', '🔮 自動切換', this);" class="w-full text-left px-5 py-4 text-sm font-bold text-white hover:bg-sky-500/20 border-b border-sky-500/20 flex items-center gap-3 group transition-colors"><i class="fa-solid fa-wand-magic-sparkles text-sky-300 group-hover:scale-110 transition-transform w-5 text-center"></i>量子核心 (推薦)</button>
+                                <button onclick="if(typeof window.selectAIEngine === 'function') window.selectAIEngine('groq', '⚡ 快速回答', this);" class="w-full text-left px-5 py-4 text-sm font-bold text-zinc-300 hover:bg-sky-500/20 border-b border-sky-500/20 flex items-center gap-3 group transition-colors"><i class="fa-solid fa-bolt text-sky-400 group-hover:scale-110 transition-transform w-5 text-center"></i>迅捷大腦 (Groq)</button>
+                                <button onclick="if(typeof window.selectAIEngine === 'function') window.selectAIEngine('gemini', '👁️ 視覺分析', this);" class="w-full text-left px-5 py-4 text-sm font-bold text-zinc-300 hover:bg-sky-500/20 border-b border-sky-500/20 flex items-center gap-3 group transition-colors"><i class="fa-solid fa-eye text-sky-400 group-hover:scale-110 transition-transform w-5 text-center"></i>視覺神經 (Gemini)</button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="h-8 overflow-hidden flex items-center justify-center w-64">
-                        <h3 id="ai-loading-text" class="text-sm font-mono font-bold tracking-[0.3em] text-sky-400 boot-text w-full text-center drop-shadow-[0_0_8px_rgba(56,189,248,0.8)]">神經網路運算中...</h3>
-                    </div>
-                </div>
 
-                <div class="flex flex-col h-full relative bg-[#0a0a0a]/90 backdrop-blur-xl overflow-hidden rounded-[40px] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.6)] mx-5">
-                    <div id="chat-window" class="flex-1 overflow-y-auto px-4 md:px-8 pt-8 pb-[180px] space-y-6 no-scrollbar scroll-smooth relative z-10 w-full max-w-3xl mx-auto">
-                        <div class="mt-8 mb-12 flex flex-col items-center justify-center text-center animate-[smoothReveal_0.6s_ease]">
-                            <div class="relative w-28 h-28 mb-6 group cursor-pointer hover:scale-105 transition-all duration-300">
-                                <div class="absolute inset-0 bg-gradient-to-r from-blue-600 via-sky-400 to-sky-200 rounded-full blur-xl opacity-60 group-hover:opacity-100 animate-[spin_4s_linear_infinite] transition-all duration-500"></div>
-                                <div class="relative w-full h-full rounded-full border-2 border-white/20 p-1.5 bg-[#030303] shadow-[0_0_30px_rgba(0,0,0,0.8)] overflow-hidden">
-                                    <img src="avatar-ai.jpg" onerror="this.src='https://ui-avatars.com/api/?name=AI&background=000&color=fff'" alt="老王AI助手" class="w-full h-full rounded-full object-cover">
+                    <div id="chat-window" class="flex-1 overflow-y-auto px-4 md:px-8 py-8 space-y-6 no-scrollbar scroll-smooth relative z-10 w-full max-w-3xl mx-auto break-words pb-40">
+                        <div class="mt-4 mb-12 flex flex-col items-center justify-center text-center animate-[smoothReveal_0.6s_ease]">
+                            <div class="relative w-24 h-24 mb-6 group cursor-pointer hover:scale-105 transition-all duration-300">
+                                <div class="absolute inset-0 bg-gradient-to-r from-sky-600 via-sky-400 to-sky-200 rounded-full blur-xl opacity-40 group-hover:opacity-80 animate-[spin_4s_linear_infinite] transition-all duration-500"></div>
+                                <div class="relative w-full h-full rounded-full border-2 border-white/20 p-1.5 bg-[#020617] shadow-[0_0_30px_rgba(0,0,0,0.8)] overflow-hidden">
+                                    <img src="avatar-ai.jpg" onerror="this.src='avatar-profile.jpg'" alt="老王AI助手" class="w-full h-full rounded-full object-cover">
                                 </div>
                             </div>
-                            <h3 class="text-xl font-black tracking-[0.2em] mb-3 text-white drop-shadow-[0_0_10px_rgba(56,189,248,0.5)]">老王AI助手</h3>
-                            <p class="text-[11px] text-sky-400 font-mono tracking-wide mb-8 bg-sky-500/10 border border-sky-500/20 px-4 py-2 rounded-full shadow-[inset_0_0_10px_rgba(56,189,248,0.1)]">視覺分析 ｜ 量子引擎 ｜ 基地機密庫</p>
+                            <h3 class="text-xl font-black tracking-[0.2em] mb-3 text-white drop-shadow-[0_0_10px_rgba(56,189,248,0.5)]">你好！我是老王的AI</h3>
+                            <p class="text-[11px] text-sky-400 font-mono tracking-wide mb-8 bg-sky-500/10 border border-sky-500/20 px-4 py-2 rounded-full shadow-[inset_0_0_10px_rgba(56,189,248,0.1)]">有什麼我可以幫忙的嗎？</p>
                             <div id="chat-ai-chips" class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-md"></div>
                         </div>
                     </div>
 
-                    <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/95 to-transparent pt-12 pb-6 px-4 md:px-5 z-20">
+                    <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#020617] via-[#020617]/95 to-transparent pt-12 pb-6 px-4 md:px-5 z-20">
                         <div class="max-w-3xl mx-auto relative">
+                            
                             <div class="flex justify-between items-end mb-2 px-2">
                                 <div id="ai-image-preview-container" class="hidden bg-white/10 backdrop-blur-xl border border-white/20 p-1.5 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex items-center gap-2 z-30">
                                     <img id="ai-image-preview" class="w-12 h-12 object-cover rounded-lg border border-white/10">
                                     <button onclick="if(typeof window.removeAIAttachment === 'function') window.removeAIAttachment();" class="w-6 h-6 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"><i class="fa-solid fa-xmark text-[10px]"></i></button>
                                 </div>
                                 <div class="flex-1"></div>
-                                <div class="flex items-center gap-3">
-                                    <div id="ai-status-text" class="text-[10px] text-zinc-400 font-mono tracking-widest flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]"></span>系統連線中</div>
-                                    <div class="relative">
-                                        <button onclick="if(typeof window.toggleAIDropdown === 'function') window.toggleAIDropdown(event);" class="flex items-center gap-2 text-xs bg-[#111] border border-[#333] px-3 py-2 rounded-xl hover:border-sky-500/50 hover:text-sky-400 transition-all font-mono text-zinc-300 shadow-md">
-                                            <i class="fa-solid fa-microchip text-sky-500"></i>
-                                            <span id="ai-dropdown-display" class="font-bold tracking-wider">🔮 自動切換</span>
-                                            <i id="ai-dropdown-arrow" class="fa-solid fa-chevron-down transition-transform duration-300 ml-1"></i>
-                                        </button>
-                                        <div id="ai-dropdown-menu" class="hidden absolute bottom-full right-0 mb-3 w-60 bg-[#111]/95 backdrop-blur-xl border border-[#444] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.9)] overflow-hidden transition-all duration-300 opacity-0 scale-95 origin-bottom-right z-50">
-                                            <button onclick="if(typeof window.selectAIEngine === 'function') window.selectAIEngine('auto', '🔮 自動切換', this);" class="w-full text-left px-5 py-4 text-sm font-bold text-white hover:bg-sky-500/20 border-b border-[#222] flex items-center gap-3 group transition-colors"><i class="fa-solid fa-wand-magic-sparkles text-sky-300 group-hover:scale-110 transition-transform w-5 text-center"></i>量子核心 (自動判斷)</button>
-                                            <button onclick="if(typeof window.selectAIEngine === 'function') window.selectAIEngine('groq', '⚡ 快速回答', this);" class="w-full text-left px-5 py-4 text-sm font-bold text-zinc-300 hover:bg-sky-500/20 border-b border-[#222] flex items-center gap-3 group transition-colors"><i class="fa-solid fa-bolt text-sky-400 group-hover:scale-110 transition-transform w-5 text-center"></i>迅捷大腦 (Groq 極速)</button>
-                                            <button onclick="if(typeof window.selectAIEngine === 'function') window.selectAIEngine('gemini', '👁️ 視覺分析', this);" class="w-full text-left px-5 py-4 text-sm font-bold text-zinc-300 hover:bg-sky-500/20 border-b border-[#222] flex items-center gap-3 group transition-colors"><i class="fa-solid fa-eye text-sky-400 group-hover:scale-110 transition-transform w-5 text-center"></i>視覺神經 (Gemini 2.5)</button>
-                                            <button onclick="if(typeof window.selectAIEngine === 'function') window.selectAIEngine('local', '💾 本地回答', this);" class="w-full text-left px-5 py-4 text-sm font-bold text-zinc-300 hover:bg-sky-500/20 flex items-center gap-3 group transition-colors"><i class="fa-solid fa-database text-sky-500 group-hover:scale-110 transition-transform w-5 text-center"></i>基地檔案 (離線助理)</button>
-                                        </div>
-                                    </div>
-                                </div>
+                                <div id="ai-status-text" class="text-[10px] text-sky-200/60 font-mono tracking-widest">輸入指令以喚醒系統</div>
                             </div>
-                            <div class="bg-[#1a1a1a]/80 backdrop-blur-md border border-white/10 rounded-[28px] flex flex-col shadow-[0_15px_50px_rgba(0,0,0,0.8)] transition-all duration-300 focus-within:border-sky-500/50 focus-within:bg-[#1f1f1f]/90 focus-within:shadow-[0_0_30px_rgba(56,189,248,0.2)] relative overflow-hidden group">
-                                <textarea id="ai-input" rows="1" onkeypress="if(typeof window.handleAIKeyPress === 'function') window.handleAIKeyPress(event);" oninput="this.style.height = '';this.style.height = Math.min(this.scrollHeight, 120) + 'px'" placeholder="輸入問題給 AI 助手 (Shift+Enter 換行，Enter 送出)..." class="w-full bg-transparent text-white px-6 pt-5 pb-3 resize-none outline-none max-h-[120px] min-h-[60px] text-[15px] placeholder-zinc-500 leading-relaxed no-scrollbar relative z-10"></textarea>
-                                <div class="flex justify-between items-end px-3 pb-3 relative z-10">
+                            
+                            <div class="bg-[#051121]/90 backdrop-blur-xl border border-sky-500/30 rounded-[28px] flex flex-col shadow-[0_15px_50px_rgba(0,0,0,0.8)] transition-all duration-300 focus-within:border-sky-400 focus-within:bg-[#0a182e]/95 focus-within:shadow-[0_0_30px_rgba(56,189,248,0.2)] relative overflow-hidden">
+                                <textarea id="ai-input" rows="1" onkeypress="if(typeof window.handleAIKeyPress === 'function') window.handleAIKeyPress(event);" oninput="this.style.height = '';this.style.height = Math.min(this.scrollHeight, 120) + 'px'" placeholder="輸入問題給 AI 助手 (Shift+Enter 換行，Enter 送出)..." class="w-full bg-transparent text-white px-6 pt-5 pb-3 resize-none outline-none max-h-[120px] min-h-[60px] text-[15px] placeholder-sky-200/40 leading-relaxed no-scrollbar relative z-10"></textarea>
+                                
+                                <div class="flex justify-between items-center px-3 pb-3 relative z-10 border-t border-sky-500/20 pt-2">
                                     <div class="flex items-center gap-1 pl-2">
                                         <input type="file" id="ai-file-input" accept="image/*" class="hidden" onchange="if(typeof window.handleAIFileUpload === 'function') window.handleAIFileUpload(event);">
-                                        <button onclick="document.getElementById('ai-file-input').click()" class="w-9 h-9 rounded-full text-zinc-400 hover:text-sky-400 hover:bg-white/5 transition-all flex items-center justify-center" title="上傳圖片"><i class="fa-solid fa-image text-[15px]"></i></button>
-                                        <button id="mic-btn" onclick="if(typeof window.toggleVoiceInput === 'function') window.toggleVoiceInput();" class="w-9 h-9 rounded-full text-zinc-400 hover:text-sky-400 hover:bg-white/5 transition-all flex items-center justify-center" title="語音輸入"><i class="fa-solid fa-microphone text-[15px]"></i></button>
-                                        <button id="voice-reply-btn" onclick="if(typeof window.toggleVoiceReply === 'function') window.toggleVoiceReply();" class="w-9 h-9 rounded-full text-zinc-600 hover:text-sky-400 hover:bg-white/5 transition-all flex items-center justify-center" title="開啟/關閉 AI 語音回覆"><i id="voice-reply-icon" class="fa-solid fa-volume-xmark text-[15px]"></i></button>
+                                        <button onclick="document.getElementById('ai-file-input').click()" class="w-9 h-9 rounded-full text-sky-200/50 hover:text-sky-400 hover:bg-sky-500/20 transition-all flex items-center justify-center" title="上傳圖片"><i class="fa-solid fa-image text-[15px]"></i></button>
+                                        <button id="mic-btn" onclick="if(typeof window.toggleVoiceInput === 'function') window.toggleVoiceInput();" class="w-9 h-9 rounded-full text-sky-200/50 hover:text-sky-400 hover:bg-sky-500/20 transition-all flex items-center justify-center" title="語音輸入"><i class="fa-solid fa-microphone text-[15px]"></i></button>
+                                        <button id="voice-reply-btn" onclick="if(typeof window.toggleVoiceReply === 'function') window.toggleVoiceReply();" class="w-9 h-9 rounded-full text-sky-200/50 hover:text-sky-400 hover:bg-sky-500/20 transition-all flex items-center justify-center" title="開啟/關閉 AI 語音回覆"><i id="voice-reply-icon" class="fa-solid fa-volume-xmark text-[15px]"></i></button>
                                     </div>
                                     <div class="flex items-center gap-2">
-                                        <button id="ai-send-btn" onclick="if(typeof window.toggleAIAction === 'function') window.toggleAIAction();" class="w-10 h-10 rounded-full bg-gradient-to-r from-sky-300 to-sky-500 text-sky-950 flex items-center justify-center hover:scale-105 transition-all duration-300 shadow-[0_0_15px_rgba(186,230,253,0.5)] disabled:opacity-30 disabled:cursor-not-allowed"><i id="ai-action-icon" class="fa-solid fa-arrow-up text-base"></i></button>
+                                        <button id="ai-stop-btn" onclick="if(typeof window.stopAIGeneration === 'function') window.stopAIGeneration();" class="hidden w-10 h-10 rounded-full bg-red-500/20 text-red-500 border border-red-500/40 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-[0_0_10px_rgba(239,68,68,0.4)]" title="強制停止運算"><i class="fa-solid fa-stop text-sm"></i></button>
+                                        <button id="ai-send-btn" onclick="if(typeof window.toggleAIAction === 'function') window.toggleAIAction();" class="w-10 h-10 rounded-full bg-gradient-to-r from-sky-400 to-blue-500 text-white flex items-center justify-center hover:scale-105 transition-all duration-300 shadow-[0_0_15px_rgba(56,189,248,0.5)] disabled:opacity-30 disabled:cursor-not-allowed"><i id="ai-action-icon" class="fa-solid fa-arrow-up text-base"></i></button>
                                     </div>
                                 </div>
                             </div>
@@ -426,7 +435,7 @@
             </section>
 
             <section id="page-timeline" class="page">
-                <h2 class="text-3xl font-black text-gradient-blue mb-16 text-center tracking-[0.25em] drop-shadow-[0_0_15px_rgba(56,189,248,0.3)]">老王的成長軌跡</h2>
+                <h2 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-sky-200 to-sky-500 mb-16 text-center tracking-[0.25em] drop-shadow-[0_0_15px_rgba(56,189,248,0.3)]">老王的成長軌跡</h2>
                 <div class="relative max-w-4xl mx-auto px-4 pb-[50vh] pt-[10vh]" id="timeline-wrapper">
                     <div class="timeline-beam"><div class="timeline-scanner"></div></div>
                     <div id="timeline-nodes-container" class="relative z-10 w-full"></div>
@@ -435,35 +444,34 @@
 
             <section id="page-id" class="page">
                 <div class="premium-card p-12 text-center max-w-sm mx-auto relative overflow-hidden">
-                    <h2 class="text-2xl font-black mb-4 text-gradient-blue relative z-10 tracking-[0.15em]">專屬粉絲認證</h2>
-                    <p class="text-xs text-zinc-400 mb-10 relative z-10 font-mono tracking-wider">輸入專屬暱稱，生成認證卡片。</p>
-                    <div class="w-36 h-36 mx-auto rounded-full p-1.5 glass-element mb-10 relative z-10">
+                    <h2 class="text-2xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-sky-200 to-sky-400 relative z-10 tracking-[0.15em]">專屬粉絲認證</h2>
+                    <p class="text-xs text-sky-200/60 mb-10 relative z-10 font-mono tracking-wider">輸入專屬暱稱，生成認證卡片。</p>
+                    <div class="w-36 h-36 mx-auto rounded-full p-1.5 glass-element mb-10 relative z-10 border-sky-500/30">
                         <img src="avatar-main.jpg" onerror="this.src='https://ui-avatars.com/api/?name=王&background=111&color=38bdf8'" alt="頭像" class="w-full h-full rounded-full object-cover border border-white/10">
-                        <div class="absolute bottom-2 right-2 w-10 h-10 bg-gradient-to-br from-sky-400 to-blue-500 text-black text-sm font-black rounded-full flex items-center justify-center border-4 border-[#111]"><i class="fa-solid fa-check"></i></div>
+                        <div class="absolute bottom-2 right-2 w-10 h-10 bg-gradient-to-br from-sky-400 to-blue-500 text-sky-950 text-sm font-black rounded-full flex items-center justify-center border-4 border-[#020617]"><i class="fa-solid fa-check"></i></div>
                     </div>
                     <div class="glass-element p-2 mb-10 relative z-10 rounded-2xl focus-within:border-sky-500/60 transition-colors">
-                        <input type="text" id="id-name" maxlength="10" placeholder="輸入暱稱（例如：老王）" class="w-full bg-transparent py-4 px-3 text-center focus:outline-none font-bold text-white text-lg tracking-widest placeholder-zinc-500">
+                        <input type="text" id="id-name" maxlength="10" placeholder="輸入暱稱（例如：老王）" class="w-full bg-transparent py-4 px-3 text-center focus:outline-none font-bold text-white text-lg tracking-widest placeholder-sky-200/40">
                     </div>
-                    <button onclick="if(typeof window.generateIDCard === 'function') window.generateIDCard();" class="w-full bg-gradient-to-r from-zinc-200 to-white text-black py-4 rounded-2xl font-black text-sm hover:from-sky-300 hover:to-sky-500 hover:text-sky-950 transition-all hover:-translate-y-1 tracking-widest shadow-[0_0_15px_rgba(186,230,253,0.2)] hover:shadow-[0_10px_25px_rgba(186,230,253,0.5)]"><i class="fa-solid fa-id-card-clip mr-2"></i> 生成專屬認證</button>
+                    <button onclick="if(typeof window.generateIDCard === 'function') window.generateIDCard();" class="w-full bg-gradient-to-r from-sky-400 to-blue-500 text-sky-950 py-4 rounded-2xl font-black text-sm hover:from-sky-300 hover:to-sky-400 transition-all hover:-translate-y-1 tracking-widest shadow-[0_0_15px_rgba(56,189,248,0.3)] hover:shadow-[0_10px_25px_rgba(56,189,248,0.5)]"><i class="fa-solid fa-id-card-clip mr-2"></i> 生成專屬認證</button>
                 </div>
-                <canvas id="id-canvas" width="1080" height="1500" style="display:none;" aria-hidden="true"></canvas>
             </section>
 
             <section id="page-quiz" class="page">
                 <div id="quiz-intro" class="premium-card p-12 text-center max-w-sm mx-auto">
                     <div class="mb-8 relative quiz-profile-container">
-                        <img src="avatar-profile.jpg" onerror="this.src='https://ui-avatars.com/api/?name=王&background=111&color=38bdf8'" alt="測驗頭像" class="w-32 h-32 rounded-full mx-auto border-4 border-sky-400/30 shadow-[0_0_20px_rgba(56,189,248,0.4)] object-cover bg-black">
+                        <img src="avatar-profile.jpg" onerror="this.src='https://ui-avatars.com/api/?name=王&background=111&color=38bdf8'" alt="測驗頭像" class="w-32 h-32 rounded-full mx-auto border-4 border-sky-400/30 shadow-[0_0_20px_rgba(56,189,248,0.4)] object-cover bg-[#020617]">
                     </div>
-                    <h2 class="text-3xl font-black mb-5 text-gradient-blue tracking-widest">鐵粉測驗</h2>
-                    <p class="text-zinc-400 text-xs mb-10 leading-relaxed font-mono tracking-wider">挑戰 10 道題目<br>測驗看看你的鐵粉程度。</p>
+                    <h2 class="text-3xl font-black mb-5 text-transparent bg-clip-text bg-gradient-to-r from-sky-200 to-sky-400 tracking-widest">鐵粉測驗</h2>
+                    <p class="text-sky-200/60 text-xs mb-10 leading-relaxed font-mono tracking-wider">挑戰 10 道題目<br>測驗看看你的鐵粉程度。</p>
                     <div class="glass-element p-2 mb-10 rounded-2xl focus-within:border-sky-500/60 transition-colors">
-                        <input type="text" id="quiz-player-name" placeholder="輸入挑戰者大名（例如：老王）" class="w-full bg-transparent py-4 px-3 text-center focus:outline-none font-bold text-white text-base tracking-widest placeholder-zinc-500">
+                        <input type="text" id="quiz-player-name" placeholder="輸入挑戰者大名（例如：老王）" class="w-full bg-transparent py-4 px-3 text-center focus:outline-none font-bold text-white text-base tracking-widest placeholder-sky-200/40">
                     </div>
-                    <button onclick="if(typeof window.startQuiz === 'function') window.startQuiz();" class="w-full bg-gradient-to-r from-sky-300 to-sky-500 text-sky-950 py-4 rounded-2xl font-black text-base hover:from-sky-200 hover:to-sky-400 transition-all hover:-translate-y-1 tracking-widest shadow-[0_5px_15px_rgba(186,230,253,0.3)] hover:shadow-[0_10px_25px_rgba(186,230,253,0.5)]">開始挑戰</button>
+                    <button onclick="if(typeof window.startQuiz === 'function') window.startQuiz();" class="w-full bg-gradient-to-r from-sky-400 to-blue-500 text-sky-950 py-4 rounded-2xl font-black text-base hover:from-sky-300 hover:to-sky-400 transition-all hover:-translate-y-1 tracking-widest shadow-[0_5px_15px_rgba(56,189,248,0.3)] hover:shadow-[0_10px_25px_rgba(56,189,248,0.5)]">開始挑戰</button>
                 </div>
                 <div id="quiz-area" class="hidden flex-col max-w-md mx-auto">
                     <div class="flex justify-between items-center mb-8 px-2">
-                        <span id="quiz-progress" class="glass-element text-zinc-200 text-xs font-bold px-5 py-2.5 rounded-full tracking-widest">第 1 / 共 10 題</span>
+                        <span id="quiz-progress" class="glass-element text-sky-100 text-xs font-bold px-5 py-2.5 rounded-full tracking-widest">第 1 / 共 10 題</span>
                         <span id="quiz-score" class="bg-sky-500/20 text-sky-400 border border-sky-500/40 text-xs font-black px-5 py-2.5 rounded-full tracking-wider shadow-[0_0_10px_rgba(56,189,248,0.2)]">目前積分: 0</span>
                     </div>
                     <div class="premium-card p-10 mb-8 border-l-4 border-l-sky-400 relative">
@@ -476,42 +484,88 @@
         </main>
 
         <aside class="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 w-[96%] max-w-[500px]">
-            <nav class="nav-dock flex justify-between items-center" aria-label="主導航">
-                <button onclick="window.switchTab('page-home', this)" class="nav-item active flex flex-col items-center py-2"><i class="fa-solid fa-house text-xl"></i></button>
-                <button onclick="window.switchTab('page-announcements', this)" class="nav-item flex flex-col items-center py-2"><i class="fa-solid fa-bullhorn text-xl"></i></button>
-                <button onclick="window.switchTab('page-leaderboard', this)" class="nav-item flex flex-col items-center py-2"><i class="fa-solid fa-trophy text-xl"></i></button>
-                <button onclick="window.switchTab('page-ai', this)" class="nav-item flex flex-col items-center py-2"><i class="fa-solid fa-robot text-xl"></i></button>
-                <button onclick="window.switchTab('page-timeline', this)" class="nav-item flex flex-col items-center py-2"><i class="fa-solid fa-clock-rotate-left text-xl"></i></button>
-                <button onclick="window.switchTab('page-id', this)" class="nav-item flex flex-col items-center py-2"><i class="fa-solid fa-id-badge text-xl"></i></button>
-                <button onclick="window.switchTab('page-quiz', this)" class="nav-item flex flex-col items-center py-2"><i class="fa-solid fa-pen text-xl"></i></button>
+            <nav class="nav-dock flex justify-between items-center bg-[#020617]/90 border border-sky-500/30 shadow-[0_20px_50px_rgba(0,0,0,0.9)] rounded-[40px] px-2 py-1" aria-label="主導航">
+                <button onclick="window.switchTab('page-home', this)" class="nav-item active flex flex-col items-center p-3 rounded-2xl hover:bg-white/5"><i class="fa-solid fa-house text-xl"></i></button>
+                <button onclick="window.switchTab('page-announcements', this)" class="nav-item flex flex-col items-center p-3 rounded-2xl hover:bg-white/5"><i class="fa-solid fa-bullhorn text-xl"></i></button>
+                <button onclick="window.switchTab('page-leaderboard', this)" class="nav-item flex flex-col items-center p-3 rounded-2xl hover:bg-white/5"><i class="fa-solid fa-trophy text-xl"></i></button>
+                <button onclick="window.switchTab('page-ai', this)" class="nav-item flex flex-col items-center p-3 rounded-2xl hover:bg-white/5"><i class="fa-solid fa-robot text-xl"></i></button>
+                <button onclick="window.switchTab('page-timeline', this)" class="nav-item flex flex-col items-center p-3 rounded-2xl hover:bg-white/5"><i class="fa-solid fa-clock-rotate-left text-xl"></i></button>
+                <button onclick="window.switchTab('page-id', this)" class="nav-item flex flex-col items-center p-3 rounded-2xl hover:bg-white/5"><i class="fa-solid fa-id-badge text-xl"></i></button>
+                <button onclick="window.switchTab('page-quiz', this)" class="nav-item flex flex-col items-center p-3 rounded-2xl hover:bg-white/5"><i class="fa-solid fa-pen text-xl"></i></button>
             </nav>
         </aside>
 
-        <div id="auth-modal" class="fixed inset-0 z-[150] bg-black/90 backdrop-blur-xl hidden flex-col items-center justify-center px-5 opacity-0 transition-all duration-300">
-            <div class="premium-card w-full max-w-md p-0 relative transform scale-95 transition-transform duration-300 overflow-hidden" id="auth-content">
-                <div class="relative px-8 pt-10 pb-6 bg-gradient-to-br from-sky-500/20 via-blue-600/10 to-transparent">
-                    <div class="absolute inset-0 pointer-events-none">
-                        <div class="absolute -top-24 -right-24 w-56 h-56 rounded-full bg-sky-500/20 blur-3xl"></div>
-                        <div class="absolute -bottom-24 -left-24 w-56 h-56 rounded-full bg-blue-600/20 blur-3xl"></div>
-                    </div>
-                    <button id="auth-close-btn" onclick="window.closeAuthModal()" class="absolute top-5 right-5 w-9 h-9 rounded-full glass-element flex items-center justify-center text-zinc-300 hover:text-white transition-colors">
-                        <i class="fa-solid fa-xmark"></i>
-                    </button>
-                    <div class="flex items-center gap-4 relative">
-                        <div class="w-12 h-12 rounded-2xl bg-black/50 border border-white/10 flex items-center justify-center shadow-[0_0_25px_rgba(56,189,248,0.18)]">
-                            <i class="fa-solid fa-user-shield text-sky-400 text-xl"></i>
+        <div id="support-modal" class="fixed inset-0 z-[160] bg-[#020617]/95 backdrop-blur-xl hidden flex-col items-center justify-center px-4 md:px-0 opacity-0 transition-all duration-400">
+            <div class="premium-card w-full max-w-2xl p-0 rounded-[40px] transform scale-95 transition-transform duration-400 overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.9)] flex flex-col h-[85vh] md:h-[80vh] border-sky-400/50" id="support-content">
+                
+                <div class="p-5 border-b border-sky-500/30 bg-[#051121] flex justify-between items-center flex-shrink-0 relative z-20 shadow-md">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-sky-400 to-blue-600 p-0.5 shadow-[0_0_15px_rgba(56,189,248,0.4)]">
+                            <div class="w-full h-full bg-[#020617] rounded-full flex items-center justify-center text-sky-400"><i class="fa-solid fa-headset text-xl"></i></div>
                         </div>
                         <div>
-                            <div class="text-white font-black tracking-[0.25em] text-lg">粉絲登入</div>
-                            <div class="text-zinc-400 text-xs font-mono tracking-widest mt-1">登入後可使用 AI / 基地成就系統</div>
+                            <h3 class="font-black text-white tracking-widest text-lg">官方支援中心</h3>
+                            <p class="text-[10px] text-emerald-400 font-mono tracking-wider mt-0.5 flex items-center"><span class="w-1.5 h-1.5 bg-emerald-400 rounded-full shadow-[0_0_8px_#34d399] animate-pulse mr-1.5"></span>加密通道已建立</p>
                         </div>
                     </div>
-                    <div class="mt-7 flex items-center gap-2 p-1 rounded-2xl bg-black/40 border border-white/10 relative">
-                        <button id="tab-login" onclick="window.switchAuthMode('login')" class="auth-tab active">登入</button>
-                        <button id="tab-register" onclick="window.switchAuthMode('register')" class="auth-tab">註冊</button>
+                    <div class="flex gap-2">
+                        <button onclick="if(typeof window.endSupportTicket === 'function') window.endSupportTicket();" class="text-xs bg-red-500/10 text-red-400 border border-red-500/30 px-3 py-2 rounded-xl hover:bg-red-500 hover:text-white transition-all font-bold tracking-widest">結束對談</button>
+                        <button onclick="if(typeof window.closeSupportModal === 'function') window.closeSupportModal();" class="w-10 h-10 rounded-xl bg-white/5 text-zinc-400 hover:text-white hover:bg-white/20 border border-white/10 flex items-center justify-center transition-all"><i class="fa-solid fa-xmark"></i></button>
                     </div>
                 </div>
-                <div class="px-8 pb-8 pt-6">
+                
+                <div class="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar bg-[#020617] relative" id="support-history-list">
+                    <div class="flex justify-center py-20"><i class="fa-solid fa-circle-notch fa-spin text-4xl text-sky-500"></i></div>
+                </div>
+                
+                <div class="p-4 border-t border-sky-500/30 bg-[#051121] flex-shrink-0 relative z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+                    
+                    <div id="support-image-preview-container" class="hidden mb-3 relative inline-block">
+                        <img id="support-image-preview" class="w-24 h-24 object-cover rounded-xl border border-sky-400/50 shadow-md">
+                        <button onclick="if(typeof window.removeSupportAttachment === 'function') window.removeSupportAttachment()" class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs shadow-lg hover:scale-110 transition-transform"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+
+                    <div class="bg-[#020617] border border-sky-500/40 rounded-[24px] p-2 flex items-end focus-within:border-sky-400 focus-within:shadow-[0_0_25px_rgba(56,189,248,0.25)] transition-all">
+                        
+                        <input type="file" id="support-file-input" accept="image/*" class="hidden" onchange="if(typeof window.handleSupportFileUpload === 'function') window.handleSupportFileUpload(event)">
+                        <button onclick="document.getElementById('support-file-input').click()" class="w-10 h-10 flex-shrink-0 rounded-full bg-sky-500/10 text-sky-400 flex items-center justify-center hover:bg-sky-500 hover:text-white transition-all mb-1 ml-1" title="上傳截圖">
+                            <i class="fa-solid fa-plus text-xl"></i>
+                        </button>
+
+                        <textarea id="support-input" rows="1" oninput="this.style.height = '';this.style.height = Math.min(this.scrollHeight, 120) + 'px'" class="w-full bg-transparent text-[15px] text-white px-4 py-2 resize-none outline-none placeholder-sky-200/40 leading-relaxed font-medium no-scrollbar max-h-[120px]" placeholder="輸入訊息或附上截圖問題..."></textarea>
+                        
+                        <button onclick="if(typeof window.sendSupportTicket === 'function') window.sendSupportTicket();" class="w-10 h-10 flex-shrink-0 rounded-full bg-gradient-to-br from-sky-400 to-blue-500 text-white flex items-center justify-center hover:scale-105 transition-transform mb-1 mr-1 shadow-md">
+                            <i class="fa-solid fa-arrow-up text-lg"></i>
+                        </button>
+                    </div>
+                    <div class="text-center mt-2">
+                        <span class="text-[10px] text-sky-500/60 font-mono font-bold tracking-widest"><i class="fa-solid fa-shield-halved mr-1"></i> 訊息已端對端加密</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="auth-modal" class="fixed inset-0 z-[150] bg-[#020617]/95 backdrop-blur-2xl hidden flex-col items-center justify-center px-5 opacity-0 transition-all duration-400">
+            <div class="premium-card w-full max-w-md p-0 relative transform scale-95 transition-transform duration-400 overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.9)] border-sky-500/40" id="auth-content">
+                <div class="relative px-8 pt-10 pb-6 bg-gradient-to-br from-sky-600/20 via-blue-600/10 to-[#020617]">
+                    <button id="auth-close-btn" onclick="window.closeAuthModal()" class="absolute top-5 right-5 w-10 h-10 rounded-full glass-element flex items-center justify-center text-zinc-300 hover:text-white transition-colors">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                    <div class="flex items-center gap-5 relative">
+                        <div class="w-14 h-14 rounded-[20px] bg-[#020617] border border-sky-400/50 flex items-center justify-center shadow-[0_0_30px_rgba(56,189,248,0.3)]">
+                            <i class="fa-solid fa-fingerprint text-sky-400 text-3xl"></i>
+                        </div>
+                        <div>
+                            <div class="text-white font-black tracking-[0.25em] text-xl">基地授權登入</div>
+                            <div class="text-sky-300/70 text-xs font-mono tracking-widest mt-1">Unlock V-CORE System</div>
+                        </div>
+                    </div>
+                    <div class="mt-8 flex items-center gap-2 p-1.5 rounded-2xl bg-[#020617]/80 border border-white/10 relative">
+                        <button id="tab-login" onclick="window.switchAuthMode('login')" class="auth-tab active text-sm">登入通道</button>
+                        <button id="tab-register" onclick="window.switchAuthMode('register')" class="auth-tab text-sm">申請授權</button>
+                    </div>
+                </div>
+                <div class="px-8 pb-8 pt-6 bg-[#020617]">
                     <form id="auth-form" onsubmit="window.handleAuthSubmit(event)">
                         <div id="field-name" class="auth-input-group hidden">
                             <input type="text" id="auth-name" class="auth-input" placeholder="粉絲暱稱">
@@ -526,22 +580,22 @@
                             <i class="fa-solid fa-lock auth-icon"></i>
                         </div>
                         <div class="flex justify-end mb-6 w-full relative z-10">
-                            <button type="button" onclick="window.handleForgotPassword()" class="text-xs text-sky-400 hover:text-sky-300 font-bold transition-colors">忘記密碼？</button>
+                            <button type="button" onclick="window.handleForgotPassword()" class="text-xs text-sky-400 hover:text-sky-300 font-bold tracking-widest transition-colors">忘記密碼？</button>
                         </div>
 
-                        <button type="submit" id="btn-auth-submit" class="w-full bg-gradient-to-r from-sky-300 to-sky-500 text-sky-950 py-4 rounded-2xl font-black text-base tracking-widest shadow-[0_10px_25px_rgba(186,230,253,0.3)] hover:-translate-y-1 transition-all mb-5">
+                        <button type="submit" id="btn-auth-submit" class="w-full bg-gradient-to-r from-sky-400 to-blue-500 text-[#020617] py-4 rounded-2xl font-black text-base tracking-[0.2em] shadow-[0_10px_30px_rgba(56,189,248,0.4)] hover:scale-105 transition-transform mb-6">
                             確認登入
                         </button>
-                        <div class="relative flex py-2 items-center mb-5">
+                        <div class="relative flex py-2 items-center mb-6">
                             <div class="flex-grow border-t border-white/10"></div>
-                            <span class="flex-shrink-0 mx-4 text-zinc-500 text-xs font-mono">或使用以下方式</span>
+                            <span class="flex-shrink-0 mx-4 text-zinc-500 text-[10px] font-black tracking-widest uppercase">Other Methods</span>
                             <div class="flex-grow border-t border-white/10"></div>
                         </div>
-                        <button type="button" onclick="window.loginWithGoogle()" class="w-full glass-element py-3.5 rounded-2xl flex items-center justify-center gap-3 text-sm font-bold text-white hover:bg-white/10 transition-colors mb-3">
-                            <i class="fa-brands fa-google text-red-400 text-lg"></i> 使用 Google 登入
+                        <button type="button" onclick="window.loginWithGoogle()" class="w-full glass-element py-4 rounded-2xl flex items-center justify-center gap-3 text-sm font-black tracking-wider text-white hover:border-sky-500/50 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all mb-4">
+                            <i class="fa-brands fa-google text-red-400 text-xl"></i> 使用 Google 快速登入
                         </button>
-                        <button type="button" onclick="window.loginAsGuest()" class="w-full bg-transparent border border-zinc-600 text-zinc-400 py-3.5 rounded-2xl flex items-center justify-center gap-3 text-sm font-bold hover:text-white hover:border-zinc-400 transition-colors">
-                            <i class="fa-solid fa-user-secret text-lg"></i> 訪客可瀏覽（AI 需登入）
+                        <button type="button" onclick="window.loginAsGuest()" class="w-full bg-transparent border border-zinc-700 text-zinc-400 py-4 rounded-2xl flex items-center justify-center gap-3 text-sm font-bold tracking-wider hover:text-white hover:border-zinc-400 transition-colors">
+                            <i class="fa-solid fa-user-secret text-lg"></i> 訪客身分瀏覽
                         </button>
                     </form>
                 </div>
@@ -594,104 +648,94 @@
                             <div class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
                         </label>
                     </div>
-                    <div class="flex justify-between items-center glass-element p-5 rounded-3xl">
-                        <div class="text-sm font-bold text-zinc-200 tracking-wider"><i class="fa-solid fa-volume-high text-zinc-400 mr-2"></i>系統提示音效</div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="sound-toggle" class="sr-only peer" onchange="if(typeof window.saveSettings === 'function') window.saveSettings()">
-                            <div class="w-12 h-6 bg-black/80 border border-white/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-sky-400 peer-checked:to-blue-500"></div>
-                        </label>
-                    </div>
                 </div>
             </div>
         </div>
+        <div id="promo-modal" class="fixed inset-0 z-[180] bg-[#020617]/90 backdrop-blur-2xl hidden flex-col items-center justify-center px-4 opacity-0 transition-all duration-500">
+            <div class="premium-card w-full max-w-md p-0 rounded-[36px] overflow-hidden flex flex-col max-h-[85vh] border-sky-400/50 shadow-[0_30px_60px_rgba(0,0,0,0.9)] transform scale-95 transition-transform duration-500 relative" id="promo-content-box">
+                
+               <div class="absolute top-4 right-4 z-50">
+                    <button id="promo-close-btn" disabled onclick="window.closePromoModal()" class="w-10 h-10 rounded-full bg-black/50 backdrop-blur-md text-white border border-white/20 flex items-center justify-center transition-all shadow-lg opacity-50 cursor-not-allowed">
+                        <span id="promo-countdown" class="text-xs font-mono font-bold">5</span>
+                        <i id="promo-close-icon" class="fa-solid fa-xmark text-lg hidden"></i>
+                    </button>
+                </div>
 
-        <script>
-            window.addEventListener('load', () => {
-                 setTimeout(() => {
-                    if(!window.firebaseApp) return;
+                <div id="promo-slider-container" class="relative w-full h-64 sm:h-72 bg-black flex-shrink-0 border-b border-sky-500/30 overflow-hidden group">
+                    <div id="promo-image-track" class="flex w-full h-full overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth">
+                        </div>
+                    <div id="promo-slider-dots" class="absolute bottom-3 left-0 w-full flex justify-center gap-2 z-20"></div>
+                </div>
+
+                <div class="flex-1 overflow-y-auto no-scrollbar p-6 md:p-8 bg-gradient-to-b from-[#051121] to-[#020617] relative">
+                    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-20 bg-sky-500/10 blur-3xl pointer-events-none"></div>
                     
-                    const announceRef = window.firebaseApp.collection(window.firebaseApp.db, "announcements");
-                    const qA = window.firebaseApp.query(announceRef, window.firebaseApp.orderBy("timestamp", "desc"), window.firebaseApp.limit(1));
-                    let initialLoadA = true;
-                    window.firebaseApp.onSnapshot(qA, (snap) => {
-                        if(initialLoadA) { initialLoadA = false; return; }
-                        snap.docChanges().forEach(change => {
-                            if(change.type === 'added') {
-                                const data = change.doc.data();
-                                Swal.fire({
-                                    title: '🔔 基地緊急廣播',
-                                    text: data.content,
-                                    icon: 'info', toast: true, position: 'top', timer: 6000, showConfirmButton: false,
-                                    background: 'rgba(14, 165, 233, 0.15)', color: '#fff',
-                                    customClass: { popup: 'border border-sky-500/50 backdrop-blur-xl' }
-                                });
-                            }
-                        });
-                    });
+                    <h2 id="promo-display-title" class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-sky-200 to-sky-400 tracking-widest mb-3 leading-snug">載入中...</h2>
 
-                    window.firebaseApp.auth.onAuthStateChanged(user => {
-                        if(user && !user.isAnonymous) {
-                            document.getElementById('btn-inbox').classList.remove('hidden');
-                            document.getElementById('btn-inbox').classList.add('flex');
-                            const historyRef = window.firebaseApp.collection(window.firebaseApp.doc(window.firebaseApp.db, "users", user.uid), "exp_history");
-                            const qH = window.firebaseApp.query(historyRef, window.firebaseApp.where("read", "==", false), window.firebaseApp.limit(1));
-                            window.firebaseApp.onSnapshot(qH, (snap) => {
-                                const badge = document.getElementById('inbox-badge');
-                                if(badge) {
-                                    if(!snap.empty) badge.classList.remove('hidden');
-                                    else badge.classList.add('hidden');
-                                }
-                            });
-                        }
-                    });
-                }, 2500);
-            });
-        </script>
+<div id="promo-ecommerce-info" class="flex flex-wrap gap-2 mb-4 hidden">
+    <div class="flex items-end gap-2 bg-black/40 px-3 py-1.5 rounded-lg border border-sky-500/20">
+        <span id="promo-sale-price" class="text-rose-400 font-black text-lg"></span>
+        <span id="promo-original-price" class="text-zinc-500 text-xs line-through mb-0.5"></span>
+    </div>
+    <span id="promo-stock-badge" class="px-3 py-1.5 rounded-lg text-[10px] font-black tracking-widest flex items-center"></span>
+    <div id="promo-discount-container" class="hidden items-center gap-2 bg-amber-500/10 border border-amber-500/30 px-3 py-1.5 rounded-lg">
+        <i class="fa-solid fa-ticket text-amber-400 text-xs"></i>
+        <span id="promo-discount-code" class="text-amber-400 text-xs font-mono font-bold select-all"></span>
+    </div>
+</div>
 
-        <script src="zcsn_qa.js?v=22.0.0"></script>
-        <script src="zcsn_quiz.js?v=22.0.0"></script>
-        <script src="app.js?v=22.0.0"></script>
+<div id="promo-display-content" class="text-sm text-sky-100/80 leading-relaxed font-medium mb-6 whitespace-pre-line"></div>
+
+                    <div id="promo-qa-container" class="space-y-3 mb-4">
+                        </div>
+                </div>
+
+                <div class="p-5 bg-[#020617] border-t border-sky-500/30 flex-shrink-0 relative z-20">
+                    <a id="promo-action-btn" href="#" target="_blank" class="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-cyan-400 to-blue-600 text-[#020617] py-4 rounded-2xl font-black text-base tracking-[0.2em] shadow-[0_0_20px_rgba(34,211,238,0.4)] hover:scale-105 transition-transform">
+                        <i class="fa-solid fa-cart-shopping"></i> 立即前往專屬連結
+                    </a>
+                </div>
+
+            </div>
+        </div>
+
+        <script src="zcsn_qa.js?v=24.1.0"></script>
+        <script src="zcsn_quiz.js?v=24.1.0"></script>
+        <script src="app.js?v=24.1.0"></script>
 
         <audio id="bgm-audio" loop preload="none">
             <source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3" type="audio/mpeg">
         </audio>
     </div>
 
-    <footer class="w-full mt-20 py-16 px-6 border-t border-white/5 bg-[#050505]/80 backdrop-blur-2xl relative overflow-hidden">
-        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-px bg-gradient-to-r from-transparent via-sky-500/20 to-transparent"></div>
+    <footer class="w-full mt-20 py-16 px-6 border-t border-white/5 bg-[#020617]/95 backdrop-blur-2xl relative overflow-hidden z-20">
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-px bg-gradient-to-r from-transparent via-sky-500/40 to-transparent"></div>
         <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start gap-12 relative z-10">
-            <div class="space-y-6 max-w-md">
+            
+             <div class="space-y-6 max-w-md">
                 <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/30 flex items-center justify-center">
-                        <img src="avatar-main.jpg" class="w-6 h-6 rounded-md object-cover opacity-80" alt="Logo">
+                    <div class="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/30 flex items-center justify-center shadow-[0_0_15px_rgba(56,189,248,0.2)]">
+                        <img src="avatar-main.jpg" class="w-7 h-7 rounded-md object-cover opacity-90" alt="Logo">
                     </div>
-                    <span class="text-white font-black tracking-[0.2em] text-sm">老王專屬秘密基地</span>
+                    <span class="text-white font-black tracking-[0.2em] text-base">老王專屬秘密基地</span>
                 </div>
                 <div class="space-y-2">
-                    <p class="text-xs text-zinc-500 leading-relaxed tracking-wider">
+                    <p class="text-xs text-zinc-400 leading-relaxed tracking-wider font-medium">
                         © 2026 老王粉絲專屬基地 <br>
                         未經授權禁止轉載，請共同維護基地環境。
                     </p>
-                    <p class="text-[10px] text-zinc-600 leading-relaxed italic">
-                        註：AI 助手生成之內容僅供與參考，不代表老王本人立場。
-                    </p>
-                </div>
-                <div class="flex gap-4 text-[11px] font-bold text-zinc-500 tracking-wider">
-                    <span onclick="window.showPrivacyPolicy()" class="hover:text-sky-400 cursor-pointer transition-colors">隱私權政策</span>
-                    <span class="text-zinc-800">|</span>
-                    <span onclick="window.showTermsOfService()" class="hover:text-sky-400 cursor-pointer transition-colors">服務條款</span>
                 </div>
             </div>
-
+            
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-10 w-full md:w-auto">
                 <div class="space-y-4">
-                    <h4 class="text-xs font-black text-sky-400 tracking-widest">系統開發與問題回報</h4>
+                    <h4 class="text-xs font-black text-sky-400 tracking-widest">系統開發與維護</h4>
                     <div class="flex flex-col gap-3">
-                        <div class="flex items-center gap-3 text-zinc-400">
-                            <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center border border-white/5">
-                                <i class="fa-solid fa-code text-xs"></i>
+                        <div class="flex items-center gap-3 text-zinc-300">
+                            <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
+                                <i class="fa-solid fa-code text-xs text-sky-400"></i>
                             </div>
-                            <span class="text-xs font-bold">工程師：王岦恩 (Wangleon)</span>
+                            <span class="text-xs font-bold tracking-widest">工程師：王岦恩 (Wangleon)</span>
                         </div>
                         <a href="mailto:wangleon26@gmail.com" class="group flex items-center gap-3 text-zinc-400 hover:text-white transition-all">
                             <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-sky-500/20 border border-white/5 transition-all">
@@ -701,26 +745,11 @@
                         </a>
                     </div>
                 </div>
-
-                <div class="space-y-4">
-                    <h4 class="text-xs font-black text-sky-400 tracking-widest">工程師社群聯絡</h4>
-                    <div class="flex flex-wrap gap-2">
-                        <a href="https://www.instagram.com/ld_leon0803" target="_blank" title="聯絡工程師 IG" class="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-gradient-to-br hover:from-purple-500/20 hover:to-pink-500/20 hover:border-pink-500/40 transition-all shadow-lg">
-                            <i class="fa-brands fa-instagram text-lg"></i>
-                        </a>
-                        <a href="https://www.tiktok.com/@ld_leon0803" target="_blank" title="聯絡工程師 TikTok" class="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-black hover:border-sky-500/40 transition-all shadow-lg">
-                            <i class="fa-brands fa-tiktok text-lg"></i>
-                        </a>
-                    </div>
-                </div>
             </div>
         </div>
-        
-        <div class="max-w-6xl mx-auto mt-12 pt-8 border-t border-white/5 text-[10px] text-zinc-700 text-center tracking-widest">
-            系統版本 v22.0.0 ｜ 伺服器運作正常
+        <div class="max-w-6xl mx-auto mt-12 pt-8 border-t border-white/5 text-[10px] text-zinc-600 text-center tracking-[0.2em] font-black uppercase">
+            老王專屬粉絲系統 v24.PRO｜伺服器在線
         </div>
     </footer>
-
 </body>
-
 </html>
