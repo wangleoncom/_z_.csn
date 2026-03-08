@@ -155,6 +155,13 @@
                                 }
 
                                 window.appSettings.exp = userData.exp || 0;
+                                // 補上從雲端拉取成就數據，避免重整歸零
+                                window.appSettings.checkInCount = userData.checkInCount || window.appSettings.checkInCount || 0;
+                                window.appSettings.gachaCount = userData.gachaCount || window.appSettings.gachaCount || 0;
+                                window.appSettings.quizPerfect = userData.quizPerfect || window.appSettings.quizPerfect || 0;
+                                window.appSettings.aiVisionCount = userData.aiVisionCount || window.appSettings.aiVisionCount || 0;
+                                window.appSettings.aiUsageCount = userData.aiUsageCount || window.appSettings.aiUsageCount || 0;
+                                
                                 if (typeof window.updateExpUI === 'function') window.updateExpUI();
                                 if (typeof window.saveSettings === 'function') window.saveSettings();
                                 
@@ -699,9 +706,9 @@
             </div>
         </div>
 
-        <script src="zcsn_qa.js?v=24.1.0"></script>
-        <script src="zcsn_quiz.js?v=24.1.0"></script>
-        <script src="app.js?v=24.1.0"></script>
+        <script src="zcsn_qa.js?v=24.1.4"></script>
+        <script src="zcsn_quiz.js?v=24.1.4"></script>
+        <script src="app.js?v=24.1.4"></script>
 
         <audio id="bgm-audio" loop preload="none">
             <source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3" type="audio/mpeg">

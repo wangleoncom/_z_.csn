@@ -6,7 +6,7 @@
  * ==========================================================================
  */
 
-const CACHE_NAME = 'VCORE-BASE-v24.0.0-PRO-CYAN'; // 統一系統版本號，更新此字串即可觸發全站快取刷新
+const CACHE_NAME = 'VCORE-BASE-v24.1.5'; // 強制清除舊後台快取
 const CORE_ASSETS = [
     './',
     './index.html',

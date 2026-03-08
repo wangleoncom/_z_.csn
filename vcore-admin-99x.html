@@ -705,7 +705,24 @@
                 return `<div onclick="window.selTk('${uid}', '${g.name}')" class="p-4 rounded-2xl cursor-pointer border transition-all flex justify-between items-center mb-1 ${act}"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center font-bold text-xs text-white">${g.name.charAt(0)}</div><span class="text-sm font-bold text-white tracking-wide">${g.name}</span></div>${g.hasP?'<div class="w-2.5 h-2.5 bg-rose-500 rounded-full shadow-[0_0_10px_rgba(244,63,94,0.8)] animate-pulse"></div>':''}</div>`;
             }).join('') || '<div class="text-center text-slate-500 text-xs py-10 tracking-widest uppercase">無通訊頻道</div>';
         };
-
+        window.renderTkView = () => {
+            const view = document.getElementById('tk-view');
+            if(!window.vcore.activeTk) { view.innerHTML = ''; return; }
+            const msgs = window.vcore.tickets.filter(m => m.uid === window.vcore.activeTk).sort((a,b)=>a.timestamp-b.timestamp);
+            view.innerHTML = msgs.map(m => {
+                let html = '';
+                if(m.message && m.message !== "*(通訊串接延續)*" && m.message !== "*(工程師主動聯繫)*") {
+                    const mContent = m.message.startsWith('data:image') ? `<img src="${m.message}" class="max-w-[200px] rounded-lg">` : m.message.replace(/\n/g, '<br>');
+                    html += `<div class="flex flex-col items-start mb-4"><span class="text-[10px] text-slate-500 font-mono mb-1 pr-1">${new Date(m.timestamp).toLocaleString()}</span><div class="bg-[#0f172a] text-white px-5 py-3 rounded-2xl rounded-bl-sm text-[14px] max-w-[85%] border border-white/10">${mContent}</div></div>`;
+                }
+                if(m.replyContent) {
+                    const rContent = m.replyContent.startsWith('data:image') ? `<img src="${m.replyContent}" class="max-w-[200px] rounded-lg">` : m.replyContent.replace(/\n/g, '<br>');
+                    html += `<div class="flex flex-col items-end mb-4"><div class="flex items-center gap-2 mb-1 pl-1"><span class="text-[10px] text-cyan-400 font-bold"><i class="fa-solid fa-wrench mr-1"></i>系統回覆</span><span class="text-[10px] text-slate-500 font-mono">${new Date(m.replyTime||m.timestamp).toLocaleString()}</span></div><div class="bg-gradient-to-r from-cyan-500 to-blue-600 text-[#020617] font-medium px-5 py-3 rounded-2xl rounded-br-sm text-[14px] max-w-[85%] shadow-lg">${rContent}</div></div>`;
+                }
+                return html;
+            }).join('') || '<div class="absolute inset-0 flex flex-col items-center justify-center opacity-50 pointer-events-none"><i class="fa-solid fa-comment-slash text-4xl mb-2 text-slate-500"></i><p class="text-sm">尚無通訊內容</p></div>';
+            view.scrollTop = view.scrollHeight;
+        };
         window.selTk = (uid, name) => {
             window.vcore.activeTk = uid; window.renderTicketList();
             document.getElementById('tk-title').innerHTML = `<div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-cyan-500 flex items-center justify-center text-[#020617] font-black text-xs">${name.charAt(0)}</div><div><span class="text-sm font-black text-white tracking-widest block">${name}</span><span class="text-[9px] text-cyan-400 font-mono">UID-${uid.slice(0,8)}</span></div></div>`;

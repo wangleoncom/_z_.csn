@@ -1,5 +1,5 @@
 // --- 更新日誌 ---
-const APP_VERSION = '24.1.3-PRO-FINAL'; 
+const APP_VERSION = '24.1.5';
 let globalSupportUnsubscribe = null;
 
 const customStyle = document.createElement('style');
@@ -41,8 +41,13 @@ const PremiumSwal = Swal.mixin({
 });
 
 const CHANGELOG = [
-    { ver: '24.1.3', date: '2026-03-07', items: [
-        '系統升級：修復 AI 解析引擎斷字問題，完美支援 Markdown 排版。',
+    { ver: '24.1.5', date: '2026-03-08', items: [
+        '系統修復：實裝正式版「鐵粉測驗引擎」，解決無法測驗的問題。',
+        '系統修復：修復 AI 視覺分析成就無法即時解鎖與渲染的 Bug。',
+        '系統優化：升級 Service Worker 快取清除機制，確保全站強制同步最新版。'
+    ]},
+    { ver: '24.1.4', date: '2026-03-08', items: [
+        '系統修復：修復 AI 解析引擎斷字問題，完美支援 Markdown 排版。',
         '新增：開團模組支援 5 秒強制顯示防呆機制。',
         '優化：系統動畫渲染加速，解決畫面卡頓。'
     ]}
@@ -118,6 +123,18 @@ try {
 
 window.saveSettings = window.saveSettings || function() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(window.appSettings)); } catch(e) {}
+    // 同步成就數據到 Firebase，避免換裝置或重整後消失
+    if (window.firebaseApp && window.firebaseApp.auth && window.firebaseApp.auth.currentUser && !window.firebaseApp.auth.currentUser.isAnonymous) {
+        try {
+            window.firebaseApp.updateDoc(window.firebaseApp.doc(window.firebaseApp.db, "users", window.firebaseApp.auth.currentUser.uid), {
+                checkInCount: window.appSettings.checkInCount || 0,
+                gachaCount: window.appSettings.gachaCount || 0,
+                quizPerfect: window.appSettings.quizPerfect || 0,
+                aiVisionCount: window.appSettings.aiVisionCount || 0,
+                aiUsageCount: window.appSettings.aiUsageCount || 0
+            });
+        } catch(e){}
+    }
 };
 
 window.hideSplashScreen = function() {
@@ -891,7 +908,17 @@ window.loadLeaderboard = async function () {
             querySnapshot.forEach((docSnap) => {
                 const data = docSnap.data();
                 const isMe = docSnap.id === currentUser.uid;
-                if (isMe) { foundMe = true; if (myRankPos) myRankPos.innerText = `第 ${rank} 名`; }
+                if (isMe) { 
+                    foundMe = true; 
+                    if (myRankPos) myRankPos.innerText = `第 ${rank} 名`; 
+                }
+                // --- 強制更新上方顯示名稱與EXP ---
+                const myRankName = document.getElementById('my-rank-name');
+                const myRankExp = document.getElementById('my-rank-exp');
+                const myRankAvatar = document.getElementById('my-rank-avatar');
+                if (myRankName) myRankName.innerHTML = window.appSettings.customTitle ? `<span class="text-amber-400 font-black"><i class="fa-solid fa-crown mr-1"></i>${window.appSettings.customTitle}</span>` : (currentUser.displayName || "老王鐵粉");
+                if (myRankExp) myRankExp.innerText = `${currentExp} EXP`;
+                if (myRankAvatar) myRankAvatar.src = currentUser.photoURL || `https://ui-avatars.com/api/?name=${currentUser.displayName || 'Me'}&background=111&color=38bdf8`;
                 
                 let rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : '';
                 let avatarUrl = data.photoURL || `https://ui-avatars.com/api/?name=${data.name}&background=111&color=38bdf8`;
@@ -1360,6 +1387,15 @@ window.sendAIMessage = async function() {
     currentAbortController = new AbortController(); const signal = currentAbortController.signal;
 
     let imgHTML = window.currentAttachedImageBase64 ? `<img src="${window.currentAttachedImageBase64}" class="w-32 h-32 object-cover rounded-xl mb-2 border border-white/20 shadow-lg">` : "";
+    
+    // --- 補上 AI 視覺分析成就解鎖與立即刷新畫面 ---
+    if (window.currentAttachedImageBase64) {
+        window.appSettings.aiVisionCount = (window.appSettings.aiVisionCount || 0) + 1;
+    }
+    window.saveSettings();
+    if(typeof window.renderBadges === 'function') window.renderBadges(); // 強制立刻刷新徽章
+    // ----------------------------------------------
+
     const safeTextForEdit = window.escapeForInlineHandler(text);
     
     chat.innerHTML += `
@@ -1845,4 +1881,91 @@ window.closePromoModal = function() {
 
     modal.classList.add('opacity-0'); content.classList.add('scale-95');
     setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 500);
+};
+
+// ==========================================================================
+// 鐵粉測驗核心引擎 (正式版)
+// ==========================================================================
+let currentQuizQuestions = [];
+let currentQuizIndex = 0;
+let currentQuizScore = 0;
+
+window.startQuiz = function() {
+    const playerName = document.getElementById('quiz-player-name')?.value.trim();
+    if(!playerName) return Swal.fire('請輸入大名', '要挑戰測驗請先輸入名字喔！', 'warning');
+    
+    if (!window.QUIZ_DB || window.QUIZ_DB.length === 0) {
+        return Swal.fire('系統提示', '題庫尚未載入，請確認 zcsn_quiz.js 是否正確掛載！', 'info');
+    }
+
+    // 隨機選出 10 題
+    currentQuizQuestions = [...window.QUIZ_DB].sort(() => 0.5 - Math.random()).slice(0, 10);
+    currentQuizIndex = 0;
+    currentQuizScore = 0;
+
+    document.getElementById('quiz-intro').classList.add('hidden');
+    document.getElementById('quiz-area').classList.remove('hidden');
+    document.getElementById('quiz-area').classList.add('flex');
+    
+    window.renderQuizQuestion();
+};
+
+window.renderQuizQuestion = function() {
+    if (currentQuizIndex >= currentQuizQuestions.length) {
+        window.finishQuiz();
+        return;
+    }
+
+    const qData = currentQuizQuestions[currentQuizIndex];
+    document.getElementById('quiz-progress').innerText = `第 ${currentQuizIndex + 1} / 共 10 題`;
+    document.getElementById('quiz-score').innerText = `目前積分: ${currentQuizScore}`;
+    document.getElementById('quiz-question').innerText = qData.q;
+
+    // 打亂選項並生成按鈕
+    const options = [...qData.options].sort(() => 0.5 - Math.random());
+    const optionsContainer = document.getElementById('quiz-options');
+    
+    optionsContainer.innerHTML = options.map((opt, i) => `
+        <button onclick="window.answerQuiz('${window.escapeForInlineHandler(opt)}', '${window.escapeForInlineHandler(qData.a)}')" class="w-full text-left bg-[#0f172a] border border-sky-500/30 p-5 rounded-2xl hover:bg-sky-900/40 hover:border-sky-400 transition-all font-bold text-sky-100 group">
+            <span class="inline-block w-8 h-8 rounded-full bg-sky-500/10 text-sky-400 text-center leading-8 mr-3 border border-sky-500/30 group-hover:bg-sky-400 group-hover:text-black transition-all">${String.fromCharCode(65 + i)}</span>
+            ${opt}
+        </button>
+    `).join('');
+};
+
+window.answerQuiz = function(selected, correct) {
+    if (selected === correct) {
+        if(typeof window.playSuccessSound === 'function') window.playSuccessSound();
+        currentQuizScore += 10;
+        Swal.fire({ toast: true, position: 'top', icon: 'success', title: '答對了！+10分', showConfirmButton: false, timer: 1000, background: 'rgba(10,20,35,0.95)', color: '#fff' });
+    } else {
+        if(typeof window.playErrorSound === 'function') window.playErrorSound();
+        Swal.fire({ toast: true, position: 'top', icon: 'error', title: '答錯囉！', showConfirmButton: false, timer: 1000, background: 'rgba(10,20,35,0.95)', color: '#fff' });
+    }
+    
+    currentQuizIndex++;
+    setTimeout(window.renderQuizQuestion, 1000);
+};
+
+window.finishQuiz = function() {
+    document.getElementById('quiz-area').classList.add('hidden');
+    document.getElementById('quiz-area').classList.remove('flex');
+    document.getElementById('quiz-intro').classList.remove('hidden');
+    
+    // 檢查滿分成就
+    if (currentQuizScore === 100) {
+        window.appSettings.quizPerfect = (window.appSettings.quizPerfect || 0) + 1;
+        window.saveSettings();
+        if(typeof window.renderBadges === 'function') window.renderBadges(); // 強制刷新成就牆
+    }
+
+    // 依據分數發放 EXP 獎勵 (滿分送50 EXP)
+    const expReward = Math.floor(currentQuizScore / 2); 
+    if(expReward > 0) window.gainExp(expReward, false, "完成鐵粉測驗");
+
+    Swal.fire({
+        title: currentQuizScore === 100 ? '完美通關！學霸鐵粉🎉' : '測驗結束！',
+        html: `<div class="text-4xl font-black text-amber-400 my-5">${currentQuizScore} 分</div><p class="text-sky-200 text-sm font-bold">獲得了 ${expReward} EXP 獎勵！</p>`,
+        confirmButtonText: '領取獎勵返回'
+    });
 };
