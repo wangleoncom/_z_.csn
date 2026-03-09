@@ -1,5 +1,5 @@
 // --- 更新日誌 ---
-const APP_VERSION = '24.1.5';
+const APP_VERSION = '24.1.6';
 let globalSupportUnsubscribe = null;
 
 const customStyle = document.createElement('style');
@@ -41,6 +41,9 @@ const PremiumSwal = Swal.mixin({
 });
 
 const CHANGELOG = [
+    { ver: '24.1.6', date: '2026-03-09', items: [
+        '系統修復：重構排行榜連線引擎，解決無限轉圈與資料卡頓問題。'
+    ]},
     { ver: '24.1.5', date: '2026-03-08', items: [
         '系統修復：實裝正式版「鐵粉測驗引擎」，解決無法測驗的問題。',
         '系統修復：修復 AI 視覺分析成就無法即時解鎖與渲染的 Bug。',
@@ -52,6 +55,7 @@ const CHANGELOG = [
         '優化：系統動畫渲染加速，解決畫面卡頓。'
     ]}
 ];
+
 
 // --- 強制更新與驗證機制 ---
 (function enforceAppVersion(){
@@ -881,23 +885,45 @@ window.playExpGamble = async function() {
     }
 };
 
-// ==========================================================================
-// 🔌 排行榜讀取
-// ==========================================================================
 window.loadLeaderboard = async function () {
     if (!window.firebaseApp || !window.firebaseApp.auth.currentUser) return;
     const currentUser = window.firebaseApp.auth.currentUser;
     let currentExp = window.appSettings ? (window.appSettings.exp || 0) : 0;
+    
     const lockElement = document.getElementById('leaderboard-lock');
     const listElement = document.getElementById('leaderboard-list');
     const myRankPos = document.getElementById('my-rank-position');
+
+    // 🚀 1. 確保個人名牌「絕對」會先渲染出來 (無論資料庫有沒有掛掉)
+    const myRankName = document.getElementById('my-rank-name');
+    const myRankExp = document.getElementById('my-rank-exp');
+    const myRankAvatar = document.getElementById('my-rank-avatar');
+    
+    if (myRankName) {
+        myRankName.innerHTML = window.appSettings.customTitle ? 
+            `<span class="text-amber-400 font-black"><i class="fa-solid fa-crown mr-1"></i>${window.appSettings.customTitle}</span>` : 
+            (currentUser.displayName || "老王鐵粉");
+    }
+    if (myRankExp) myRankExp.innerText = `${currentExp} EXP`;
+    if (myRankAvatar) myRankAvatar.src = currentUser.photoURL || `https://ui-avatars.com/api/?name=${currentUser.displayName || 'Me'}&background=111&color=38bdf8`;
 
     if (currentUser.isAnonymous || currentExp < 300) {
         if (lockElement) lockElement.style.display = 'flex';
         if (listElement) listElement.innerHTML = '';
     } else {
         if (lockElement) lockElement.style.display = 'none';
-        if (listElement) listElement.innerHTML = '<div class="text-center text-sky-500 py-4"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2 block"></i>讀取資料中...</div>';
+        
+        // 🚀 2. 給用戶「超有感」的全新雷達掃描載入動畫
+        if (listElement) {
+            listElement.innerHTML = `
+                <div class="text-center py-8 animate-pulse">
+                    <div class="relative w-16 h-16 mx-auto mb-4">
+                        <div class="absolute inset-0 border-4 border-sky-500/30 border-t-sky-400 rounded-full animate-spin"></div>
+                        <i class="fa-solid fa-satellite-dish text-sky-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xl"></i>
+                    </div>
+                    <span class="text-sky-400 font-bold tracking-widest text-sm">V-CORE 引擎同步中...</span>
+                </div>`;
+        }
 
         try {
             const usersRef = window.firebaseApp.collection(window.firebaseApp.db, "users");
@@ -905,46 +931,58 @@ window.loadLeaderboard = async function () {
             const querySnapshot = await window.firebaseApp.getDocs(q);
 
             let html = ''; let rank = 1; let foundMe = false;
-            querySnapshot.forEach((docSnap) => {
-                const data = docSnap.data();
-                const isMe = docSnap.id === currentUser.uid;
-                if (isMe) { 
-                    foundMe = true; 
-                    if (myRankPos) myRankPos.innerText = `第 ${rank} 名`; 
-                }
-                // --- 強制更新上方顯示名稱與EXP ---
-                const myRankName = document.getElementById('my-rank-name');
-                const myRankExp = document.getElementById('my-rank-exp');
-                const myRankAvatar = document.getElementById('my-rank-avatar');
-                if (myRankName) myRankName.innerHTML = window.appSettings.customTitle ? `<span class="text-amber-400 font-black"><i class="fa-solid fa-crown mr-1"></i>${window.appSettings.customTitle}</span>` : (currentUser.displayName || "老王鐵粉");
-                if (myRankExp) myRankExp.innerText = `${currentExp} EXP`;
-                if (myRankAvatar) myRankAvatar.src = currentUser.photoURL || `https://ui-avatars.com/api/?name=${currentUser.displayName || 'Me'}&background=111&color=38bdf8`;
-                
-                let rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : '';
-                let avatarUrl = data.photoURL || `https://ui-avatars.com/api/?name=${data.name}&background=111&color=38bdf8`;
-                
-                let nameHtml = data.name || "未命名";
-                let cardClass = rankClass;
 
-                if (data.customTitle) {
-                    nameHtml += ` <span class="inline-block text-[9px] bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 px-2 py-0.5 rounded font-black ml-2 border border-amber-500/40 shadow-sm align-middle tracking-widest"><i class="fa-solid fa-crown mr-1"></i>${data.customTitle}</span>`;
-                }
-                if (data.hasAura) cardClass += ` aura-effect`; 
+            if (querySnapshot.empty) {
+                html = '<div class="text-center text-sky-200/50 py-8 bg-black/40 rounded-2xl border border-sky-500/20">目前基地尚無排名資料</div>';
+            } else {
+                querySnapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    const isMe = docSnap.id === currentUser.uid;
+                    if (isMe) { foundMe = true; if (myRankPos) myRankPos.innerText = `第 ${rank} 名`; }
+                    
+                    let rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : '';
+                    let avatarUrl = data.photoURL || `https://ui-avatars.com/api/?name=${data.name || 'User'}&background=111&color=38bdf8`;
+                    
+                    let nameHtml = data.name || "未命名";
+                    let cardClass = rankClass;
 
-                html += `
-                <div class="glass-element rank-card ${cardClass} p-4 rounded-2xl flex items-center justify-between mb-3 ${isMe ? 'border-sky-400 shadow-[0_0_15px_rgba(56,189,248,0.3)]' : ''}">
-                    <div class="flex items-center gap-4">
-                        <div class="w-8 text-center text-xl font-black text-sky-200/50">${rank}</div>
-                        <div class="w-10 h-10 rounded-full border-2 border-sky-500/30 overflow-hidden bg-black flex-shrink-0"><img src="${avatarUrl}" class="w-full h-full object-cover"></div>
-                        <div class="font-bold ${isMe ? 'text-sky-400' : 'text-white'} leading-tight">${nameHtml}</div>
-                    </div>
-                    <div class="text-right flex-shrink-0 ml-2"><div class="text-[12px] font-black text-sky-400">${data.exp || 0} EXP</div></div>
-                </div>`;
-                rank++;
-            });
+                    if (data.customTitle) nameHtml += ` <span class="inline-block text-[9px] bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 px-2 py-0.5 rounded font-black ml-2 border border-amber-500/40 shadow-sm align-middle tracking-widest"><i class="fa-solid fa-crown mr-1"></i>${data.customTitle}</span>`;
+                    if (data.hasAura) cardClass += ` aura-effect`; 
+
+                    html += `
+                    <div class="glass-element rank-card ${cardClass} p-4 rounded-2xl flex items-center justify-between mb-3 ${isMe ? 'border-sky-400 shadow-[0_0_15px_rgba(56,189,248,0.5)] scale-105' : ''} animate-[smoothReveal_0.5s_ease_backwards]" style="animation-delay: ${rank * 0.05}s;">
+                        <div class="flex items-center gap-4">
+                            <div class="w-8 text-center text-xl font-black ${rank <= 3 ? 'text-white drop-shadow-md' : 'text-sky-200/50'}">${rank}</div>
+                            <div class="w-10 h-10 rounded-full border-2 border-sky-500/30 overflow-hidden bg-black flex-shrink-0"><img src="${avatarUrl}" class="w-full h-full object-cover"></div>
+                            <div class="font-bold ${isMe ? 'text-sky-400' : 'text-white'} leading-tight">${nameHtml}</div>
+                        </div>
+                        <div class="text-right flex-shrink-0 ml-2"><div class="text-[12px] font-black ${rank <= 3 ? 'text-white' : 'text-sky-400'}">${data.exp || 0} EXP</div></div>
+                    </div>`;
+                    rank++;
+                });
+            }
+            
             if (!foundMe && myRankPos) myRankPos.innerText = "10名外";
             if (listElement) listElement.innerHTML = html;
-        } catch (error) {}
+
+            // 🚀 3. 給用戶「修好了」的強烈暗示 (每次登入或重整看排行榜時彈出一次)
+            if (!window.hasShownRankFixToast) {
+                Swal.fire({ toast: true, position: 'top', icon: 'success', title: '排行榜訊號已重新連線', showConfirmButton: false, timer: 2000, background: 'rgba(10,20,35,0.95)', color: '#fff' });
+                window.hasShownRankFixToast = true;
+            }
+
+        } catch (error) {
+            // 🚀 4. 終極防呆：如果 Firebase 還是報錯，顯示精美錯誤卡片，不再無限轉圈
+            console.error("排行榜讀取失敗:", error);
+            if (listElement) {
+                listElement.innerHTML = `
+                    <div class="text-center text-amber-400 py-8 bg-amber-500/10 rounded-2xl border border-amber-500/30 shadow-[0_0_15px_rgba(251,191,36,0.2)]">
+                        <i class="fa-solid fa-triangle-exclamation text-3xl mb-3 block animate-pulse"></i>
+                        <span class="font-black tracking-widest block mb-1">訊號干擾，無法載入名次</span>
+                        <span class="text-xs text-amber-400/70">請聯絡管理員確認資料庫狀態。<br><span class="opacity-50">${error.message.substring(0, 20)}...</span></span>
+                    </div>`;
+            }
+        }
     }
 }
 
