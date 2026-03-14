@@ -545,13 +545,11 @@
             if(tkUnsub) tkUnsub();
             tkUnsub = onSnapshot(query(collection(db, "support_tickets"), where("uid", "==", uid), orderBy("timestamp", "asc")), (snap) => {
                 let html = ''; window.currentTicketHistory = [];
-                let isAlreadyClosed = false;
                 let currentStatus = 'pending';
 
                 snap.forEach(d => {
                     const data = d.data();
-                    currentStatus = data.status;
-                    if(data.status === 'closed') isAlreadyClosed = true;
+                    currentStatus = data.status; // 只需要追蹤最後一筆(最新)的狀態即可
 
                     if(data.message && !data.message.includes('*(工程師主動聯繫)*')) {
                         html += `<div class="flex flex-col items-start mb-5 animate-fade-in"><div class="bg-slate-800 border border-slate-700 text-slate-200 px-5 py-3.5 rounded-2xl rounded-tl-sm text-sm max-w-[85%] shadow-md leading-relaxed">${data.message}</div></div>`;
@@ -563,19 +561,20 @@
                     }
                 });
 
-                // 🌟 同步下拉選單狀態 (相容舊資料庫的 replied 狀態)
+
                 const selectEl = document.getElementById('tk-status-select');
                 if(currentStatus === 'replied') currentStatus = 'in_progress';
                 selectEl.value = currentStatus;
 
-                if(isAlreadyClosed) {
-                    html += `<div class='w-full text-center py-6'><span class='bg-rose-500/10 text-rose-400 border border-rose-500/30 px-6 py-2.5 rounded-full text-xs font-black tracking-widest'><i class='fa-solid fa-lock mr-2'></i>此工單已結案歸檔</span></div>`;
-                    document.getElementById('tk-input-area').classList.add('opacity-50', 'pointer-events-none');
-                } else {
-                    document.getElementById('tk-input-area').classList.remove('opacity-50', 'pointer-events-none');
+                if(currentStatus === 'closed') {
+                    html += `<div class='w-full text-center py-6'><span class='bg-rose-500/10 text-rose-400 border border-rose-500/30 px-6 py-2.5 rounded-full text-xs font-black tracking-widest'><i class='fa-solid fa-lock mr-2'></i>最新工單已結案，發送訊息將重啟對話</span></div>`;
                 }
+                
+                // 🌟 致命修正：身為工程師，無條件解鎖輸入框，讓你隨時可以主動回覆！
+                document.getElementById('tk-input-area').classList.remove('opacity-50', 'pointer-events-none');
 
                 const box = document.getElementById('tk-chat-box');
+
                 box.innerHTML = html; box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' });
             }, (err) => handleFirebaseError(err, "讀取對話紀錄失敗"));
         };

@@ -50,6 +50,11 @@
                     console.warn('[系統核心] Service Worker 註冊失敗', err);
                 });
             });
+            
+            // 🌟 核心防呆：當發現新版 Service Worker 準備接管時，強制網頁重新整理
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                window.location.reload();
+            });
         }
     </script>
 
