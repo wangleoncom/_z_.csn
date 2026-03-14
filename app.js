@@ -1410,8 +1410,20 @@ try {
 
 async function summarizeMemory() {
     if (aiMemory.length > 10) {
-        const archive = aiMemory.slice(0, -4);
-        localStorage.setItem('ai_memory_archive', JSON.stringify(archive));
+        // 🌟 修正：存入硬碟前，將肥大的 Base64 圖片資料過濾掉，只保留文字對話紀錄
+        const cleanArchive = aiMemory.slice(0, -4).map(msg => ({
+            role: msg.role, 
+            content: msg.content, 
+            image: null // 強制清空圖片資料
+        }));
+        
+        try {
+            localStorage.setItem('ai_memory_archive', JSON.stringify(cleanArchive));
+        } catch (e) {
+            console.warn("本機儲存空間已滿，清除舊有 AI 記憶");
+            localStorage.removeItem('ai_memory_archive');
+        }
+        
         aiMemory = aiMemory.slice(-4);
     }
 }
@@ -2240,6 +2252,7 @@ window.verifyTwitchSubStatus = async function(uid, accessToken) {
         });
 
         window.appSettings.isTwitchSub = isSub;
+        window.appSettings.twitchName = twitchUserName; // 🌟 補上：同步更新暫存的 Twitch 名稱
         window.saveSettings();
         
         if (isSub) {
@@ -2261,14 +2274,23 @@ window.toggleUserMenu = function () {
     const isGuest = user.isAnonymous;
     const email = isGuest ? "未綁定 (訪客模式)" : (user.email || "使用 Google 授權登入");
     const uid = user.uid;
-    
-    // 如果是乾爹顯示徽章，否則顯示綁定按鈕
-    let twitchAreaHtml = "";
-    if (window.appSettings.isTwitchSub) {
-        twitchAreaHtml = `<span class="text-purple-400 text-[10px] font-black border border-purple-500/30 bg-purple-500/10 px-2 py-0.5 rounded tracking-widest"><i class="fa-brands fa-twitch mr-1"></i>乾爹認證</span>`;
-    } else {
-        twitchAreaHtml = `<button onclick="window.bindTwitchAccount()" class="bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-bold px-3 py-1 rounded-lg transition-colors shadow-[0_0_10px_rgba(168,85,247,0.4)]"><i class="fa-brands fa-twitch mr-1"></i>前往綁定驗證</button>`;
-    }
+
+            let twitchAreaHtml = "";
+            if (window.appSettings.isTwitchSub) {
+                twitchAreaHtml = `
+                    <div class="flex items-center gap-2">
+                        <span class="text-zinc-300 text-xs font-medium">${window.appSettings.twitchName}</span>
+                        <span class="text-purple-400 text-[10px] font-black border border-purple-500/30 bg-purple-500/10 px-2 py-0.5 rounded tracking-widest"><i class="fa-brands fa-twitch mr-1"></i>乾爹認證</span>
+                    </div>`;
+            } else if (window.appSettings.twitchName) {
+                twitchAreaHtml = `
+                    <div class="flex items-center gap-2">
+                        <span class="text-zinc-300 text-xs font-medium">${window.appSettings.twitchName}</span>
+                        <button onclick="window.bindTwitchAccount()" class="bg-zinc-700 hover:bg-zinc-600 text-zinc-300 text-[10px] font-bold px-2 py-0.5 rounded transition-colors" title="重新檢查訂閱狀態"><i class="fa-solid fa-rotate mr-1"></i>重整狀態</button>
+                    </div>`;
+            } else {
+                twitchAreaHtml = `<button onclick="window.bindTwitchAccount()" class="bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-bold px-3 py-1 rounded-lg transition-colors shadow-[0_0_10px_rgba(168,85,247,0.4)]"><i class="fa-brands fa-twitch mr-1"></i>前往綁定驗證</button>`;
+            }
 
     PremiumSwal.fire({
         title: '<i class="fa-solid fa-crown text-sky-400 mr-2"></i> 個人帳號中心',

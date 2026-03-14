@@ -122,27 +122,29 @@
                         if (typeof window.updateHeaderToLoggedIn === 'function') window.updateHeaderToLoggedIn("訪客");
                     } else {
                         const userRef = doc(db, "users", user.uid);
+                        
+                        // 🌟 修正：小紅點監聽器獨立拉出來，避免重複註冊造成的記憶體洩漏
+                        const historyRef = collection(userRef, "exp_history");
+                        const qUnread = query(historyRef, where("read", "==", false));
+                        onSnapshot(qUnread, (unReadSnap) => {
+                            const badge = document.getElementById('inbox-badge');
+                            const inboxBtn = document.getElementById('btn-inbox');
+                            if (inboxBtn) inboxBtn.classList.remove('hidden'); 
+                            if (badge) {
+                                if (!unReadSnap.empty) badge.classList.remove('hidden');
+                                else badge.classList.add('hidden');
+                            }
+                        });
+
                         onSnapshot(userRef, (docSnap) => {
                             if (docSnap.exists()) {
-                                const historyRef = collection(userRef, "exp_history");
-                                const qUnread = query(historyRef, where("read", "==", false));
-                                onSnapshot(qUnread, (unReadSnap) => {
-                                    const badge = document.getElementById('inbox-badge');
-                                    const inboxBtn = document.getElementById('btn-inbox');
-                                    if (inboxBtn) inboxBtn.classList.remove('hidden'); 
-                                    if (badge) {
-                                        if (!unReadSnap.empty) badge.classList.remove('hidden');
-                                        else badge.classList.add('hidden');
-                                    }
-                                });
-
                                 const userData = docSnap.data();
                                 window.userRole = userData.role || 'user'; 
                                 window.appSettings.customTitle = userData.customTitle || "";
                                 window.appSettings.hasAura = userData.hasAura || false;
-                                window.appSettings.isTwitchSub = userData.isTwitchSub || false; // 🌟 抓取乾爹狀態
+                                window.appSettings.isTwitchSub = userData.isTwitchSub || false;
+                                window.appSettings.twitchName = userData.twitchName || "";
 
-                                // 🌟 修正：在此正確的作用域執行 Twitch Token 自動綁定
                                 const pendingToken = sessionStorage.getItem('twitch_pending_token');
                                 if (pendingToken && typeof window.verifyTwitchSubStatus === 'function') {
                                     sessionStorage.removeItem('twitch_pending_token');
@@ -160,16 +162,8 @@
                                     if(typeof window.playSuccessSound === 'function') window.playSuccessSound();
                                     Swal.fire({
                                         title: '🎁 接收到系統空投！',
-                                        html: `
-                                            <div class="bg-gradient-to-r from-sky-500/10 to-blue-500/10 border border-sky-400/30 p-5 rounded-2xl mb-5 mt-3 shadow-[inset_0_0_20px_rgba(56,189,248,0.15)] relative overflow-hidden">
-                                                <div class="absolute -top-10 -right-10 w-20 h-20 bg-sky-400/20 blur-2xl rounded-full"></div>
-                                                <p class="text-sm text-sky-100 leading-relaxed font-bold tracking-widest relative z-10">「${msg}」</p>
-                                            </div>
-                                            <div class="text-base text-zinc-300 tracking-wider">數據庫已同步增加 <b class="text-amber-400 text-4xl drop-shadow-[0_0_15px_rgba(251,191,36,0.6)] mx-2 font-black">+${diff}</b> EXP</div>
-                                        `,
-                                        background: 'rgba(6, 14, 26, 0.98)',
-                                        color: '#fff',
-                                        confirmButtonText: '接收積分',
+                                        html: `<div class="bg-gradient-to-r from-sky-500/10 to-blue-500/10 border border-sky-400/30 p-5 rounded-2xl mb-5 mt-3 shadow-[inset_0_0_20px_rgba(56,189,248,0.15)] relative overflow-hidden"><p class="text-sm text-sky-100 leading-relaxed font-bold tracking-widest relative z-10">「${msg}」</p></div><div class="text-base text-zinc-300 tracking-wider">數據庫已同步增加 <b class="text-amber-400 text-4xl mx-2 font-black">+${diff}</b> EXP</div>`,
+                                        background: 'rgba(6, 14, 26, 0.98)', color: '#fff', confirmButtonText: '接收積分',
                                         customClass: { confirmButton: 'bg-gradient-to-r from-amber-400 to-orange-500 text-black font-black tracking-widest rounded-xl px-10 py-3 shadow-[0_0_20px_rgba(251,191,36,0.4)] hover:scale-105 transition-transform' },
                                     });
                                 }
@@ -182,11 +176,9 @@
                                 window.appSettings.aiUsageCount = userData.aiUsageCount || window.appSettings.aiUsageCount || 0;
                                 
                                 if (typeof window.updateExpUI === 'function') window.updateExpUI();
-                                if (typeof window.saveSettings === 'function') window.saveSettings();
+                                // 🌟 致命修正：移除 window.saveSettings(); 徹底阻斷無限迴圈！
                                 
-                                // 🌟 確保資料載入後才重繪排行榜
                                 if (typeof window.loadLeaderboard === 'function') window.loadLeaderboard();
-                                
                             } else {
                                 const fallbackName = user.displayName || "老王鐵粉";
                                 setDoc(userRef, {
