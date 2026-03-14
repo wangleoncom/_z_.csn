@@ -6,7 +6,7 @@
  * ==========================================================================
  */
 
-const CACHE_NAME = 'VCORE-BASE-v24.1.5'; // 強制清除舊後台快取
+const CACHE_NAME = 'VCORE-BASE-v24.1.7'; // 升級為 v24.1.7
 const CORE_ASSETS = [
     './',
     './index.html',

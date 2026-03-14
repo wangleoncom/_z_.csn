@@ -45,7 +45,7 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js').then(reg => {
-                    console.log('[系統核心] Service Worker 註冊成功，網路層已由 V-CORE 接管');
+                    console.log('[系統核心] Service Worker 註冊成功');
                 }).catch(err => {
                     console.warn('[系統核心] Service Worker 註冊失敗', err);
                 });
@@ -110,8 +110,8 @@
                 } catch (e) { console.warn("雲端同步失敗", e); }
             }
             if (typeof window.saveSettings === 'function') window.saveSettings();
-        };
-
+        }
+        
         onAuthStateChanged(auth, async (user) => {
             try {
                 if (user) {
@@ -124,10 +124,30 @@
                         const userRef = doc(db, "users", user.uid);
                         onSnapshot(userRef, (docSnap) => {
                             if (docSnap.exists()) {
+                                const historyRef = collection(userRef, "exp_history");
+                                const qUnread = query(historyRef, where("read", "==", false));
+                                onSnapshot(qUnread, (unReadSnap) => {
+                                    const badge = document.getElementById('inbox-badge');
+                                    const inboxBtn = document.getElementById('btn-inbox');
+                                    if (inboxBtn) inboxBtn.classList.remove('hidden'); 
+                                    if (badge) {
+                                        if (!unReadSnap.empty) badge.classList.remove('hidden');
+                                        else badge.classList.add('hidden');
+                                    }
+                                });
+
                                 const userData = docSnap.data();
                                 window.userRole = userData.role || 'user'; 
                                 window.appSettings.customTitle = userData.customTitle || "";
                                 window.appSettings.hasAura = userData.hasAura || false;
+                                window.appSettings.isTwitchSub = userData.isTwitchSub || false; // 🌟 抓取乾爹狀態
+
+                                // 🌟 修正：在此正確的作用域執行 Twitch Token 自動綁定
+                                const pendingToken = sessionStorage.getItem('twitch_pending_token');
+                                if (pendingToken && typeof window.verifyTwitchSubStatus === 'function') {
+                                    sessionStorage.removeItem('twitch_pending_token');
+                                    window.verifyTwitchSubStatus(user.uid, pendingToken);
+                                }
 
                                 if (typeof window.updateHeaderToLoggedIn === 'function') {
                                     window.updateHeaderToLoggedIn(userData.name || user.displayName || "老王鐵粉");
@@ -155,7 +175,6 @@
                                 }
 
                                 window.appSettings.exp = userData.exp || 0;
-                                // 補上從雲端拉取成就數據，避免重整歸零
                                 window.appSettings.checkInCount = userData.checkInCount || window.appSettings.checkInCount || 0;
                                 window.appSettings.gachaCount = userData.gachaCount || window.appSettings.gachaCount || 0;
                                 window.appSettings.quizPerfect = userData.quizPerfect || window.appSettings.quizPerfect || 0;
@@ -164,6 +183,9 @@
                                 
                                 if (typeof window.updateExpUI === 'function') window.updateExpUI();
                                 if (typeof window.saveSettings === 'function') window.saveSettings();
+                                
+                                // 🌟 確保資料載入後才重繪排行榜
+                                if (typeof window.loadLeaderboard === 'function') window.loadLeaderboard();
                                 
                             } else {
                                 const fallbackName = user.displayName || "老王鐵粉";
@@ -188,7 +210,10 @@
         });
     </script>
 
-    <link rel="stylesheet" href="styles.css?v=24.1.0">
+    <link rel="stylesheet" href="styles.css?v=24.1.7">
+    <script src="zcsn_qa.js?v=24.1.7"></script>
+    <script src="zcsn_quiz.js?v=24.1.7"></script>
+    <script src="app.js?v=24.1.7"></script>
 </head>
 
 <body class="pb-[100px] pt-6 flex flex-col justify-start min-h-screen relative font-sans">
@@ -252,9 +277,55 @@
         </header>
 
         <main class="w-full max-w-3xl mx-auto px-5 relative z-10 flex flex-col justify-start mb-auto" id="main-container">
-            
+            <div id="twitch-live-banner" class="mb-8 relative group animate-[smoothReveal_0.5s_ease]">
+                <div id="tw-glow" class="absolute inset-0 bg-gradient-to-r from-purple-600/30 to-blue-600/30 rounded-[36px] blur-xl opacity-0 transition-opacity duration-1000"></div>
+                
+                <div id="tw-card-container" class="premium-card p-1.5 rounded-[36px] border-white/10 bg-[#020617]/60 relative z-10 flex flex-col md:flex-row overflow-hidden h-auto md:h-[380px] transition-all duration-500">
+                    
+                    <div class="flex-1 flex flex-col relative cursor-pointer" onclick="window.open('https://twitch.tv/z_knc', '_blank')">
+                        <div class="relative w-full h-48 md:h-full rounded-[30px] overflow-hidden bg-black">
+                            <img id="tw-thumbnail" src="" class="w-full h-full object-cover opacity-0 transition-all duration-1000">
+                            
+                            <div id="tw-offline-ui" class="absolute inset-0 flex flex-col items-center justify-center bg-[#0a0a0c]">
+                                <div class="relative mb-4 opacity-50">
+                                    <i class="fa-brands fa-twitch text-5xl text-zinc-600"></i>
+                                </div>
+                                <div class="text-[10px] text-zinc-500 font-mono tracking-[0.2em] uppercase">Offline</div>
+                            </div>
+
+                            <div class="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent"></div>
+                            
+                            <div class="absolute top-4 left-4 flex items-center gap-2">
+                                <div id="tw-status-tag" class="bg-zinc-800 text-zinc-400 text-[9px] font-black tracking-widest px-3 py-1.5 rounded-xl border border-white/5 transition-all">
+                                    <i class="fa-solid fa-moon mr-1"></i>STANDBY
+                                </div>
+                                <span id="tw-viewers-box" class="hidden bg-black/60 backdrop-blur-md border border-white/10 text-white text-[10px] font-bold tracking-wider px-3 py-1.5 rounded-xl">
+                                    <i class="fa-solid fa-eye text-red-400 mr-1.5"></i><span id="tw-viewers">0</span>
+                                </span>
+                            </div>
+                            
+                            <div class="absolute bottom-0 left-0 w-full p-5 flex items-end gap-4">
+                                <div id="tw-avatar-box" class="w-12 h-12 rounded-full border border-white/10 p-0.5 shrink-0 bg-[#020617] grayscale transition-all">
+                                    <img id="tw-avatar" src="avatar-main.jpg" class="w-full h-full rounded-full object-cover">
+                                </div>
+                                <div class="flex-1 min-w-0 pb-1">
+                                    <h3 id="tw-title" class="text-base font-bold text-zinc-500 leading-snug mb-1 truncate transition-colors">老王目前不在線上</h3>
+                                    <p id="tw-desc" class="text-[10px] text-zinc-600 font-mono tracking-widest uppercase">監測頻道: Z_KNC</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="tw-chat-panel" class="hidden w-full md:w-[300px] h-64 md:h-full shrink-0 border-l border-white/10 bg-[#0e0e10] overflow-hidden">
+                        <div id="tw-chat-container" class="w-full h-full"></div>
+                    </div>
+                </div>
+            </div>
+
             <section id="page-home" class="page active">
-                <article class="premium-card p-8 flex flex-col md:flex-row items-center gap-8 mb-8">
+                <div id="tw-anchor-top" class="w-full"></div>
+
+                <article class="premium-card p-8 flex flex-col md:flex-row items-center gap-8 mb-8 mt-2">
                     <div class="relative group">
                         <div class="w-40 h-40 rounded-full p-1.5 bg-gradient-to-br from-sky-300 to-sky-600 relative z-10 shadow-[0_15px_30px_rgba(56,189,248,0.4)] animate-[pulse_3s_infinite]">
                             <img src="avatar-main.jpg" onerror="this.src='https://ui-avatars.com/api/?name=王&background=111&color=38bdf8'" alt="老王頭像" class="w-full h-full rounded-full object-cover border-4 border-[#020617]">
@@ -331,6 +402,8 @@
                     <div id="qa-list" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
                     <nav id="pagination-controls" class="flex justify-center items-center gap-4 mt-12 mb-10" aria-label="分頁導航"></nav>
                 </section>
+
+                <div id="tw-anchor-bottom" class="w-full mt-4 mb-10"></div>
             </section>
 
             <section id="page-announcements" class="page">
@@ -539,7 +612,11 @@
                             <i class="fa-solid fa-plus text-xl"></i>
                         </button>
 
-                        <textarea id="support-input" rows="1" oninput="this.style.height = '';this.style.height = Math.min(this.scrollHeight, 120) + 'px'" class="w-full bg-transparent text-[15px] text-white px-4 py-2 resize-none outline-none placeholder-sky-200/40 leading-relaxed font-medium no-scrollbar max-h-[120px]" placeholder="輸入訊息或附上截圖問題..."></textarea>
+                        <textarea id="support-input" rows="1" 
+                            onkeypress="if(typeof window.handleSupportKeyPress === 'function') window.handleSupportKeyPress(event);" 
+                            oninput="this.style.height = '';this.style.height = Math.min(this.scrollHeight, 120) + 'px'" 
+                            class="w-full bg-transparent text-[15px] text-white px-4 py-2 resize-none outline-none placeholder-sky-200/40 leading-relaxed font-medium no-scrollbar max-h-[120px]" 
+                            placeholder="輸入訊息或附上截圖 (按 Enter 發送)..."></textarea>
                         
                         <button onclick="if(typeof window.sendSupportTicket === 'function') window.sendSupportTicket();" class="w-10 h-10 flex-shrink-0 rounded-full bg-gradient-to-br from-sky-400 to-blue-500 text-white flex items-center justify-center hover:scale-105 transition-transform mb-1 mr-1 shadow-md">
                             <i class="fa-solid fa-arrow-up text-lg"></i>
@@ -705,10 +782,6 @@
 
             </div>
         </div>
-
-        <script src="zcsn_qa.js?v=24.1.4"></script>
-        <script src="zcsn_quiz.js?v=24.1.4"></script>
-        <script src="app.js?v=24.1.4"></script>
 
         <audio id="bgm-audio" loop preload="none">
             <source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3" type="audio/mpeg">

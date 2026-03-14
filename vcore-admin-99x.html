@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>老王專屬秘密基地 - 專業管理系統</title>
+    <title>老王秘密基地 | 基地管理核心 v25.ULTRA</title>
     
-    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
-    
+    <link rel="icon" href="avatar-main.jpg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -20,12 +19,12 @@
                     },
                     animation: { 
                         'fade-in': 'fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards',
-                        'float-slow': 'float 8s ease-in-out infinite',
+                        'slide-up': 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                         'pulse-glow': 'pulseGlow 2s infinite'
                     },
                     keyframes: {
-                        fadeIn: { '0%': { opacity: '0', transform: 'translateY(20px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
-                        float: { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-15px)' } },
+                        fadeIn: { '0%': { opacity: '0', transform: 'translateY(10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+                        slideUp: { '0%': { opacity: '0', transform: 'translateY(30px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
                         pulseGlow: { '0%, 100%': { opacity: 1, filter: 'drop-shadow(0 0 15px rgba(34,211,238,0.8))' }, '50%': { opacity: 0.6, filter: 'drop-shadow(0 0 5px rgba(34,211,238,0.3))' } }
                     }
                 } 
@@ -37,48 +36,18 @@
     
     <style>
         body { background-color: #020617; color: #f8fafc; font-family: 'Inter', system-ui, sans-serif; overflow: hidden; margin: 0; }
-        
-        .cyber-bg {
-            position: fixed; inset: 0; z-index: -10;
-            background: 
-                radial-gradient(circle at 10% 20%, rgba(14, 165, 233, 0.1) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 40%);
-            animation: float-slow 10s alternate infinite;
-        }
-
-        .glass-panel {
-            background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-top: 1px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), inset 0 1px 10px rgba(255,255,255,0.02);
-            transition: all 0.3s ease;
-        }
-        .glass-panel:hover { border-color: rgba(34, 211, 238, 0.3); box-shadow: 0 15px 50px rgba(14, 165, 233, 0.15); }
-
-        .v-input {
-            background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); color: #fff;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: inset 0 2px 10px rgba(0,0,0,0.3);
-        }
-        .v-input:focus {
-            border-color: #22d3ee; background: rgba(14, 165, 233, 0.05); outline: none;
-            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.2), inset 0 2px 10px rgba(0,0,0,0.5);
-        }
-
-        .nav-btn { border-left: 3px solid transparent; transition: all 0.3s; position: relative; overflow: hidden; }
-        .nav-btn:hover { background: rgba(255, 255, 255, 0.03); }
-        .nav-btn.active { 
-            background: linear-gradient(90deg, rgba(34, 211, 238, 0.15) 0%, transparent 100%);
-            border-left-color: #22d3ee; color: #22d3ee; text-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
-        }
-
+        .cyber-bg { position: fixed; inset: 0; z-index: -10; background: radial-gradient(circle at 20% 30%, rgba(14, 165, 233, 0.12) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(168, 85, 247, 0.12) 0%, transparent 50%); animation: float-slow 15s alternate infinite ease-in-out; }
+        .glass-panel { background: rgba(8, 12, 23, 0.75); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255, 255, 255, 0.08); border-top: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5); transition: all 0.3s ease; }
+        .v-input { background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); color: #fff; transition: all 0.3s ease; }
+        .v-input:focus { border-color: #22d3ee; outline: none; box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15); }
+        .nav-btn { border-left: 3px solid transparent; transition: all 0.3s; position: relative; }
+        .nav-btn:hover { background: rgba(255,255,255,0.05); }
+        .nav-btn.active { background: linear-gradient(90deg, rgba(34, 211, 238, 0.15) 0%, transparent 100%); border-left-color: #22d3ee; color: #22d3ee; text-shadow: 0 0 10px rgba(34, 211, 238, 0.5); }
+        .status-pill { padding: 4px 10px; border-radius: 8px; font-size: 10px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; border: 1px solid currentColor; display: inline-flex; align-items: center; gap: 4px; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb { background: rgba(34, 211, 238, 0.4); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(34, 211, 238, 0.8); }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-
-        .swal2-popup { background: rgba(15, 23, 42, 0.95) !important; backdrop-filter: blur(30px) !important; border: 1px solid rgba(34,211,238,0.3) !important; color: #fff !important; border-radius: 24px !important; box-shadow: 0 30px 60px rgba(0,0,0,0.9) !important; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: rgba(34, 211, 238, 0.3); border-radius: 10px; }
+        .swal2-popup { background: rgba(10, 15, 30, 0.95) !important; border-radius: 24px !important; border: 1px solid rgba(34,211,238,0.3) !important; color: #fff !important; }
     </style>
 </head>
 <body class="h-screen flex flex-col selection:bg-cyan-500/30">
@@ -86,149 +55,144 @@
     <div class="cyber-bg"></div>
 
     <div id="login-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-[#020617]/95 backdrop-blur-3xl transition-opacity duration-700">
-        <div class="glass-panel p-12 rounded-[40px] w-full max-w-md text-center animate-fade-in relative overflow-hidden">
-            <div class="absolute -top-20 -right-20 w-60 h-60 bg-cyan-500/20 rounded-full blur-[80px]"></div>
-            <div class="absolute -bottom-20 -left-20 w-60 h-60 bg-purple-500/20 rounded-full blur-[80px]"></div>
+        <div class="glass-panel p-12 rounded-[40px] w-full max-w-md text-center animate-fade-in border-cyan-500/30 relative overflow-hidden">
+            <div class="absolute -top-20 -right-20 w-64 h-64 bg-cyan-500/10 rounded-full blur-[80px]"></div>
             
-            <div class="w-20 h-20 mx-auto bg-gradient-to-br from-cyan-400 to-blue-600 rounded-2xl flex items-center justify-center shadow-[0_0_40px_rgba(34,211,238,0.6)] mb-8 relative z-10">
-                <i class="fa-solid fa-microchip text-4xl text-white"></i>
+            <div class="w-24 h-24 mx-auto mb-8 relative z-10">
+                <img src="avatar-main.jpg" alt="基地管理核心" class="w-full h-full rounded-full object-cover border-4 border-cyan-500/50 shadow-[0_0_25px_rgba(34,211,238,0.5)]">
             </div>
-            <h1 class="text-3xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-white relative z-10 tracking-widest">老王網站後台管理系統</h1>
-            <p class="text-slate-400 text-xs mb-10 tracking-[0.4em] font-mono relative z-10">專業管理系統</p>
             
+            <h1 class="text-2xl font-black mb-10 text-white tracking-widest uppercase relative z-10">營運級管理核心</h1>
             <form onsubmit="event.preventDefault(); window.systemLogin();" class="space-y-5 relative z-10">
                 <div class="relative">
-                    <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
-                    <input type="email" id="auth-email" required class="v-input w-full pl-12 pr-4 py-4 rounded-2xl text-sm font-medium" placeholder="授權信箱 (Email)">
+                    <i class="fa-solid fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                    <input type="email" id="auth-email" required class="v-input w-full pl-12 pr-4 py-4 rounded-2xl text-sm" placeholder="管理者信箱">
                 </div>
                 <div class="relative">
-                    <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
-                    <input type="password" id="auth-pass" required class="v-input w-full pl-12 pr-4 py-4 rounded-2xl text-sm font-medium" placeholder="安全密鑰 (Password)">
+                    <i class="fa-solid fa-key absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                    <input type="password" id="auth-pass" required class="v-input w-full pl-12 pr-4 py-4 rounded-2xl text-sm" placeholder="神經網路密鑰">
                 </div>
-                <button type="submit" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-black py-4 rounded-2xl shadow-[0_0_20px_rgba(34,211,238,0.4)] hover:scale-[1.02] transition-transform tracking-widest mt-4">啟動神經網路</button>
+                <button type="submit" class="w-full bg-gradient-to-r from-cyan-400 to-blue-600 text-white font-black py-4 rounded-2xl shadow-lg hover:scale-[1.02] transition-transform tracking-widest mt-4">啟動系統</button>
             </form>
         </div>
     </div>
 
     <div id="main-ui" class="hidden flex-1 flex flex-col overflow-hidden relative z-10">
-        
-        <header class="h-[76px] glass-panel border-x-0 border-t-0 flex items-center justify-between px-8 z-50 shrink-0 rounded-none">
-            <div class="flex items-center gap-5">
+        <header class="h-[76px] glass-panel border-x-0 border-t-0 flex items-center justify-between px-8 shrink-0 rounded-none z-50">
+            <div class="flex items-center gap-4">
                 <div class="w-10 h-10 bg-gradient-to-br from-cyan-400 to-purple-600 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(34,211,238,0.4)]">
-                    <i class="fa-solid fa-bolt text-white text-lg"></i>
+                    <i class="fa-solid fa-terminal text-white"></i>
                 </div>
-                <div class="flex flex-col">
-                    <h2 class="font-black tracking-[0.2em] text-white text-base">老王專屬秘密基地 <span class="text-slate-500 font-mono text-[10px] ml-1">v5.4 PRO</span></h2>
-                    <span id="role-display" class="text-[10px] text-cyan-400 font-black tracking-widest uppercase">載入中...</span>
+                <div>
+                    <h2 class="font-black text-white text-sm tracking-widest uppercase">基地管理中心 <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-orange-400">v25.ULTRA</span></h2>
+                    <div class="flex items-center gap-2 mt-0.5">
+                        <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse-glow"></span>
+                        <p id="role-display" class="text-[9px] text-emerald-400 font-mono tracking-widest uppercase">已連線</p>
+                    </div>
                 </div>
             </div>
-            <div class="flex items-center gap-6">
-                <div class="hidden md:flex items-center gap-2 text-[11px] font-mono text-emerald-400 bg-emerald-900/20 px-4 py-2 rounded-full border border-emerald-500/30">
-                    <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse-glow"></div> 資料庫已連線
-                </div>
-                <button onclick="window.systemLogout()" class="w-10 h-10 rounded-full bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-white/5 hover:border-rose-500/30 transition-all flex items-center justify-center shadow-lg" title="登出"><i class="fa-solid fa-power-off"></i></button>
+            <div class="flex items-center gap-4">
+                <div id="header-time" class="hidden md:block text-[10px] font-mono text-slate-500 tracking-[0.2em] bg-black/40 px-4 py-2 rounded-full border border-white/5"></div>
+                <button onclick="window.systemLogout()" class="w-10 h-10 rounded-full bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-white/5 transition-all flex items-center justify-center" title="登出系統"><i class="fa-solid fa-power-off"></i></button>
             </div>
         </header>
 
         <div class="flex-1 flex overflow-hidden">
-            <aside class="w-20 md:w-[260px] glass-panel border-y-0 border-l-0 flex flex-col py-6 z-40 shrink-0 rounded-none">
-                <nav class="space-y-2 flex-1 overflow-y-auto no-scrollbar px-3">
-                    <button id="nav-home" onclick="window.switchTab('tab-home', this)" class="nav-btn active w-full flex items-center gap-4 px-4 py-3.5 text-slate-300 rounded-2xl">
-                        <i class="fa-solid fa-chart-line w-6 text-center text-xl drop-shadow-md"></i><span class="hidden md:block font-bold tracking-widest text-sm">數據總覽</span>
+            <aside class="w-[260px] glass-panel border-y-0 border-l-0 flex flex-col py-6 shrink-0 rounded-none z-40 bg-[#050b14]/80">
+                <nav class="space-y-1 flex-1 px-3 overflow-y-auto no-scrollbar">
+                    <div class="text-[10px] text-slate-500 font-black tracking-widest px-4 mb-2 mt-2 uppercase">核心數據分析</div>
+                    <button onclick="window.switchTab('tab-home', this)" class="nav-btn active w-full flex items-center gap-4 px-4 py-3.5 text-slate-300 rounded-xl">
+                        <i class="fa-solid fa-gauge-high w-5 text-center"></i><span class="font-bold tracking-widest text-sm">數據儀表板</span>
                     </button>
-                    <button id="nav-users" onclick="window.switchTab('tab-users', this)" class="nav-btn w-full flex items-center gap-4 px-4 py-3.5 text-slate-300 rounded-2xl">
-                        <i class="fa-solid fa-users w-6 text-center text-xl drop-shadow-md"></i><span class="hidden md:block font-bold tracking-widest text-sm">粉絲管理</span>
+                    <button onclick="window.switchTab('tab-users', this)" class="nav-btn w-full flex items-center gap-4 px-4 py-3.5 text-slate-300 rounded-xl">
+                        <i class="fa-solid fa-users-gear w-5 text-center"></i><span class="font-bold tracking-widest text-sm">粉絲客戶管理 (CRM)</span>
                     </button>
-                    <button id="nav-support" onclick="window.switchTab('tab-support', this)" class="nav-btn w-full flex items-center gap-4 px-4 py-3.5 text-slate-300 rounded-2xl relative">
-                        <i class="fa-solid fa-headset w-6 text-center text-xl drop-shadow-md"></i><span class="hidden md:block font-bold tracking-widest text-sm">支援中心</span>
+                    
+                    <div class="text-[10px] text-slate-500 font-black tracking-widest px-4 mb-2 mt-6 uppercase">營運管理</div>
+                    <button onclick="window.switchTab('tab-support', this)" class="nav-btn w-full flex items-center gap-4 px-4 py-3.5 text-slate-300 rounded-xl relative">
+                        <i class="fa-solid fa-headset w-5 text-center"></i><span class="font-bold tracking-widest text-sm">官方客服中心</span>
                         <span id="badge-ticket" class="hidden absolute right-3 top-1/2 -translate-y-1/2 bg-rose-500 text-[10px] text-white px-2 py-0.5 rounded-full font-black shadow-[0_0_10px_rgba(244,63,94,0.8)]">0</span>
                     </button>
-                    <button id="nav-spy" onclick="window.switchTab('tab-spy', this)" class="nav-btn w-full flex items-center gap-4 px-4 py-3.5 text-slate-300 rounded-2xl">
-                        <i class="fa-solid fa-user-ninja w-6 text-center text-xl drop-shadow-md"></i><span class="hidden md:block font-bold tracking-widest text-sm">AI 攔截器</span>
+                    <button onclick="window.switchTab('tab-announcements', this)" class="nav-btn w-full flex items-center gap-4 px-4 py-3.5 text-slate-300 rounded-xl">
+                        <i class="fa-solid fa-bullhorn w-5 text-center"></i><span class="font-bold tracking-widest text-sm">時空公告排程</span>
                     </button>
-                    <button id="nav-promo" onclick="window.switchTab('tab-promo', this)" class="nav-btn w-full flex items-center gap-4 px-4 py-3.5 text-slate-300 rounded-2xl">
-                        <i class="fa-solid fa-bullhorn w-6 text-center text-xl drop-shadow-md"></i><span class="hidden md:block font-bold tracking-widest text-sm">開團模組</span>
+                    <button onclick="window.switchTab('tab-promo', this)" class="nav-btn w-full flex items-center gap-4 px-4 py-3.5 text-slate-300 rounded-xl">
+                        <i class="fa-solid fa-rocket w-5 text-center"></i><span class="font-bold tracking-widest text-sm">開團變現模組</span>
                     </button>
-                    
-                    <div id="nav-divider" class="my-6 border-t border-white/10 mx-2"></div>
-                    
-                    <button id="nav-keys" onclick="window.switchTab('tab-keys', this)" class="nav-btn w-full flex items-center gap-4 px-4 py-3.5 text-slate-300 rounded-2xl">
-                        <i class="fa-solid fa-key w-6 text-center text-xl drop-shadow-md text-amber-400"></i><span class="hidden md:block font-bold tracking-widest text-sm text-amber-400">API 監控狗</span>
+                    <button onclick="window.switchTab('tab-season', this)" class="nav-btn w-full flex items-center gap-4 px-4 py-3.5 text-amber-400 rounded-xl bg-amber-500/5 mt-2 border border-amber-500/20">
+                        <i class="fa-solid fa-trophy w-5 text-center"></i><span class="font-bold tracking-widest text-sm">賽季結算引擎</span>
                     </button>
-                    <button id="nav-config" onclick="window.switchTab('tab-config', this)" class="nav-btn w-full flex items-center gap-4 px-4 py-3.5 text-slate-300 rounded-2xl">
-                        <i class="fa-solid fa-terminal w-6 text-center text-xl drop-shadow-md text-rose-400"></i><span class="hidden md:block font-bold tracking-widest text-sm text-rose-400">工程師配置</span>
+
+                    <div class="text-[10px] text-slate-500 font-black tracking-widest px-4 mb-2 mt-6 uppercase">系統設定</div>
+                    <button onclick="window.switchTab('tab-keys', this)" class="nav-btn w-full flex items-center gap-4 px-4 py-3.5 text-slate-300 rounded-xl">
+                        <i class="fa-solid fa-key w-5 text-center"></i><span class="font-bold tracking-widest text-sm">API 神經金庫</span>
+                    </button>
+                    <button onclick="window.switchTab('tab-config', this)" class="nav-btn w-full flex items-center gap-4 px-4 py-3.5 text-rose-400 rounded-xl bg-rose-500/5">
+                        <i class="fa-solid fa-shield-halved w-5 text-center"></i><span class="font-bold tracking-widest text-sm">系統防護配置</span>
                     </button>
                 </nav>
             </aside>
 
-            <main class="flex-1 p-5 md:p-10 overflow-y-auto no-scrollbar relative">
+            <main class="flex-1 p-6 md:p-10 overflow-y-auto no-scrollbar relative bg-[#020617]/50">
                 
-                <div id="tab-home" class="tab-content space-y-8 animate-fade-in">
-                    <div class="flex flex-col gap-2 mb-10">
-                        <h1 class="text-4xl font-black text-white drop-shadow-md tracking-wide">數據總覽</h1>
-                        <p class="text-slate-400 text-sm font-medium tracking-widest">運行中</p>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        <div class="glass-panel p-6 rounded-[32px] border-t-4 border-t-cyan-500 relative overflow-hidden group">
-                            <i class="fa-solid fa-users absolute -right-4 -bottom-4 text-7xl text-cyan-500/10 group-hover:scale-110 transition-transform"></i>
-                            <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-2 relative z-10">已載入粉絲數</p>
-                            <h4 id="st-users" class="text-4xl font-black text-cyan-400 drop-shadow-[0_0_15px_rgba(34,211,238,0.5)] relative z-10">0</h4>
+                <div id="tab-home" class="tab-content space-y-8 animate-slide-up">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div class="glass-panel p-6 rounded-3xl border-t-4 border-t-cyan-500 relative overflow-hidden group">
+                            <i class="fa-solid fa-users absolute -right-2 -bottom-4 text-6xl text-cyan-500/10 group-hover:scale-110 transition-transform"></i>
+                            <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1 relative z-10">粉絲總數</p>
+                            <h4 id="st-users" class="text-4xl font-black text-cyan-400 relative z-10">0</h4>
                         </div>
-                        <div class="glass-panel p-6 rounded-[32px] border-t-4 border-t-purple-500 relative overflow-hidden group">
-                            <i class="fa-solid fa-bolt absolute -right-4 -bottom-4 text-7xl text-purple-500/10 group-hover:scale-110 transition-transform"></i>
-                            <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-2 relative z-10">系統 EXP 產出</p>
-                            <h4 id="st-exp" class="text-4xl font-black text-purple-400 drop-shadow-[0_0_15px_rgba(168,85,247,0.5)] relative z-10">0</h4>
+                        <div class="glass-panel p-6 rounded-3xl border-t-4 border-t-purple-500 relative overflow-hidden group">
+                            <i class="fa-solid fa-bolt absolute -right-2 -bottom-4 text-6xl text-purple-500/10 group-hover:scale-110 transition-transform"></i>
+                            <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1 relative z-10">累計積分產出</p>
+                            <h4 id="st-exp" class="text-4xl font-black text-purple-400 relative z-10">0</h4>
                         </div>
-                        <div class="glass-panel p-6 rounded-[32px] border-t-4 border-t-emerald-500 relative overflow-hidden group">
-                            <i class="fa-solid fa-server absolute -right-4 -bottom-4 text-7xl text-emerald-500/10 group-hover:scale-110 transition-transform"></i>
-                            <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-2 relative z-10">系統狀態</p>
-                            <h4 class="text-3xl font-black text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.5)] relative z-10 mt-1">連線穩定</h4>
+                        <div class="glass-panel p-6 rounded-3xl border-t-4 border-t-emerald-500 relative overflow-hidden group">
+                            <i class="fa-solid fa-crown absolute -right-2 -bottom-4 text-6xl text-emerald-500/10 group-hover:scale-110 transition-transform"></i>
+                            <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1 relative z-10">Twitch 訂閱乾爹</p>
+                            <h4 id="st-subs" class="text-3xl font-black text-emerald-400 relative z-10 mt-1">0</h4>
                         </div>
-                        <div class="glass-panel p-6 rounded-[32px] border-t-4 border-t-rose-500 relative overflow-hidden group">
-                            <i class="fa-solid fa-headset absolute -right-4 -bottom-4 text-7xl text-rose-500/10 group-hover:scale-110 transition-transform"></i>
-                            <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-2 relative z-10">未讀客服單</p>
-                            <h4 id="st-tickets" class="text-4xl font-black text-rose-400 drop-shadow-[0_0_15px_rgba(244,63,94,0.5)] relative z-10">0</h4>
+                        <div class="glass-panel p-6 rounded-3xl border-t-4 border-t-rose-500 relative overflow-hidden group">
+                            <i class="fa-solid fa-headset absolute -right-2 -bottom-4 text-6xl text-rose-500/10 group-hover:scale-110 transition-transform"></i>
+                            <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1 relative z-10">待處理客服單</p>
+                            <h4 id="st-tickets" class="text-4xl font-black text-rose-400 relative z-10">0</h4>
                         </div>
                     </div>
-
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                         <div class="glass-panel p-8 rounded-[40px] md:col-span-2">
-                            <div class="flex justify-between items-center mb-6">
-                                <h3 class="text-base font-black text-white tracking-widest flex items-center gap-3"><i class="fa-solid fa-chart-area text-cyan-400 text-xl"></i> 近 7 日活躍度與註冊趨勢</h3>
-                            </div>
+                            <h3 class="text-sm font-black text-white tracking-widest mb-6"><i class="fa-solid fa-chart-line mr-2 text-cyan-400"></i> 活動趨勢圖</h3>
                             <div class="h-[300px] w-full"><canvas id="trendChart"></canvas></div>
                         </div>
-
                         <div class="glass-panel p-8 rounded-[40px] flex flex-col">
-                            <h3 class="text-base font-black text-amber-400 tracking-widest mb-4 flex items-center gap-3"><i class="fa-solid fa-trophy text-amber-400 text-xl"></i> 粉絲貢獻榜 (Top 5)</h3>
-                            <div id="top-fans-list" class="flex-1 overflow-y-auto space-y-3 no-scrollbar pr-2"></div>
+                            <h3 class="text-sm font-black text-amber-400 tracking-widest mb-6"><i class="fa-solid fa-crown mr-2"></i> 粉絲貢獻榜 Top 5</h3>
+                            <div id="top-fans-list" class="space-y-3 flex-1 overflow-y-auto no-scrollbar"></div>
                         </div>
                     </div>
                 </div>
 
-                <div id="tab-users" class="tab-content hidden animate-fade-in flex flex-col h-full gap-6">
+                <div id="tab-users" class="tab-content hidden animate-slide-up flex flex-col h-full gap-6">
                     <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-                        <div class="flex flex-col">
-                            <h2 class="text-2xl font-black tracking-widest">粉絲資料庫</h2>
-                            <p class="text-xs text-slate-400 mt-1">目前顯示最高經驗值前 100 名活躍用戶 (效能優化模式)</p>
-                        </div>
-                        <div class="flex gap-3 w-full md:w-auto">
-                            <div class="relative w-full md:w-72">
-                                <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
-                                <input type="text" id="user-search" oninput="window.renderUserTable()" placeholder="在載入名單中搜尋..." class="v-input w-full pl-12 pr-4 py-3 rounded-2xl text-sm">
+                        <h2 class="text-2xl font-black tracking-widest">粉絲客戶管理系統</h2>
+                        <div class="flex items-center gap-3 w-full md:w-auto">
+                            <div class="relative flex-1 md:w-64">
+                                <input type="text" id="user-search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore name="search_crm_dummy" readonly onfocus="this.removeAttribute('readonly');" onblur="this.setAttribute('readonly', true);" oninput="window.renderUserTable()" placeholder="搜尋 UID、暱稱、內部標籤..." class="v-input w-full pl-10 pr-4 py-2.5 rounded-xl text-xs">
+                                <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
                             </div>
+                            <button onclick="window.exportUsersCSV()" class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 hover:bg-emerald-500 hover:text-black font-black px-4 py-2.5 rounded-xl text-xs transition-all flex items-center gap-2 shadow-sm shrink-0">
+                                <i class="fa-solid fa-file-csv"></i>匯出名單報表
+                            </button>
                         </div>
                     </div>
-                    <div class="flex-1 glass-panel rounded-[32px] overflow-hidden flex flex-col p-2">
-                        <div class="flex-1 overflow-y-auto no-scrollbar">
-                            <table class="w-full text-left text-sm whitespace-nowrap">
-                                <thead class="sticky top-0 bg-[#0b1121]/95 backdrop-blur-md text-slate-400 text-xs tracking-widest uppercase border-b border-white/10 z-10">
+                    <div class="flex-1 glass-panel rounded-3xl overflow-hidden p-2 relative">
+                        <div class="h-full overflow-y-auto no-scrollbar">
+                            <table class="w-full text-left text-xs whitespace-nowrap">
+                                <thead class="sticky top-0 bg-[#080d1a]/95 backdrop-blur-xl text-slate-400 tracking-widest uppercase border-b border-white/10 z-20 shadow-md">
                                     <tr>
-                                        <th class="py-5 px-6 font-black">粉絲資料</th>
-                                        <th class="py-5 px-6 font-black text-center">目前 EXP</th>
-                                        <th class="py-5 px-6 font-black text-center">身分權限</th>
-                                        <th class="py-5 px-6 font-black text-right">管理操作 (指派/私訊/刪除)</th>
+                                        <th class="py-4 px-6 font-black">粉絲身分 / 系統 UID / 內部備註</th>
+                                        <th class="py-4 px-4 font-black text-center">擁有積分 (EXP)</th>
+                                        <th class="py-4 px-4 font-black text-center">Twitch 狀態</th>
+                                        <th class="py-4 px-4 font-black text-center">系統權限</th>
+                                        <th class="py-4 px-6 font-black text-right">管理操作</th>
                                     </tr>
                                 </thead>
                                 <tbody id="user-table-body" class="divide-y divide-white/5"></tbody>
@@ -237,214 +201,193 @@
                     </div>
                 </div>
 
-                <div id="tab-support" class="tab-content hidden animate-fade-in flex flex-col h-full gap-6">
-                    <div class="flex-1 flex gap-6 overflow-hidden">
-                        <div class="w-full md:w-80 glass-panel rounded-[32px] flex flex-col overflow-hidden shrink-0">
-                            <div class="p-5 border-b border-white/10 bg-black/20">
-                                <input type="text" id="tk-search" oninput="window.renderTicketList()" placeholder="搜尋通訊頻道..." class="v-input w-full px-4 py-3 rounded-xl text-sm">
+                <div id="tab-support" class="tab-content hidden animate-slide-up flex flex-col h-full gap-6">
+                    <div class="flex-1 flex flex-col md:flex-row gap-6 overflow-hidden">
+                        
+                        <div class="w-full md:w-[320px] glass-panel rounded-[32px] flex flex-col shrink-0 overflow-hidden">
+                            <div class="p-5 border-b border-white/10 bg-black/20 space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[10px] text-slate-500 font-black tracking-widest uppercase">工單過濾器</span>
+                                    <label class="flex items-center gap-2 cursor-pointer group">
+                                        <span class="text-[10px] text-slate-400 font-bold group-hover:text-cyan-400 transition-colors">顯示已結案</span>
+                                        <input type="checkbox" id="tk-show-closed" onchange="window.initTicketSystem()" class="w-3.5 h-3.5 rounded bg-black border-white/10 accent-cyan-500">
+                                    </label>
+                                </div>
+                                <input type="text" id="tk-search" oninput="window.renderTicketList()" placeholder="搜尋關鍵字或 UID..." class="v-input w-full px-4 py-2.5 rounded-xl text-xs">
                             </div>
                             <div id="ticket-list" class="flex-1 overflow-y-auto p-3 space-y-2 no-scrollbar"></div>
                         </div>
-                        
-                        <div class="flex-1 glass-panel rounded-[32px] flex flex-col relative overflow-hidden hidden md:flex" id="tk-main-view">
-                            <div class="p-5 border-b border-white/10 flex justify-between items-center bg-black/20 shrink-0 relative z-30">
+
+                        <div class="flex-1 glass-panel rounded-[32px] flex flex-col overflow-hidden bg-[#050b18] relative">
+                            <div id="tk-header" class="p-5 border-b border-white/10 flex justify-between items-center bg-black/30 shrink-0 z-20">
                                 <div id="tk-title" class="flex items-center gap-4">
-                                    <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center"><i class="fa-solid fa-user text-slate-500"></i></div>
-                                    <span class="font-bold text-slate-400">等待選擇通訊串列</span>
+                                    <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center border border-white/10 shadow-inner"><i class="fa-solid fa-headset text-slate-500"></i></div>
+                                    <div class="flex flex-col">
+                                        <span class="font-bold text-slate-300 text-sm tracking-wider" id="tk-display-name">尚未選擇對話</span>
+                                        <span class="text-[9px] text-slate-600 font-mono mt-0.5" id="tk-display-uid">等待指派</span>
+                                    </div>
                                 </div>
-                                <div id="tk-actions" class="hidden flex gap-3">
-                                    <button onclick="window.startTicket()" id="btn-tk-start" class="bg-cyan-500 text-[#020617] text-xs font-black px-5 py-2.5 rounded-full shadow-[0_0_15px_rgba(34,211,238,0.4)] hover:scale-105 transition-transform"><i class="fa-solid fa-link mr-2"></i>建立加密連線</button>
-                                    <button onclick="window.endTicket()" id="btn-tk-end" class="hidden bg-rose-500/10 text-rose-400 border border-rose-500/30 text-xs font-black px-5 py-2.5 rounded-full hover:bg-rose-500 hover:text-white transition-all"><i class="fa-solid fa-power-off mr-2"></i>結束對談</button>
-                                </div>
-                            </div>
-                            
-                            <div id="tk-view" class="flex-1 overflow-y-auto p-8 space-y-6 no-scrollbar relative z-10">
-                                <div class="absolute inset-0 flex flex-col items-center justify-center opacity-10 pointer-events-none">
-                                    <i class="fa-solid fa-shield-halved text-6xl mb-4"></i><p class="font-mono font-black tracking-widest text-xl">SECURE CHANNEL</p>
-                                </div>
-                            </div>
-                            
-                            <div id="tk-mask" class="absolute inset-0 top-[81px] bg-black/50 backdrop-blur-md z-20 flex flex-col items-center justify-center hidden">
-                                <div class="bg-slate-900/80 p-8 rounded-[32px] border border-slate-700 shadow-2xl flex flex-col items-center">
-                                    <i class="fa-solid fa-lock text-5xl text-slate-500 mb-4"></i>
-                                    <span class="text-sm font-black tracking-[0.2em] uppercase text-slate-300">點擊上方「建立加密連線」解鎖</span>
-                                </div>
-                            </div>
-
-                            <div id="tk-input-area" class="p-5 bg-black/40 border-t border-white/10 hidden flex-col gap-4 shrink-0 z-30">
-                                <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                                    <button onclick="window.insertTkReply('您好！這裡是系統工程部，已接管此頻道，請問有什麼我可以協助的？')" class="text-[11px] font-black bg-white/5 text-slate-300 px-4 py-2 rounded-xl border border-white/10 hover:bg-cyan-500/20 hover:text-cyan-400 transition-all whitespace-nowrap">👋 工程師招呼</button>
-                                    <button onclick="window.insertTkReply('哈囉！我是老王，剛剛看到你的問題，交給我處理！')" class="text-[11px] font-black bg-white/5 text-slate-300 px-4 py-2 rounded-xl border border-white/10 hover:bg-cyan-500/20 hover:text-cyan-400 transition-all whitespace-nowrap">👑 老王招呼</button>
-                                    <button onclick="window.insertTkReply('問題已修復完畢。若無其他疑問，我們將關閉此通訊串列。')" class="text-[11px] font-black bg-white/5 text-slate-300 px-4 py-2 rounded-xl border border-white/10 hover:bg-cyan-500/20 hover:text-cyan-400 transition-all whitespace-nowrap">✅ 結案用語</button>
-                                </div>
-                                <div class="flex gap-4 items-end">
-                                    <input type="file" id="tk-img-upload" class="hidden" accept="image/*" onchange="window.handleTkFileUpload(event)">
-                                    <button onclick="document.getElementById('tk-img-upload').click()" class="w-14 h-14 bg-white/5 text-slate-400 rounded-2xl flex items-center justify-center text-xl hover:text-cyan-400 border border-white/10 transition-all shrink-0" title="上傳圖片"><i class="fa-solid fa-paperclip"></i></button>
-                                    <textarea id="tk-reply" rows="1" class="flex-1 v-input rounded-2xl p-4 text-[15px] resize-none leading-relaxed max-h-32 overflow-y-auto" placeholder="輸入回覆訊息... (Cmd/Ctrl+Enter 送出)"></textarea>
-                                    <button onclick="window.sendTkReply()" class="w-14 h-14 bg-gradient-to-r from-cyan-400 to-blue-500 text-white rounded-full flex items-center justify-center text-xl shadow-[0_0_20px_rgba(34,211,238,0.5)] hover:scale-110 transition-transform shrink-0"><i class="fa-solid fa-paper-plane"></i></button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="tab-spy" class="tab-content hidden animate-fade-in flex flex-col h-full gap-6">
-                    <div class="glass-panel p-6 rounded-[32px] border-l-4 border-l-rose-500 flex justify-between items-center bg-rose-900/10">
-                        <div>
-                            <h2 class="text-xl font-black text-rose-400 tracking-widest"><i class="fa-solid fa-user-ninja mr-3"></i>神經網路攔截中心</h2>
-                            <p class="text-xs text-slate-300 mt-1">即時監控粉絲與 AI 的對話，並可隨時輸入訊息強制打斷 AI，切換為「人工回覆」。</p>
-                        </div>
-                    </div>
-                    <div class="flex-1 flex gap-6 overflow-hidden">
-                        <div class="w-80 glass-panel rounded-[32px] flex flex-col p-2 shrink-0">
-                            <input type="text" id="spy-search" oninput="window.renderSpyList()" placeholder="鎖定目標..." class="v-input w-full px-4 py-3 rounded-xl text-sm mb-2">
-                            <div id="spy-list" class="flex-1 overflow-y-auto no-scrollbar space-y-1"></div>
-                        </div>
-                        <div class="flex-1 glass-panel rounded-[32px] flex flex-col relative overflow-hidden">
-                            <div class="p-5 border-b border-white/10 bg-black/20 font-black text-sm text-cyan-400 tracking-widest" id="spy-title">等待選擇攔截目標...</div>
-                            <div id="spy-view" class="flex-1 overflow-y-auto p-8 space-y-6 no-scrollbar relative"></div>
-                            <div class="p-5 bg-black/40 border-t border-white/10 flex gap-4">
-                                <input type="text" id="spy-input" placeholder="輸入強制接管訊息..." class="flex-1 v-input px-5 py-3 rounded-2xl text-[15px]">
-                                <button onclick="window.sendSpyTakeover()" class="bg-rose-500 text-white px-8 py-3 rounded-2xl text-sm font-black shadow-[0_0_20px_rgba(244,63,94,0.5)] hover:bg-rose-600 transition-colors">強制發送</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="tab-promo" class="tab-content hidden animate-fade-in max-w-4xl mx-auto pt-4 space-y-8 pb-20">
-                    <div class="flex justify-between items-center">
-                        <h2 class="text-3xl font-black tracking-widest">開團宣傳模組 <span class="text-[10px] bg-cyan-500/20 text-cyan-400 px-3 py-1 rounded-lg ml-2 border border-cyan-500/30">v5.4 Pro</span></h2>
-                        <button onclick="window.savePromoConfig()" class="bg-gradient-to-r from-cyan-400 to-blue-500 text-white px-10 py-3.5 rounded-2xl text-sm font-black shadow-[0_0_20px_rgba(34,211,238,0.4)] hover:scale-105 transition-transform tracking-widest">儲存並推播全網</button>
-                    </div>
-                    
-                    <div class="glass-panel p-10 rounded-[40px] space-y-8">
-                        <div class="flex justify-between items-center p-5 bg-white/5 rounded-2xl border border-white/10">
-                            <div><p class="text-base font-black text-white">啟用宣傳視窗</p><p class="text-[10px] text-slate-400 mt-1">開啟後將依據排程自動顯示。若未設定排程，則立刻顯示且永不下架。</p></div>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="p-active" class="sr-only peer">
-                                <div class="w-14 h-7 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-cyan-500"></div>
-                            </label>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div class="md:col-span-2 space-y-2">
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">宣傳主標題</label>
-                                <input type="text" id="p-title" class="v-input w-full p-4 rounded-xl text-base font-bold" placeholder="例如：老王專屬好物獨家開團！">
-                            </div>
-                            <div class="md:col-span-2 space-y-2">
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">內文詳細說明 (支援多行)</label>
-                                <textarea id="p-content" rows="3" class="v-input w-full p-4 rounded-xl text-sm resize-none" placeholder="輸入活動介紹、規格..."></textarea>
-                            </div>
-
-                            <div class="space-y-2">
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">原價 (選填)</label>
-                                <input type="number" id="p-price" class="v-input w-full p-4 rounded-xl text-sm" placeholder="例如：1990">
-                            </div>
-                            <div class="space-y-2">
-                                <label class="text-[10px] font-black text-rose-400 uppercase tracking-widest">特價/促銷價</label>
-                                <input type="number" id="p-sale-price" class="v-input w-full p-4 rounded-xl text-sm" placeholder="例如：990">
-                            </div>
-                            <div class="space-y-2">
-                                <label class="text-[10px] font-black text-amber-400 uppercase tracking-widest">專屬折扣碼 (選填)</label>
-                                <input type="text" id="p-discount-code" class="v-input w-full p-4 rounded-xl text-sm font-mono uppercase" placeholder="例如：WANG2026">
-                            </div>
-                            <div class="space-y-2">
-                                <label class="text-[10px] font-black text-cyan-400 uppercase tracking-widest">庫存狀態</label>
-                                <select id="p-stock" class="v-input w-full p-4 rounded-xl text-sm">
-                                    <option value="in_stock">現貨供應中</option>
-                                    <option value="low_stock">即將完售 (顯示緊張感)</option>
-                                    <option value="preorder">預購中</option>
-                                    <option value="out_of_stock">已售完</option>
+                            <div class="flex items-center gap-3">
+                                <div id="tk-sentiment" class="hidden"><span id="sentiment-pill" class="status-pill text-zinc-400 border-zinc-500/50">分析中...</span></div>
+                                
+                                <select id="tk-status-select" onchange="window.updateTicketStatus(this.value)" class="hidden bg-black/50 border border-white/10 text-slate-300 text-[10px] rounded-lg px-3 py-1.5 outline-none focus:border-cyan-500 font-bold tracking-widest cursor-pointer shadow-sm">
+                                    <option value="pending">🔴 待回覆</option>
+                                    <option value="in_progress">🟡 進行中</option>
+                                    <option value="closed">⚪ 已結案</option>
                                 </select>
                             </div>
-
-                            <div class="space-y-2">
-                                <label class="text-[10px] font-black text-emerald-400 uppercase tracking-widest">上架時間 (空白=立刻)</label>
-                                <input type="datetime-local" id="p-start" class="v-input w-full p-4 rounded-xl text-sm">
-                            </div>
-                            <div class="space-y-2">
-                                <label class="text-[10px] font-black text-rose-400 uppercase tracking-widest">下架時間 (空白=永不下架)</label>
-                                <input type="datetime-local" id="p-end" class="v-input w-full p-4 rounded-xl text-sm">
-                            </div>
-                            <div class="md:col-span-2 space-y-2">
-                                <label class="text-[10px] font-black text-purple-400 uppercase tracking-widest">專屬跳轉導購連結 URL</label>
-                                <input type="url" id="p-url" class="v-input w-full p-4 rounded-xl text-sm" placeholder="https://...">
                             </div>
                             
-                            <div class="md:col-span-2 space-y-4 pt-4 border-t border-white/10">
-                                <div class="flex justify-between items-center">
-                                    <div>
-                                        <label class="text-sm font-black text-cyan-400 uppercase tracking-widest"><i class="fa-solid fa-images mr-2"></i>活動圖片</label>
-                                        <p class="text-[10px] text-slate-400 mt-1">選取後系統會自動進行強力壓縮以符合資料庫容量限制 (最多 8 張)。</p>
+                            <div id="tk-chat-box" class="flex-1 overflow-y-auto p-6 space-y-5 no-scrollbar relative bg-[#020617]/30">
+                                <div class="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
+                                    <i class="fa-solid fa-satellite-dish text-[150px] text-cyan-500"></i>
+                                </div>
+                            </div>
+                            
+                            <div id="tk-input-area" class="p-4 border-t border-white/10 bg-black/40 flex flex-col gap-3 shrink-0 z-20 opacity-50 pointer-events-none">
+                                <div class="flex flex-wrap items-center justify-between gap-2 px-1">
+                                    <div class="flex items-center gap-2">
+                                        <button onclick="window.generateAIReply(event)" class="text-[10px] bg-purple-500/20 text-purple-400 border border-purple-500/30 px-3 py-1.5 rounded-lg hover:bg-purple-500 hover:text-white transition-all font-bold tracking-widest"><i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i>AI 智慧草擬</button>
+                                        <button onclick="window.fixTypos(event)" class="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg hover:bg-emerald-500 hover:text-white transition-all font-bold tracking-widest"><i class="fa-solid fa-spell-check mr-1.5"></i>文案潤飾</button>
                                     </div>
-                                    <input type="file" id="p-img-upload" multiple accept="image/*" class="hidden" onchange="window.handlePromoUpload(event)">
-                                    <button onclick="document.getElementById('p-img-upload').click()" class="bg-white/10 text-white px-5 py-2.5 rounded-xl text-xs font-black border border-white/20 hover:bg-white/20 transition-all"><i class="fa-solid fa-cloud-arrow-up mr-2"></i>選擇圖片</button>
+                                    <select id="tk-ai-tone" class="bg-black/50 border border-white/10 text-slate-300 text-[10px] rounded-lg px-2 py-1 outline-none">
+                                        <option value="friendly">😊 親切友善語氣</option>
+                                        <option value="professional">🤖 專業官方語氣</option>
+                                        <option value="strict">⚠️ 嚴肅警告語氣</option>
+                                    </select>
                                 </div>
-                                <div id="promo-image-preview" class="flex gap-4 overflow-x-auto pb-4 no-scrollbar"></div>
+                                <div class="flex gap-3 items-end">
+                                    <input type="file" id="tk-file" class="hidden" accept="image/*" onchange="window.handleAdminUpload(event)">
+                                    <button onclick="document.getElementById('tk-file').click()" class="w-10 h-10 shrink-0 rounded-xl bg-white/5 border border-white/10 text-slate-400 flex items-center justify-center hover:text-cyan-400 transition-colors"><i class="fa-solid fa-image"></i></button>
+                                    <div class="flex-1 relative bg-[#020617] border border-white/10 rounded-xl flex items-end shadow-inner">
+                                        <textarea id="tk-reply" rows="1" onkeypress="window.handleTkKeyPress(event)" oninput="this.style.height=''; this.style.height = Math.min(this.scrollHeight, 150) + 'px';" class="w-full bg-transparent text-sm text-white pl-4 pr-12 py-3.5 resize-none outline-none no-scrollbar max-h-[150px]" placeholder="輸入回覆訊息 (按 Enter 發送)..."></textarea>
+                                        <button onclick="window.sendTicketReply()" class="absolute right-2 bottom-2 w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-600 text-black flex items-center justify-center hover:scale-110 transition-transform shadow-md"><i class="fa-solid fa-paper-plane text-xs"></i></button>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-
-                        <div class="border-t border-white/10 pt-8 mt-8">
-                            <div class="flex justify-between items-center mb-6">
-                                <div><h3 class="text-base font-black text-amber-400 tracking-widest">專屬粉絲 QA 區 (For 老王)</h3><p class="text-[10px] text-slate-400 mt-1">預先建立常見問題，前端自動展開。</p></div>
-                                <button onclick="window.addPromoQA()" class="bg-amber-500/10 text-amber-400 border border-amber-500/30 px-5 py-2.5 rounded-xl text-xs font-black hover:bg-amber-500 hover:text-[#020617] transition-all"><i class="fa-solid fa-plus mr-1"></i>新增問答</button>
-                            </div>
-                            <div id="promo-qa-list" class="space-y-4"></div>
                         </div>
                     </div>
                 </div>
 
-                <div id="tab-keys" class="tab-content hidden animate-fade-in max-w-6xl mx-auto pt-4 pb-20">
-                    <div class="flex justify-between items-center mb-10">
-                        <h2 class="text-3xl font-black tracking-widest">API 資源監控狗</h2>
-                        <button onclick="window.addApiKey()" class="bg-purple-600 text-white px-8 py-3.5 rounded-2xl text-sm font-black shadow-[0_0_20px_rgba(168,85,247,0.5)] hover:scale-105 transition-transform"><i class="fa-solid fa-plus mr-2"></i>注入新金鑰</button>
+                <div id="tab-announcements" class="tab-content hidden animate-slide-up space-y-6">
+                    <div class="flex justify-between items-end mb-6">
+                        <div>
+                            <h2 class="text-2xl font-black text-white tracking-widest mb-1">時空公告管理器</h2>
+                            <p class="text-xs text-slate-500 font-mono">設定立即發布或預約未來時間發布的系統公告</p>
+                        </div>
+                        <button onclick="window.createNewAnnouncement()" class="bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-black px-6 py-3 rounded-xl text-xs shadow-lg hover:scale-105 transition-transform"><i class="fa-solid fa-plus mr-2"></i>設定新排程公告</button>
                     </div>
-                    <div id="api-key-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+                    <div id="announcement-manage-list" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
                 </div>
 
-                <div id="tab-config" class="tab-content hidden animate-fade-in max-w-5xl mx-auto pt-4 pb-20 space-y-10">
-                    <h2 class="text-3xl font-black tracking-widest">系統靈魂與安全配置</h2>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div class="glass-panel p-8 rounded-[40px] md:col-span-2 border-l-4 border-l-cyan-500">
-                            <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-base font-black text-cyan-400 tracking-widest"><i class="fa-solid fa-brain mr-2"></i>AI 靈魂控制器 (System Prompt)</h3>
-                                <button onclick="window.saveGlobalConfig()" class="bg-cyan-500 text-[#020617] px-6 py-2 rounded-xl text-xs font-black shadow-[0_0_15px_rgba(34,211,238,0.4)]">儲存變更</button>
-                            </div>
-                            <p class="text-xs text-slate-400 mb-4">定義 AI 的語氣與背景，儲存後即刻生效。</p>
-                            <textarea id="cfg-prompt" rows="6" class="v-input w-full p-5 rounded-2xl text-sm leading-relaxed" placeholder="你是老王的專屬助手..."></textarea>
-                        </div>
-
-                        <div class="glass-panel p-8 rounded-[40px] border-l-4 border-l-purple-500 space-y-6">
-                            <h3 class="text-base font-black text-purple-400 tracking-widest">主播 (Broadcaster) 權限矩陣</h3>
-                            <p class="text-[10px] text-slate-400 mb-4">勾選以開放對應後台模組給主播使用。</p>
-                            <div class="space-y-3">
-                                <div class="flex justify-between items-center p-4 bg-white/5 rounded-2xl border border-white/5"><span class="text-sm font-bold">1. 允許查看數據總覽</span><input type="checkbox" id="perm-dash" class="w-5 h-5 accent-purple-500"></div>
-                                <div class="flex justify-between items-center p-4 bg-white/5 rounded-2xl border border-white/5"><span class="text-sm font-bold">2. 允許查看/管理粉絲</span><input type="checkbox" id="perm-users" class="w-5 h-5 accent-purple-500"></div>
-                                <div class="flex justify-between items-center p-4 bg-white/5 rounded-2xl border border-white/5"><span class="text-sm font-bold">3. 允許回覆加密客服單</span><input type="checkbox" id="perm-support" class="w-5 h-5 accent-purple-500"></div>
-                                <div class="flex justify-between items-center p-4 bg-white/5 rounded-2xl border border-white/5"><span class="text-sm font-bold">4. 允許查看 AI 攔截器</span><input type="checkbox" id="perm-spy" class="w-5 h-5 accent-purple-500"></div>
-                                <div class="flex justify-between items-center p-4 bg-white/5 rounded-2xl border border-white/5"><span class="text-sm font-bold">5. 允許設定宣傳排程</span><input type="checkbox" id="perm-promo" class="w-5 h-5 accent-purple-500"></div>
-                            </div>
-                        </div>
-
-                        <div class="glass-panel p-8 rounded-[40px] border-l-4 border-l-rose-500 flex flex-col justify-between">
+                <div id="tab-promo" class="tab-content hidden animate-slide-up space-y-8">
+                    <div class="flex flex-col gap-2 mb-4">
+                        <h2 class="text-2xl font-black text-emerald-400 tracking-widest"><i class="fa-solid fa-rocket mr-3"></i>開團推播控制台 V2</h2>
+                        <p class="text-xs text-slate-400 font-mono">支援時間排程，時間到自動於首頁彈窗上下架。</p>
+                    </div>
+                    <div class="glass-panel p-8 rounded-[40px] border-l-4 border-l-emerald-500 space-y-6">
+                        <div class="flex justify-between items-center bg-emerald-900/10 p-5 rounded-2xl border border-emerald-500/20">
                             <div>
-                                <h3 class="text-base font-black text-rose-400 tracking-widest mb-2">系統緊急處置與備份</h3>
-                                <p class="text-[10px] text-slate-400 mb-6">如遇 Permission Denied 報錯，請確認 Firebase Rules 已開放。</p>
-                                
-                                <div class="flex justify-between items-center p-5 bg-rose-500/10 rounded-2xl border border-rose-500/30 mb-6">
-                                    <span class="text-sm font-black text-rose-400 tracking-widest">開啟全站維護模式</span>
-                                    <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" id="cfg-maint" class="sr-only peer" onchange="window.saveGlobalConfig()">
-                                        <div class="w-14 h-7 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-rose-500"></div>
-                                    </label>
+                                <span class="text-sm font-bold text-white tracking-widest uppercase block mb-1">強制顯示 / 活動狀態 (啟動)</span>
+                                <span class="text-xs text-emerald-400/60 font-mono">若有設定排程，請保持開啟，系統會依時間自動判斷。</span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="promo-active" class="sr-only peer">
+                                <div class="w-14 h-7 bg-slate-700 rounded-full peer peer-checked:bg-emerald-500 transition-all after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:after:translate-x-7"></div>
+                            </label>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-black/30 p-5 rounded-2xl border border-white/5">
+                            <div class="space-y-2"><label class="text-[10px] text-slate-500 font-black tracking-widest uppercase">自動上架時間 (不填即刻生效)</label><input type="datetime-local" id="promo-start" class="v-input w-full p-3 rounded-xl text-sm"></div>
+                            <div class="space-y-2"><label class="text-[10px] text-slate-500 font-black tracking-widest uppercase">自動下架時間 (不填為永久)</label><input type="datetime-local" id="promo-end" class="v-input w-full p-3 rounded-xl text-sm"></div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-2"><label class="text-[10px] text-slate-500 font-black tracking-widest uppercase">活動大標題</label><input type="text" id="promo-title" class="v-input w-full p-4 rounded-xl text-sm"></div>
+                            <div class="space-y-2"><label class="text-[10px] text-slate-500 font-black tracking-widest uppercase">導購連結 (URL)</label><input type="text" id="promo-link" class="v-input w-full p-4 rounded-xl text-sm" placeholder="https://..."></div>
+                        </div>
+                        <div class="space-y-2"><label class="text-[10px] text-slate-500 font-black tracking-widest uppercase">推播文案內容 (支援多行)</label><textarea id="promo-content" rows="4" class="v-input w-full p-4 rounded-xl text-sm resize-none"></textarea></div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 bg-black/20 p-6 rounded-3xl border border-white/5">
+                            <div class="space-y-2"><label class="text-[10px] text-slate-500 font-black tracking-widest uppercase">特價金額</label><input type="text" id="promo-sale-price" class="v-input w-full p-4 rounded-xl text-sm"></div>
+                            <div class="space-y-2"><label class="text-[10px] text-slate-500 font-black tracking-widest uppercase">原價</label><input type="text" id="promo-price" class="v-input w-full p-4 rounded-xl text-sm"></div>
+                            <div class="space-y-2"><label class="text-[10px] text-slate-500 font-black tracking-widest uppercase">粉絲專屬折扣碼</label><input type="text" id="promo-discount-code" class="v-input w-full p-4 rounded-xl text-sm" placeholder="選填"></div>
+                        </div>
+                        <div class="flex gap-4 pt-2">
+                            <button onclick="window.savePromoConfig()" class="flex-1 bg-emerald-500 text-black py-4 rounded-2xl text-sm font-black shadow-[0_0_20px_rgba(52,211,153,0.3)] hover:scale-[1.02] transition-transform tracking-widest">寫入排程與推播配置</button>
+                            <button onclick="window.previewPromoConfig()" class="w-16 flex-shrink-0 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center hover:bg-white/10 hover:text-emerald-400 transition-all" title="預覽顯示畫面"><i class="fa-solid fa-eye text-lg"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-season" class="tab-content hidden animate-slide-up space-y-8">
+                    <div class="flex flex-col gap-2 mb-6">
+                        <h2 class="text-3xl font-black text-amber-400 tracking-widest"><i class="fa-solid fa-trophy mr-3"></i>賽季結算引擎</h2>
+                        <p class="text-sm text-slate-400 font-mono tracking-wider">自動或手動執行全伺服器積分清零與歷史封存</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="glass-panel p-8 rounded-[40px] border-t-4 border-t-purple-500 flex flex-col justify-between relative">
+                            <div class="relative z-10">
+                                <h3 class="text-base font-black text-purple-400 mb-4 flex items-center gap-2 tracking-widest"><i class="fa-solid fa-clock"></i> 時空排程結算</h3>
+                                <div class="space-y-4">
+                                    <div class="space-y-2"><label class="text-[10px] text-slate-500 font-black tracking-widest">新賽季標籤名稱</label><input type="text" id="auto-season-name" class="v-input w-full p-4 rounded-xl text-sm" placeholder="例如：S3 寒冬之戰"></div>
+                                    <div class="space-y-2"><label class="text-[10px] text-slate-500 font-black tracking-widest">排定結算日期與時間</label><input type="datetime-local" id="auto-season-time" class="v-input w-full p-4 rounded-xl text-sm"></div>
                                 </div>
                             </div>
-                            
-                            <div class="space-y-4">
-                                <button onclick="window.createSnapshot()" class="w-full bg-slate-800 text-white py-4 rounded-2xl text-sm font-black tracking-widest hover:bg-slate-700 transition-colors border border-slate-600 shadow-lg"><i class="fa-solid fa-camera mr-2"></i>建立系統快照存檔</button>
-                                <button onclick="window.restoreSnapshot()" class="w-full bg-slate-800 text-white py-4 rounded-2xl text-sm font-black tracking-widest hover:bg-slate-700 transition-colors border border-slate-600 shadow-lg"><i class="fa-solid fa-clock-rotate-left mr-2"></i>從歷史快照還原</button>
+                            <div class="mt-8">
+                                <div id="wipe-countdown-box" class="hidden mb-4 p-4 bg-purple-900/20 border border-purple-500/30 rounded-2xl text-center">
+                                    <p class="text-[10px] text-purple-300 font-black mb-1 uppercase tracking-widest">距離結算啟動還有</p>
+                                    <div id="wipe-countdown" class="text-2xl font-mono font-black text-white tracking-widest">00:00:00:00</div>
+                                </div>
+                                <button onclick="window.saveWipeSchedule()" class="w-full bg-purple-600 text-white py-4 rounded-2xl text-sm font-black shadow-lg hover:bg-purple-500 transition-colors tracking-widest">確認排程任務</button>
                             </div>
+                        </div>
+                        <div class="glass-panel p-8 rounded-[40px] border-t-4 border-t-rose-500 flex flex-col justify-between">
+                            <div class="relative z-10">
+                                <h3 class="text-base font-black text-rose-500 mb-4 flex items-center gap-2 tracking-widest"><i class="fa-solid fa-bolt-lightning"></i> 強制即刻清零</h3>
+                                <p class="text-xs text-slate-400 leading-relaxed mb-6">不經過排程，立刻對全伺服器進行 EXP 封存與清零。此操作不可撤回，請謹慎使用。</p>
+                                <div class="space-y-2"><label class="text-[10px] text-slate-500 font-black tracking-widest uppercase">輸入確認代碼 (CONFIRM)</label><input type="text" id="manual-season-confirm" class="v-input w-full p-4 rounded-xl text-sm font-mono text-rose-400" placeholder="請手打 CONFIRM"></div>
+                            </div>
+                            <button onclick="window.executeManualWipe()" class="w-full bg-rose-600/20 text-rose-400 border border-rose-500/40 py-4 rounded-2xl text-sm font-black mt-8 hover:bg-rose-600 hover:text-white transition-all tracking-widest">核爆全伺服器積分</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-keys" class="tab-content hidden animate-slide-up space-y-8">
+                    <h2 class="text-2xl font-black text-amber-400 tracking-widest">四大 API 神經金庫</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="glass-panel p-6 rounded-3xl space-y-3 border-t-2 border-t-blue-500"><h3 class="text-xs font-black text-blue-400 uppercase tracking-widest">Gemini 金鑰 (視覺/主邏輯)</h3><textarea id="keys-gemini" rows="3" class="v-input w-full p-3 rounded-xl text-[10px] font-mono" placeholder="支援多把輪替..."></textarea></div>
+                        <div class="glass-panel p-6 rounded-3xl space-y-3 border-t-2 border-t-purple-500"><h3 class="text-xs font-black text-purple-400 uppercase tracking-widest">Groq 金鑰 (極速/客服大腦)</h3><textarea id="keys-groq" rows="3" class="v-input w-full p-3 rounded-xl text-[10px] font-mono"></textarea></div>
+                        <div class="glass-panel p-6 rounded-3xl space-y-3 border-t-2 border-t-emerald-500"><h3 class="text-xs font-black text-emerald-400 uppercase tracking-widest">OpenAI 金鑰 (備用神經)</h3><input type="password" id="keys-openai" class="v-input w-full p-3 rounded-xl text-[10px] font-mono"></div>
+                        <div class="glass-panel p-6 rounded-3xl space-y-3 border-t-2 border-t-pink-500"><h3 class="text-xs font-black text-pink-400 uppercase tracking-widest">HuggingFace 金鑰 (開源神經)</h3><input type="password" id="keys-hf" class="v-input w-full p-3 rounded-xl text-[10px] font-mono"></div>
+                    </div>
+                    <div class="glass-panel p-6 rounded-3xl space-y-4 border-t-2 border-t-indigo-500 mt-6">
+                        <h3 class="text-xs font-black text-indigo-400 uppercase tracking-widest">Twitch 串接 API</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <input type="text" id="keys-twitch-client" class="v-input w-full p-3 rounded-xl text-xs font-mono" placeholder="客戶端 ID (Client ID)">
+                            <input type="password" id="keys-twitch-secret" class="v-input w-full p-3 rounded-xl text-xs font-mono" placeholder="客戶端密鑰 (Client Secret)">
+                        </div>
+                    </div>
+                    <button onclick="window.saveApiKeys()" class="bg-amber-500 text-black font-black px-10 py-4 rounded-2xl text-sm shadow-xl tracking-widest hover:scale-105 transition-transform mt-6">封裝並更新金鑰庫</button>
+                </div>
+
+                <div id="tab-config" class="tab-content hidden animate-slide-up space-y-8">
+                    <h2 class="text-2xl font-black text-rose-400 tracking-widest">系統防護與核心廣播</h2>
+                    <div class="glass-panel p-8 rounded-[40px] border-l-4 border-l-red-600 bg-red-900/10 space-y-4 relative overflow-hidden">
+                        <h3 class="text-base font-black text-red-500 tracking-widest uppercase">全站緊急避難模式 (Maintenance)</h3>
+                        <p class="text-xs text-slate-300 leading-relaxed">開啟後，所有非管理員用戶進入網站將只會看到「系統維護中」畫面。僅限遭到攻擊或重大漏洞時啟用。</p>
+                        <div class="pt-2"><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" id="cfg-maintenance" class="sr-only peer" onchange="window.toggleMaintenanceMode(this.checked)"><div class="w-16 h-8 bg-slate-800 border border-slate-600 rounded-full peer peer-checked:bg-red-600 peer-checked:border-red-400 transition-colors after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:after:translate-x-8"></div><span class="ml-4 text-xs font-bold text-slate-400 uppercase tracking-widest" id="maintenance-text">系統正常運行中</span></label></div>
+                    </div>
+                    <div class="glass-panel p-8 rounded-[40px] border-l-4 border-l-purple-500 space-y-6">
+                        <h3 class="text-base font-black text-purple-400 tracking-widest">Twitch 雷達自動監控</h3>
+                        <div class="flex justify-between items-center p-4 bg-purple-900/20 rounded-2xl border border-purple-500/30">
+                            <div><span class="text-sm font-bold text-white block mb-1 tracking-widest">啟用自動掃描</span><span class="text-xs text-purple-300/70 font-mono">後台將每 2 分鐘偵測老王頻道，同步至首頁。</span></div>
+                            <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" id="cfg-twitch-auto" class="sr-only peer" onchange="window.toggleTwitchMonitor(this.checked)"><div class="w-14 h-7 bg-slate-700 rounded-full peer peer-checked:bg-purple-500 transition-all after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:after:translate-x-7"></div></label>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-8 rounded-[40px] border-l-4 border-l-zinc-500 space-y-4">
+                        <h3 class="text-base font-black text-zinc-400 tracking-widest uppercase">系統安全快照</h3>
+                        <div class="flex gap-4">
+                            <button onclick="window.createSnapshot()" class="flex-1 bg-cyan-500/10 text-cyan-400 py-4 rounded-2xl text-xs font-black border border-cyan-500/30 hover:bg-cyan-500 hover:text-black transition-colors"><i class="fa-solid fa-camera mr-2"></i>建立全域快照備份</button>
+                            <button onclick="window.restoreSnapshot()" class="flex-1 bg-blue-500/10 text-blue-400 py-4 rounded-2xl text-xs font-black border border-blue-500/30 hover:bg-blue-500 hover:text-black transition-colors"><i class="fa-solid fa-clock-rotate-left mr-2"></i>還原歷史快照</button>
                         </div>
                     </div>
                 </div>
@@ -456,492 +399,739 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, doc, onSnapshot, getDoc, getDocs, updateDoc, setDoc, addDoc, deleteDoc, query, orderBy, limit, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, orderBy, limit, getDocs, onSnapshot, where, addDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // === Firebase 連線配置 ===
-        const firebaseConfig = {
-            apiKey: "AIzaSyDdu8ag6liDwW0AXn3zccIR5a13g7WE-hM",
-            authDomain: "oldwangbase.firebaseapp.com",
-            projectId: "oldwangbase",
-            storageBucket: "oldwangbase.firebasestorage.app",
-            messagingSenderId: "756236660652",
-            appId: "1:756236660652:web:794d9649d7315b64ec1409"
-        };
+        // Firebase Config
+        const firebaseConfig = { apiKey: "AIzaSyDdu8ag6liDwW0AXn3zccIR5a13g7WE-hM", authDomain: "oldwangbase.firebaseapp.com", projectId: "oldwangbase", storageBucket: "oldwangbase.firebasestorage.app", messagingSenderId: "756236660652", appId: "1:756236660652:web:794d9649d7315b64ec1409" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        window.vcore = { app, auth, db, user: null, role: null };
 
-        // === 全域狀態管理庫 ===
-        window.vcore = { 
-            role: 'guest', allUsers: [], tickets: [], qaList: [], promoImages: [], 
-            activeTk: null, activeSpy: null, trendChart: null, unsubscribers: [], forceUnlock: null 
+        // 🌟 錯誤處理器 (全域中文報錯)
+        const handleFirebaseError = (err, customMsg = "執行異常") => {
+            console.error("Critical Error Log:", err);
+            let msg = err.message;
+            if (err.code === 'permission-denied') msg = "權限阻擋：目前登入者身分不符，或 Firebase Security Rules 尚未發布。";
+            if (msg.includes('index')) msg = "索引缺失：請在開發者工具(Console)點擊連結建立複合索引。";
+            Swal.fire({ title: customMsg, html: `<div class='text-left bg-black/50 p-4 rounded-xl text-[10px] font-mono text-rose-400 mt-4'>錯誤日誌: ${msg}</div>`, icon: 'error', confirmButtonText: '確認' });
         };
 
-        function getName(uid, raw) { return (raw && raw !== '匿名粉絲' && raw !== '未命名' && raw.trim() !== '') ? raw : 'UID-'+uid.slice(0,6); }
-
-        // ==========================================
-        // 核心：圖片極致壓縮引擎 (解決 Firestore 容量問題)
-        // ==========================================
-        const compressImage = (file, maxSize = 600, quality = 0.5) => {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        let w = img.width, h = img.height;
-                        if (w > h && w > maxSize) { h *= maxSize / w; w = maxSize; }
-                        else if (h > maxSize) { w *= maxSize / h; h = maxSize; }
-                        canvas.width = w; canvas.height = h;
-                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                        resolve(canvas.toDataURL('image/jpeg', quality));
-                    };
-                    img.onerror = () => reject('圖片解析失敗');
-                    img.src = ev.target.result;
-                };
-                reader.onerror = () => reject('檔案讀取失敗');
-                reader.readAsDataURL(file);
-            });
+        // --- 登入與導航 ---
+        window.systemLogin = async () => {
+            const em = document.getElementById('auth-email').value;
+            const pw = document.getElementById('auth-pass').value;
+            Swal.fire({ title: '神經網路驗證中...', didOpen: () => Swal.showLoading() });
+            try {
+                const res = await signInWithEmailAndPassword(auth, em, pw);
+                const d = await getDoc(doc(db, "users", res.user.uid));
+                if (d.exists() && (d.data().role === 'admin' || d.data().role === 'engineer')) {
+                    Swal.close();
+                } else {
+                    await signOut(auth); Swal.fire('拒絕存取', '身分不具備管理權限', 'error');
+                }
+            } catch (err) { handleFirebaseError(err, "登入失敗"); }
         };
 
-        // ==========================================
-        // 系統認證與登入
-        // ==========================================
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
+        onAuthStateChanged(auth, async (u) => {
+            if (u) {
                 try {
-                    const uDoc = await getDoc(doc(db, "users", user.uid));
-                    window.vcore.role = uDoc.exists() ? (uDoc.data().role || 'user') : 'user';
-                    if(window.vcore.role !== 'admin' && window.vcore.role !== 'broadcaster') {
-                        await signOut(auth); Swal.fire('拒絕存取', '無效的管理員憑證。', 'error'); return;
-                    }
-                    document.getElementById('role-display').innerText = window.vcore.role === 'admin' ? 'ENGINEER_ADMIN' : 'BROADCASTER';
-                    document.getElementById('login-screen').classList.add('opacity-0', 'pointer-events-none');
-                    setTimeout(() => document.getElementById('login-screen').classList.add('hidden'), 500);
-                    document.getElementById('main-ui').classList.remove('hidden');
-                    initSystemListeners();
-                } catch(e) { console.error("Auth Error:", e); }
+                    const d = await getDoc(doc(db, "users", u.uid));
+                    if (d.exists() && (d.data().role === 'admin' || d.data().role === 'engineer')) {
+                        window.vcore.user = u; window.vcore.role = d.data().role;
+                        
+                        let displayRole = '系統管理員';
+                        if(d.data().role === 'admin') displayRole = '總管 (ADMIN)';
+                        if(d.data().role === 'engineer') displayRole = '工程師 (ENGINEER)';
+
+                        document.getElementById('login-screen').classList.add('opacity-0');
+                        setTimeout(() => {
+                            document.getElementById('login-screen').classList.add('hidden');
+                            document.getElementById('main-ui').classList.remove('hidden');
+                            document.getElementById('role-display').innerText = `權限: ${displayRole}`;
+                            window.initDashboard();
+                        }, 700);
+                    } else { await signOut(auth); }
+                } catch(e) { handleFirebaseError(e, "權限校驗失敗"); }
             } else {
-                window.vcore.unsubscribers.forEach(unsub => unsub()); window.vcore.unsubscribers = [];
-                document.getElementById('login-screen').classList.remove('hidden', 'opacity-0', 'pointer-events-none');
-                document.getElementById('main-ui').classList.add('hidden');
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('login-screen').classList.remove('opacity-0');
             }
         });
 
-        window.systemLogin = async () => {
-            Swal.fire({ title: '授權驗證中...', didOpen: () => Swal.showLoading(), background: 'rgba(15,23,42,0.95)' });
-            try { await signInWithEmailAndPassword(auth, document.getElementById('auth-email').value, document.getElementById('auth-pass').value); Swal.close(); } 
-            catch(err) { Swal.fire('驗證失敗', '帳號或密鑰錯誤', 'error'); }
+        window.switchTab = (tabId, btn) => {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            const target = document.getElementById(tabId); if(target) target.classList.remove('hidden');
+            if (btn) btn.classList.add('active');
+            
+            if (tabId === 'tab-users') window.renderUserTable();
+            if (tabId === 'tab-support') window.initTicketSystem();
+            if (tabId === 'tab-season') window.loadWipeSchedule();
+            if (tabId === 'tab-announcements') window.renderAnnouncements();
+            if (tabId === 'tab-promo') window.loadPromoConfig();
+            if (tabId === 'tab-keys') window.loadApiKeys();
+            if (tabId === 'tab-config') window.loadGlobalConfig();
         };
 
-        window.systemLogout = () => { Swal.fire({title:'登出系統?', icon:'warning', showCancelButton:true}).then(r=>{ if(r.isConfirmed) signOut(auth).then(()=>location.reload()); }); };
-        
-        window.switchTab = (id, btn) => { 
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden')); 
-            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active')); 
-            document.getElementById(id).classList.remove('hidden'); 
-            if(btn) btn.classList.add('active'); 
-        };
+        // =======================
+        // 🎧 官方客服中心 (結單邏輯修復、UID 去匿名化、手動標籤)
+        // =======================
+        let activeTicketId = null;
+        let tkUnsub = null;
+        window.currentTicketHistory = [];
 
-        // ==========================================
-        // 系統監聽器 (解決 Null 報錯的防呆機制)
-        // ==========================================
-        async function initSystemListeners() {
-            let perms = { dash: true, users: true, support: true, spy: true, promo: true };
-            if (window.vcore.role === 'broadcaster') {
-                try {
-                    const mDoc = await getDoc(doc(db, "system_config", "master"));
-                    if(mDoc.exists() && mDoc.data().broadcasterPerms) perms = mDoc.data().broadcasterPerms;
-                } catch(e) {}
-                document.getElementById('nav-divider').classList.add('hidden'); document.getElementById('nav-keys').classList.add('hidden'); document.getElementById('nav-config').classList.add('hidden');
-                document.getElementById('nav-home').classList.toggle('hidden', !perms.dash);
-                document.getElementById('nav-users').classList.toggle('hidden', !perms.users);
-                document.getElementById('nav-support').classList.toggle('hidden', !perms.support);
-                document.getElementById('nav-spy').classList.toggle('hidden', !perms.spy);
-                document.getElementById('nav-promo').classList.toggle('hidden', !perms.promo);
-                const first = document.querySelector('.nav-btn:not(.hidden)');
-                if(first) first.click();
-            } else { initTrendChart(); }
+        window.initTicketSystem = async () => {
+            const showClosed = document.getElementById('tk-show-closed').checked;
+            const q = showClosed ? 
+                query(collection(db, "support_tickets"), orderBy("timestamp", "desc"), limit(50)) :
+                query(collection(db, "support_tickets"), where("status", "!=", "closed"), orderBy("status", "asc"), orderBy("timestamp", "desc"), limit(50));
+            
+            onSnapshot(q, (snap) => {
+                let html = '';
+                const now = Date.now();
 
-            const errHandler = (err) => console.warn("Firestore Rule Info:", err.message);
-
-            // 系統底層配置
-            window.vcore.unsubscribers.push(onSnapshot(doc(db, "system_config", "master"), (d) => {
-                if(d.exists()) {
+                snap.forEach(d => {
                     const data = d.data();
-                    const prmpt = document.getElementById('cfg-prompt'); if(prmpt) prmpt.value = data.aiPrompt || '';
-                    const maint = document.getElementById('cfg-maint'); if(maint) maint.checked = data.maintenanceMode || false;
-                    if(data.broadcasterPerms) {
-                        ['dash','users','support','spy','promo'].forEach(k => {
-                            const el = document.getElementById(`perm-${k}`);
-                            if(el) el.checked = data.broadcasterPerms[k] || false;
-                        });
+                    
+                    // 🌟 核心防呆：如果標記「進行中」，但距離粉絲發訊已過 15 分鐘且尚未回覆，自動退回「待回覆」
+                    if ((data.status === 'in_progress' || data.status === 'replied') && (!data.replyTime || data.timestamp > data.replyTime)) {
+                        if (now - data.timestamp > 15 * 60 * 1000) {
+                            updateDoc(doc(db, "support_tickets", d.id), { status: 'pending' });
+                            return; // 讓下一次資料庫更新來重新渲染，跳過這次
+                        }
+                    }
+
+                    let sClass = 'text-zinc-500 border-zinc-500/30 bg-white/5';
+                    let sText = '已結案';
+                    if (data.status === 'pending') { sClass = 'text-rose-400 border-rose-400/30 bg-rose-400/10'; sText = '待回覆'; }
+                    if (data.status === 'in_progress' || data.status === 'replied') { sClass = 'text-amber-400 border-amber-400/30 bg-amber-400/10'; sText = '進行中'; }
+
+                    const displayName = (data.name && data.name !== "匿名粉絲") ? data.name : `用戶: ${data.uid.substring(0,8)}`;
+
+                    html += `
+                    <div onclick="window.selectTicket('${data.uid}', '${displayName}')" class="p-4 bg-white/5 border border-white/10 rounded-2xl cursor-pointer hover:bg-white/10 transition-all ${data.uid === activeTicketId ? 'border-cyan-500/50 bg-cyan-500/10' : ''}">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="font-bold text-white text-xs tracking-wider truncate max-w-[120px]">${displayName}</span>
+                            <span class="status-pill ${sClass}">${sText}</span>
+                        </div>
+                        <div class="text-[10px] text-slate-500 truncate leading-relaxed">${data.message.replace(/<[^>]*>?/gm, '')}</div>
+                    </div>`;
+                });
+                document.getElementById('ticket-list').innerHTML = html || `<div class='text-center p-10 text-slate-600 text-xs'>目前無此類工單</div>`;
+            }, (err) => handleFirebaseError(err, "讀取客服列表失敗"));
+        };
+
+        // 搜尋過濾
+        window.renderTicketList = () => {
+            const term = document.getElementById('tk-search').value.toLowerCase();
+            const items = document.getElementById('ticket-list').children;
+            for(let item of items) {
+                if(item.innerText.toLowerCase().includes(term)) item.style.display = 'block';
+                else item.style.display = 'none';
+            }
+        };
+
+        window.selectTicket = (uid, displayName) => {
+            activeTicketId = uid;
+            const cleanName = displayName.replace(/<[^>]*>?/gm, '').trim();
+            document.getElementById('tk-display-name').innerText = cleanName;
+            document.getElementById('tk-display-uid').innerText = `系統完整 UID: ${uid}`;
+            
+            document.getElementById('tk-sentiment').classList.remove('hidden');
+            document.getElementById('tk-status-select').classList.remove('hidden');
+            document.getElementById('tk-input-area').classList.remove('opacity-50', 'pointer-events-none');
+            
+            if(tkUnsub) tkUnsub();
+            tkUnsub = onSnapshot(query(collection(db, "support_tickets"), where("uid", "==", uid), orderBy("timestamp", "asc")), (snap) => {
+                let html = ''; window.currentTicketHistory = [];
+                let isAlreadyClosed = false;
+                let currentStatus = 'pending';
+
+                snap.forEach(d => {
+                    const data = d.data();
+                    currentStatus = data.status;
+                    if(data.status === 'closed') isAlreadyClosed = true;
+
+                    if(data.message && !data.message.includes('*(工程師主動聯繫)*')) {
+                        html += `<div class="flex flex-col items-start mb-5 animate-fade-in"><div class="bg-slate-800 border border-slate-700 text-slate-200 px-5 py-3.5 rounded-2xl rounded-tl-sm text-sm max-w-[85%] shadow-md leading-relaxed">${data.message}</div></div>`;
+                        window.currentTicketHistory.push({ role: 'user', content: data.message.replace(/<[^>]*>?/gm, '') });
+                    }
+                    if(data.replyContent) {
+                        html += `<div class="flex flex-col items-end mb-5 animate-fade-in"><div class="bg-gradient-to-br from-cyan-600 to-blue-700 text-white px-5 py-3.5 rounded-2xl rounded-tr-sm text-sm max-w-[85%] border border-cyan-400/30 leading-relaxed shadow-lg">${data.replyContent}</div><span class='text-[8px] text-cyan-500/60 mt-1 uppercase font-black tracking-widest'>官方回覆</span></div>`;
+                        window.currentTicketHistory.push({ role: 'assistant', content: data.replyContent.replace(/<[^>]*>?/gm, '') });
+                    }
+                });
+
+                // 🌟 同步下拉選單狀態 (相容舊資料庫的 replied 狀態)
+                const selectEl = document.getElementById('tk-status-select');
+                if(currentStatus === 'replied') currentStatus = 'in_progress';
+                selectEl.value = currentStatus;
+
+                if(isAlreadyClosed) {
+                    html += `<div class='w-full text-center py-6'><span class='bg-rose-500/10 text-rose-400 border border-rose-500/30 px-6 py-2.5 rounded-full text-xs font-black tracking-widest'><i class='fa-solid fa-lock mr-2'></i>此工單已結案歸檔</span></div>`;
+                    document.getElementById('tk-input-area').classList.add('opacity-50', 'pointer-events-none');
+                } else {
+                    document.getElementById('tk-input-area').classList.remove('opacity-50', 'pointer-events-none');
+                }
+
+                const box = document.getElementById('tk-chat-box');
+                box.innerHTML = html; box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' });
+            }, (err) => handleFirebaseError(err, "讀取對話紀錄失敗"));
+        };
+
+        // 🌟 取代原本的手動標籤與結單按鈕：下拉選單變更狀態
+        window.updateTicketStatus = async (newStatus) => {
+            if(!activeTicketId) return;
+            try {
+                // 如果選擇「已結案」，一樣執行批次處理，將該用戶所有未結案工單清空
+                if (newStatus === 'closed') {
+                    const res = await Swal.fire({ title: '確認全數結案？', text: '系統將自動封存該用戶所有開放的工單。', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: '確定結案' });
+                    if(res.isConfirmed) {
+                        const q = query(collection(db, "support_tickets"), where("uid", "==", activeTicketId), where("status", "!=", "closed"));
+                        const snap = await getDocs(q);
+                        if(!snap.empty) {
+                            const batch = writeBatch(db);
+                            snap.forEach((docSnap) => {
+                                batch.update(docSnap.ref, { status: 'closed', closedAt: Date.now(), closedBy: vcore.user.email });
+                            });
+                            await batch.commit();
+                            Swal.fire({ toast: true, position: 'top', title: '已全數結案', icon: 'success', timer: 1500, showConfirmButton: false });
+                        }
+                    } else {
+                        // 取消的話，把選單切回進行中
+                        document.getElementById('tk-status-select').value = 'in_progress';
+                    }
+                } else {
+                    // 若切換為「進行中」或「待回覆」，僅更新最新的一筆文件
+                    const q = query(collection(db, "support_tickets"), where("uid", "==", activeTicketId), orderBy("timestamp", "desc"), limit(1));
+                    const snap = await getDocs(q);
+                    if(!snap.empty) {
+                        await updateDoc(doc(db, "support_tickets", snap.docs[0].id), { status: newStatus });
+                        Swal.fire({ toast: true, position: 'top', title: '狀態已切換', icon: 'success', timer: 1000, showConfirmButton: false });
                     }
                 }
-            }, errHandler));
+            } catch(e) { handleFirebaseError(e, "狀態更新失敗"); }
+        };
 
-            // 開團宣傳配置 (使用安全抓取避免報錯)
-            window.vcore.unsubscribers.push(onSnapshot(doc(db, "system_config", "promotion"), (d) => {
-                if(d.exists()) {
-                    const p = d.data();
-                    const el = (id) => document.getElementById(id);
-                    if(el('p-active')) el('p-active').checked = p.active || false;
-                    if(el('p-title')) el('p-title').value = p.title || '';
-                    if(el('p-content')) el('p-content').value = p.content || '';
-                    if(el('p-price')) el('p-price').value = p.price || '';
-                    if(el('p-sale-price')) el('p-sale-price').value = p.salePrice || '';
-                    if(el('p-discount-code')) el('p-discount-code').value = p.discountCode || '';
-                    if(el('p-stock')) el('p-stock').value = p.stockStatus || 'in_stock';
-                    if(el('p-url')) el('p-url').value = p.link || '';
-                    if(el('p-start') && p.startTime) el('p-start').value = new Date(p.startTime-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
-                    if(el('p-end') && p.endTime) el('p-end').value = new Date(p.endTime-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
+            window.handleTkKeyPress = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.sendTicketReply(); } };
                     
-                    window.vcore.promoImages = p.images || []; window.renderPromoImages(); 
-                    window.vcore.qaList = p.qaList || []; window.renderQA();
-                }
-            }, errHandler));
+                    window.sendTicketReply = async () => {
+                        if(!activeTicketId) return;
+                        const input = document.getElementById('tk-reply');
+                        const msg = input.value.trim(); if(!msg) return;
+                        input.value = ''; input.style.height = '';
+                        try {
+                            const q = query(collection(db, "support_tickets"), where("uid", "==", activeTicketId), orderBy("timestamp", "desc"), limit(1));
+                            const snap = await getDocs(q);
+                            // 🌟 發送回覆時，狀態自動切換為「進行中 (in_progress)」
+                            if(!snap.empty) await updateDoc(doc(db, "support_tickets", snap.docs[0].id), { status: 'in_progress', replyContent: msg, replyTime: Date.now(), replyBy: vcore.user.email });
+                        } catch(err) { handleFirebaseError(err, "發送回覆失敗"); }
+                    };
 
-            // 用戶資料庫 (限流100筆確保效能)
-            if (perms.dash || perms.users || window.vcore.role === 'admin') {
-                window.vcore.unsubscribers.push(onSnapshot(query(collection(db, "users"), orderBy("exp", "desc"), limit(100)), (snap) => {
-                    window.vcore.allUsers = snap.docs.map(d=>({id:d.id, ...d.data()}));
-                    let exp = 0; window.vcore.allUsers.forEach(u=>exp+=(u.exp||0));
-                    document.getElementById('st-users').innerText = snap.docs.length >= 100 ? '100+' : snap.docs.length.toLocaleString();
-                    document.getElementById('st-exp').innerText = exp.toLocaleString();
-                    window.renderUserTable(); window.renderSpyList(); window.updateTrendChart(); window.renderTopFans();
-                }, errHandler));
-            }
-
-            // 客服支援中心
-            if (perms.support || window.vcore.role === 'admin') {
-                window.vcore.unsubscribers.push(onSnapshot(query(collection(db, "support_tickets"), orderBy("timestamp", "asc")), (snap) => {
-                    window.vcore.tickets = snap.docs.map(d=>({id:d.id, ...d.data()}));
-                    window.renderTicketList();
-                    if(window.vcore.activeTk) window.selTk(window.vcore.activeTk, getName(window.vcore.activeTk, window.vcore.tickets.find(t=>t.uid===window.vcore.activeTk)?.name));
-                }, errHandler));
-            }
-
-            // API 金鑰
-            if (window.vcore.role === 'admin') {
-                window.vcore.unsubscribers.push(onSnapshot(collection(db, "api_keys_v2"), (snap) => {
-                    document.getElementById('api-key-grid').innerHTML = snap.docs.map(d => {
-                        const k = d.data(); const alert = (k.usageCount||0) > 800 ? '<i class="fa-solid fa-triangle-exclamation text-rose-500 animate-pulse ml-2"></i>' : '';
-                        return `<div class="glass-panel p-6 rounded-[24px] border-t-2 ${k.type==='gemini'?'border-t-cyan-500':'border-t-purple-500'}"><div class="flex justify-between items-center mb-3"><span class="text-xs font-black uppercase text-white">${k.type} KEY ${alert}</span><button onclick="window.deleteApiKey('${d.id}')" class="w-8 h-8 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-colors"><i class="fa-solid fa-trash text-xs"></i></button></div><div class="bg-black/50 border border-white/5 p-3 rounded-xl text-[10px] font-mono text-slate-400 mb-2 truncate select-all">${k.key}</div><div class="text-right text-[10px] text-slate-500">已使用: <span class="text-white">${(k.usageCount||0)}</span> 次</div></div>`;
-                    }).join('');
-                }, errHandler));
-            }
-        }
-
-        // ==========================================
-        // 儀表板圖表與排行
-        // ==========================================
-        function initTrendChart() {
-            const ctx = document.getElementById('trendChart'); if(!ctx) return;
-            window.vcore.trendChart = new Chart(ctx, { type: 'line', data: { labels: ['6天前','5天前','4天前','3天前','前天','昨天','今天'], datasets: [{ label: '活躍度', data: [0,0,0,0,0,0,0], borderColor: '#22d3ee', backgroundColor: 'rgba(34, 211, 238, 0.1)', fill: true, tension: 0.4, pointBackgroundColor: '#020617', pointBorderColor: '#22d3ee', pointBorderWidth: 2, pointRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }, x: { grid: { display: false }, ticks: { color: '#94a3b8' } } } } });
-        }
-        window.updateTrendChart = () => {
-            if(!window.vcore.trendChart || window.vcore.allUsers.length === 0) return;
-            const now = Date.now(); const dayMs = 86400000; let counts = [0,0,0,0,0,0,0];
-            window.vcore.allUsers.forEach(u => { const c = u.createdAt ? new Date(u.createdAt).getTime() : 0; for(let i=0; i<7; i++) { if (c <= now - ((6-i)*dayMs)) counts[i]++; } });
-            window.vcore.trendChart.data.datasets[0].data = counts; window.vcore.trendChart.update();
-        };
-        window.renderTopFans = () => {
-            const list = window.vcore.allUsers.slice(0, 5);
-            document.getElementById('top-fans-list').innerHTML = list.map((u, i) => {
-                const color = i===0 ? 'text-amber-400' : (i===1 ? 'text-slate-300' : (i===2 ? 'text-orange-400' : 'text-slate-500'));
-                return `<div class="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5 hover:bg-white/10 transition-colors"><div class="flex items-center gap-3"><div class="w-6 text-center font-black ${color}">#${i+1}</div><img src="${u.photoURL||`https://ui-avatars.com/api/?name=${getName(u.id,u.name)}&background=020617&color=22d3ee`}" class="w-8 h-8 rounded-full"><span class="text-sm font-bold text-white truncate w-24">${getName(u.id,u.name)}</span></div><span class="text-xs font-black text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.5)]">${(u.exp||0).toLocaleString()} EXP</span></div>`;
-            }).join('') || '<div class="text-slate-500 text-sm">尚無數據</div>';
-        };
-
-        // ==========================================
-        // 粉絲管理
-        // ==========================================
-        window.renderUserTable = () => {
-            const t = document.getElementById('user-search').value.toLowerCase();
-            document.getElementById('user-table-body').innerHTML = window.vcore.allUsers.filter(u=>(u.name||'').toLowerCase().includes(t)||u.id.includes(t)).map(u => {
-                const name = getName(u.id, u.name);
-                const roleColor = u.role==='admin' ? 'bg-rose-500/20 text-rose-400 border-rose-500/30' : (u.role==='broadcaster'?'bg-purple-500/20 text-purple-400 border-purple-500/30':'bg-white/5 text-slate-400 border-white/10');
-                const avatar = u.photoURL || `https://ui-avatars.com/api/?name=${name}&background=020617&color=22d3ee`;
-                return `<tr class="hover:bg-white/5 transition-colors group"><td class="py-3 px-6 flex items-center gap-4"><img src="${avatar}" class="w-10 h-10 rounded-xl border border-white/10 shadow-lg"><div><p class="font-bold text-white text-sm tracking-wide">${name}</p><p class="text-[10px] text-slate-500 font-mono">${u.email||'UID-'+u.id.slice(0,5)}</p></div></td><td class="py-3 px-6 text-center text-cyan-400 font-black text-sm tracking-widest drop-shadow-[0_0_5px_rgba(34,211,238,0.5)]">${(u.exp||0).toLocaleString()}</td><td class="py-3 px-6 text-center"><span class="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${roleColor}">${u.role||'user'}</span></td><td class="py-3 px-6 text-right space-x-2"><button onclick="window.assignBroadcaster('${u.id}', '${name}', '${u.role}')" class="w-8 h-8 rounded-full bg-purple-500/10 text-purple-400 hover:bg-purple-500 hover:text-white transition-all" title="指派權限"><i class="fa-solid fa-crown text-xs"></i></button><button onclick="window.initiateProactiveChat('${u.id}', '${name}')" class="w-8 h-8 rounded-full bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500 hover:text-[#020617] transition-all" title="主動私訊"><i class="fa-solid fa-comment-dots text-xs"></i></button><button onclick="window.deleteUserRecord('${u.id}')" class="w-8 h-8 rounded-full bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white transition-all opacity-0 group-hover:opacity-100" title="刪除數據"><i class="fa-solid fa-trash text-xs"></i></button></td></tr>`;
-            }).join('');
-        };
-        window.assignBroadcaster = async (uid, name, currentRole) => {
-            if(window.vcore.role !== 'admin') return Swal.fire('拒絕', '僅工程師可執行指派。', 'error');
-            const opts = { 'user': '一般粉絲', 'broadcaster': '主播' }; if(currentRole === 'admin') opts['admin'] = '工程師'; 
-            const {value: newRole} = await Swal.fire({ title: `變更 [${name}] 權限`, input: 'select', inputOptions: opts, inputValue: currentRole, showCancelButton: true });
-            if(newRole && newRole !== currentRole) { try { await updateDoc(doc(db, "users", uid), { role: newRole }); Swal.fire({toast:true, position:'top-end', icon:'success', title:'權限已變更', showConfirmButton:false, timer:1500}); } catch(e) { Swal.fire('錯誤',e.message,'error'); } }
-        };
-        window.deleteUserRecord = async (uid) => {
-            if(window.vcore.role !== 'admin') return;
-            if((await Swal.fire({ title: '抹除數據?', text:'將刪除此用戶的所有記錄', icon:'warning', showCancelButton:true, confirmButtonColor:'#e11d48' })).isConfirmed) { try { await deleteDoc(doc(db, "users", uid)); Swal.fire('已刪除','','success'); } catch(e){ Swal.fire('錯誤',e.message,'error'); } }
-        };
-        window.initiateProactiveChat = async (uid, name) => {
-            window.switchTab('tab-support', document.getElementById('nav-support'));
-            const exist = window.vcore.tickets.find(m => m.uid === uid && m.status !== 'closed');
-            try {
-                if(!exist) { await addDoc(collection(db, "support_tickets"), { uid: uid, name: name, message: "*(系統：管理員主動開啟通訊串列)*", status: 'replied', replyContent: "", timestamp: Date.now(), chatStatus: 'active' }); } 
-                else { await writeBatch(db).update(doc(db,"support_tickets",exist.id), {chatStatus:'active'}).commit(); }
-                setTimeout(() => window.selTk(uid, name), 500);
-            } catch(e) { Swal.fire('開啟失敗', e.message, 'error'); }
-        };
-
-        // ==========================================
-        // 支援中心 (含圖片上傳)
-        // ==========================================
-        window.renderTicketList = () => {
-            const t = (document.getElementById('tk-search').value || '').toLowerCase();
-            let groups = {}; let pending = 0;
-            window.vcore.tickets.forEach(d => {
-                if(d.status==='closed') return;
-                if(!groups[d.uid]) groups[d.uid] = { name: getName(d.uid, d.name), hasP: false, status: d.chatStatus||'waiting', last: d.timestamp };
-                if(d.status==='pending') { pending++; groups[d.uid].hasP = true; }
-                groups[d.uid].last = Math.max(groups[d.uid].last, d.timestamp);
+        window.callAdminAI = async (systemPrompt, input) => {
+            const keySnap = await getDoc(doc(db, "system_config", "api_keys"));
+            const groqKey = keySnap.data()?.groq?.[0]?.trim();
+            if(!groqKey) throw new Error("請先至神經金庫設定 Groq API 金鑰");
+            const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
+                body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{role:"system", content: systemPrompt}, {role:"user", content: input}], temperature: 0.6 })
             });
-            document.getElementById('badge-ticket').innerText = pending; document.getElementById('badge-ticket').classList.toggle('hidden', pending===0);
-            
-            document.getElementById('ticket-list').innerHTML = Object.keys(groups).sort((a,b)=>groups[b].last-groups[a].last).map(uid => {
-                const g = groups[uid]; if(t && !g.name.toLowerCase().includes(t)) return '';
-                const act = window.vcore.activeTk===uid ? 'bg-cyan-500/10 border-cyan-500/40 shadow-[0_0_15px_rgba(34,211,238,0.2)]' : 'border-transparent hover:bg-white/5';
-                return `<div onclick="window.selTk('${uid}', '${g.name}')" class="p-4 rounded-2xl cursor-pointer border transition-all flex justify-between items-center mb-1 ${act}"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center font-bold text-xs text-white">${g.name.charAt(0)}</div><span class="text-sm font-bold text-white tracking-wide">${g.name}</span></div>${g.hasP?'<div class="w-2.5 h-2.5 bg-rose-500 rounded-full shadow-[0_0_10px_rgba(244,63,94,0.8)] animate-pulse"></div>':''}</div>`;
-            }).join('') || '<div class="text-center text-slate-500 text-xs py-10 tracking-widest uppercase">無通訊頻道</div>';
+            if(!res.ok) throw new Error("AI 伺服器連線失敗");
+            const data = await res.json(); return data.choices[0].message.content;
         };
-        window.renderTkView = () => {
-            const view = document.getElementById('tk-view');
-            if(!window.vcore.activeTk) { view.innerHTML = ''; return; }
-            const msgs = window.vcore.tickets.filter(m => m.uid === window.vcore.activeTk).sort((a,b)=>a.timestamp-b.timestamp);
-            view.innerHTML = msgs.map(m => {
-                let html = '';
-                if(m.message && m.message !== "*(通訊串接延續)*" && m.message !== "*(工程師主動聯繫)*") {
-                    const mContent = m.message.startsWith('data:image') ? `<img src="${m.message}" class="max-w-[200px] rounded-lg">` : m.message.replace(/\n/g, '<br>');
-                    html += `<div class="flex flex-col items-start mb-4"><span class="text-[10px] text-slate-500 font-mono mb-1 pr-1">${new Date(m.timestamp).toLocaleString()}</span><div class="bg-[#0f172a] text-white px-5 py-3 rounded-2xl rounded-bl-sm text-[14px] max-w-[85%] border border-white/10">${mContent}</div></div>`;
+
+        window.generateAIReply = async (e) => {
+            if(!activeTicketId || window.currentTicketHistory.length === 0) return Swal.fire('提示', '目前沒有對話紀錄', 'info');
+            const btn = e.currentTarget; btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            const toneSelect = document.getElementById('tk-ai-tone').value;
+            let tonePrompt = "專業、官方且友善的語氣";
+            if(toneSelect === 'friendly') tonePrompt = "非常親切、像朋友一樣的語氣";
+            if(toneSelect === 'humorous') tonePrompt = "幽默、搞笑且帶有網路迷因的語氣";
+            if(toneSelect === 'strict') tonePrompt = "嚴肅、具警告意味且簡短的官方語氣";
+            try {
+                const history = window.currentTicketHistory.map(m => `${m.role}: ${m.content}`).join('\n');
+                const reply = await window.callAdminAI(`你是營運工程師。請根據歷史對話草擬回覆。要求：【${tonePrompt}】，只需輸出內容，不要廢話。`, history);
+                document.getElementById('tk-reply').value = reply;
+            } catch(err) { handleFirebaseError(err, "AI 草擬失敗"); }
+            btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i>AI 智慧草擬';
+        };
+
+        window.fixTypos = async (e) => {
+            const input = document.getElementById('tk-reply'); if(!input.value.trim()) return Swal.fire('提示', '請先輸入內容', 'info');
+            const btn = e.currentTarget; btn.disabled = true;
+            try { input.value = await window.callAdminAI("你是一位專業文案編輯。修正錯字並潤飾文字使其更通順。只輸出修正後的內容。", input.value); } catch(err) { handleFirebaseError(err, "潤飾失敗"); }
+            btn.disabled = false;
+        };
+
+        window.handleAdminUpload = function(e) {
+            const file = e.target.files[0]; if(!file || !activeTicketId) return;
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                const q = query(collection(db, "support_tickets"), where("uid", "==", activeTicketId), orderBy("timestamp", "desc"), limit(1));
+                const snap = await getDocs(q);
+                if(!snap.empty) {
+                    await updateDoc(doc(db, "support_tickets", snap.docs[0].id), {
+                        status: 'replied', replyContent: `<img src="${ev.target.result}" class="max-w-[200px] rounded-lg border border-cyan-500/50 shadow-lg cursor-pointer" onclick="window.open(this.src)">`, replyTime: Date.now(), replyBy: vcore.user.email
+                    });
                 }
-                if(m.replyContent) {
-                    const rContent = m.replyContent.startsWith('data:image') ? `<img src="${m.replyContent}" class="max-w-[200px] rounded-lg">` : m.replyContent.replace(/\n/g, '<br>');
-                    html += `<div class="flex flex-col items-end mb-4"><div class="flex items-center gap-2 mb-1 pl-1"><span class="text-[10px] text-cyan-400 font-bold"><i class="fa-solid fa-wrench mr-1"></i>系統回覆</span><span class="text-[10px] text-slate-500 font-mono">${new Date(m.replyTime||m.timestamp).toLocaleString()}</span></div><div class="bg-gradient-to-r from-cyan-500 to-blue-600 text-[#020617] font-medium px-5 py-3 rounded-2xl rounded-br-sm text-[14px] max-w-[85%] shadow-lg">${rContent}</div></div>`;
+            };
+            reader.readAsDataURL(file);
+        };
+
+        // =======================
+        // 📊 儀表板 (去匿名化處理)
+        // =======================
+        let trendChartObj = null;
+        window.initDashboard = async () => {
+            try {
+                const usersSnap = await getDocs(collection(db, "users"));
+                let tExp = 0; let activeCount = usersSnap.size; let subs = 0; let usersData = [];
+                usersSnap.forEach(d => {
+                    const data = d.data(); tExp += (data.exp || 0);
+                    if(data.isTwitchSub) subs++;
+                    usersData.push({ id: d.id, ...data });
+                });
+                document.getElementById('st-users').innerText = activeCount;
+                document.getElementById('st-exp').innerText = tExp.toLocaleString();
+                document.getElementById('st-subs').innerText = subs;
+                
+                const top5 = usersData.sort((a,b) => (b.exp || 0) - (a.exp || 0)).slice(0,5);
+                document.getElementById('top-fans-list').innerHTML = top5.map((u, i) => {
+                    const displayName = (u.name && u.name !== "匿名粉絲") ? u.name : `未命名粉絲 (${u.id.substring(0,6)})`;
+                    return `
+                    <div class="flex items-center justify-between p-4 bg-black/40 rounded-2xl border border-white/5 hover:border-amber-500/30 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center font-black text-xs text-white shadow-inner border border-white/10">${i+1}</div>
+                            <span class="text-sm font-bold text-white truncate max-w-[120px]">${displayName}</span>
+                        </div>
+                        <span class="text-amber-400 font-black text-sm tracking-wider drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]">${(u.exp||0).toLocaleString()} <span class="text-[9px] text-slate-500">EXP</span></span>
+                    </div>`;
+                }).join('');
+
+                const tkSnap = await getDocs(query(collection(db, "support_tickets"), where("status", "==", "pending")));
+                document.getElementById('st-tickets').innerText = tkSnap.size;
+                
+                const mSnap = await getDoc(doc(db, "system_config", "master"));
+                if(mSnap.exists() && mSnap.data().maintenanceMode) {
+                    document.getElementById('st-health').innerText = "系統鎖定中";
+                    document.getElementById('st-health').className = "text-2xl font-black text-red-500 relative z-10 mt-1 animate-pulse";
                 }
-                return html;
-            }).join('') || '<div class="absolute inset-0 flex flex-col items-center justify-center opacity-50 pointer-events-none"><i class="fa-solid fa-comment-slash text-4xl mb-2 text-slate-500"></i><p class="text-sm">尚無通訊內容</p></div>';
-            view.scrollTop = view.scrollHeight;
-        };
-        window.selTk = (uid, name) => {
-            window.vcore.activeTk = uid; window.renderTicketList();
-            document.getElementById('tk-title').innerHTML = `<div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-cyan-500 flex items-center justify-center text-[#020617] font-black text-xs">${name.charAt(0)}</div><div><span class="text-sm font-black text-white tracking-widest block">${name}</span><span class="text-[9px] text-cyan-400 font-mono">UID-${uid.slice(0,8)}</span></div></div>`;
-            document.getElementById('tk-actions').classList.remove('hidden'); 
-            document.getElementById('tk-input-area').classList.remove('hidden'); 
-            document.getElementById('tk-input-area').classList.add('flex');
-            
-            const isActive = window.vcore.tickets.find(m=>m.uid===uid && m.chatStatus==='active');
-            // 🚀 修復：加入強制解鎖判斷
-            const isUnlocked = !!isActive || window.vcore.forceUnlock === uid;
-            document.getElementById('tk-mask').classList.toggle('hidden', isUnlocked);
-            document.getElementById('btn-tk-start').classList.toggle('hidden', isUnlocked);
-            document.getElementById('btn-tk-end').classList.toggle('hidden', !isUnlocked);
-            window.renderTkView();
+
+                const ctx = document.getElementById('trendChart').getContext('2d');
+                if (trendChartObj) trendChartObj.destroy();
+                trendChartObj = new Chart(ctx, {
+                    type: 'line', data: {
+                        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                        datasets: [{ label: '活躍度', data: [45, 52, 48, 70, 65, 90, activeCount], borderColor: '#22d3ee', backgroundColor: 'rgba(34, 211, 238, 0.05)', borderWidth: 3, tension: 0.4, fill: true, pointRadius: 0 }]
+                    }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } }
+                });
+            } catch (err) { handleFirebaseError(err, "儀表板讀取失敗"); }
         };
 
-        window.startTicket = async () => {
-            window.vcore.forceUnlock = window.vcore.activeTk; // 🚀 前端強制解除鎖定
-            document.getElementById('tk-mask').classList.add('hidden');
-            document.getElementById('btn-tk-start').classList.add('hidden');
-            document.getElementById('btn-tk-end').classList.remove('hidden');
-            window.selTk(window.vcore.activeTk, document.getElementById('tk-title').innerText); // 重新渲染畫面
-            try { 
-                const batch = writeBatch(db); 
-                window.vcore.tickets.filter(m=>m.uid===window.vcore.activeTk).forEach(m=>batch.update(doc(db, "support_tickets", m.id), {chatStatus:'active'})); 
-                await batch.commit(); 
-            } catch(e) { console.warn("無權限更新雲端狀態，但前端已強行解鎖"); }
-        };
-
-        window.insertTkReply = (t) => { const box=document.getElementById('tk-reply'); box.value+=t; box.focus(); };
-        document.getElementById('tk-reply')?.addEventListener('keydown', (e) => { if((e.metaKey || e.ctrlKey) && e.key === 'Enter') window.sendTkReply(); });
-
-        window.sendTkReply = async () => {
-            const box = document.getElementById('tk-reply'); const text = box.value.trim(); if(!text || !window.vcore.activeTk) return;
-            const p = window.vcore.tickets.slice().reverse().find(m=>m.uid===window.vcore.activeTk && m.status==='pending');
+        // =======================
+        // 👥 粉絲 CRM (去匿名化處理)
+        // =======================
+        let allUsersCache = [];
+        window.renderUserTable = async () => {
             try {
-                if(p) await updateDoc(doc(db, "support_tickets", p.id), {status:'replied', replyContent:text, replyTime: Date.now()});
-                else await addDoc(collection(db, "support_tickets"), {uid:window.vcore.activeTk, message:"", status:'replied', replyContent:text, timestamp:Date.now(), chatStatus:'active'});
-                box.value='';
-            } catch(e) { Swal.fire('發送失敗', '請確認 Firebase Rules 權限', 'error'); }
-        };
-
-        window.handleTkFileUpload = async (e) => {
-            const file = e.target.files[0]; if(!file || !window.vcore.activeTk) return;
-            Swal.fire({title:'處理圖片中...', didOpen:()=>Swal.showLoading()});
-            try {
-                const b64 = await compressImage(file, 500, 0.4); // 客服圖片強力壓縮
-                await addDoc(collection(db, "support_tickets"), { uid:window.vcore.activeTk, message:"", status:'replied', replyContent: b64, timestamp:Date.now(), chatStatus:'active' });
-                Swal.close();
-            } catch(err) { Swal.fire('上傳失敗', err, 'error'); }
-            e.target.value = '';
-        };
-
-        window.endTicket = async () => {
-            const res = await Swal.fire({ title: '關閉通訊', text: '請選擇處置方式', icon: 'warning', showDenyButton: true, showCancelButton: true, confirmButtonText: '封存紀錄', denyButtonText: '物理銷毀 (刪除)' });
-            const batch = writeBatch(db); const msgs = window.vcore.tickets.filter(m=>m.uid===window.vcore.activeTk);
-            try {
-                if(res.isConfirmed) { msgs.forEach(m=>batch.update(doc(db,"support_tickets",m.id),{status:'closed', chatStatus:'closed'})); }
-                else if(res.isDenied) { msgs.forEach(m=>batch.delete(doc(db,"support_tickets",m.id))); }
-                if(!res.isDismissed) { await batch.commit(); window.vcore.forceUnlock = null; window.vcore.activeTk=null; document.getElementById('tk-input-area').classList.add('hidden'); document.getElementById('tk-actions').classList.add('hidden'); document.getElementById('tk-view').innerHTML=''; document.getElementById('tk-mask').classList.remove('hidden'); document.getElementById('tk-title').innerHTML='等待選擇'; }
-            } catch(e) { Swal.fire('處置失敗', e.message, 'error'); }
-        };
-
-        // ==========================================
-        // 開團宣傳模組
-        // ==========================================
-        window.handlePromoUpload = async (e) => {
-            const files = e.target.files; if(!files.length) return;
-            Swal.fire({title:'極致壓縮中...', text:'正在為老王省下伺服器空間', didOpen:()=>Swal.showLoading(), background:'rgba(15,23,42,0.95)'});
-            try {
-                for(let f of files) {
-                    const b64 = await compressImage(f, 600, 0.5);
-                    if(window.vcore.promoImages.length < 8) window.vcore.promoImages.push(b64);
+                if(allUsersCache.length === 0) {
+                    Swal.fire({ title: '掃描資料庫中...', allowOutsideClick:false, didOpen:()=>Swal.showLoading()});
+                    const snap = await getDocs(query(collection(db, "users"), orderBy("exp", "desc")));
+                    snap.forEach(d => allUsersCache.push({ id: d.id, ...d.data() }));
+                    Swal.close();
                 }
-                window.renderPromoImages(); Swal.close();
-            } catch(err) { Swal.fire('壓縮失敗', err, 'error'); }
-            e.target.value = '';
+                const term = document.getElementById('user-search')?.value.toLowerCase() || '';
+                const filtered = allUsersCache.filter(u => 
+                    (u.name||'').toLowerCase().includes(term) || u.id.toLowerCase().includes(term) || (u.adminRemarks||'').toLowerCase().includes(term)
+                ).slice(0, 100);
+                
+                document.getElementById('user-table-body').innerHTML = filtered.map(u => {
+                    let roleDisplay = '普通粉絲';
+                    let roleColor = 'text-cyan-400 border-cyan-400/30';
+                    if(u.role === 'admin') { roleDisplay = '總管'; roleColor = 'text-rose-400 border-rose-400/30'; }
+                    if(u.role === 'engineer') { roleDisplay = '工程師'; roleColor = 'text-amber-400 border-amber-400/30'; }
+                    if(u.role === 'banned') { roleDisplay = '已封鎖'; roleColor = 'text-zinc-600 border-zinc-600/30'; }
+
+                    const tagHtml = u.adminRemarks ? `<div class="text-[9px] text-emerald-400 font-mono mt-1 border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 w-fit"><i class="fa-solid fa-tag"></i>${u.adminRemarks}</div>` : '';
+                    const twitchHtml = u.isTwitchSub ? `<span class="text-[10px] text-purple-400 bg-purple-500/20 border border-purple-500/30 px-2 py-1 rounded font-bold"><i class="fa-brands fa-twitch mr-1"></i>訂閱者</span>` : `<span class="text-zinc-600 text-[10px]">—</span>`;
+                    const displayName = (u.name && u.name !== "匿名粉絲") ? u.name : `UID: ${u.id.substring(0,8)}`;
+
+                    return `
+                    <tr class="hover:bg-white/5 transition-colors group">
+                        <td class="py-3 px-6 border-b border-white/5">
+                            <div class="flex items-center gap-3">
+                                <img src="${u.photoURL||'avatar-main.jpg'}" class="w-10 h-10 rounded-xl object-cover border border-white/10 shadow-sm">
+                                <div class="flex flex-col">
+                                    <div class="font-bold text-white text-sm">${displayName} <span class="text-slate-500 font-normal text-[10px] ml-1">${u.customTitle||''}</span></div>
+                                    <div class="text-[9px] text-slate-500 font-mono tracking-tighter">${u.id}</div>
+                                    ${tagHtml}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3 px-4 border-b border-white/5 text-center font-black text-amber-400 text-sm tracking-wider">${u.exp||0}</td>
+                        <td class="py-3 px-4 border-b border-white/5 text-center">${twitchHtml}</td>
+                        <td class="py-3 px-4 border-b border-white/5 text-center"><span class="status-pill ${roleColor}">${roleDisplay}</span></td>
+                        <td class="py-3 px-6 border-b border-white/5 text-right">
+                            <div class="flex items-center justify-end gap-2 opacity-30 group-hover:opacity-100 transition-opacity">
+                                <button onclick="window.toggleTwitchSub('${u.id}', ${!u.isTwitchSub})" class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500 hover:text-white transition-all shadow-sm" title="標記 Twitch 訂閱"><i class="fa-brands fa-twitch text-[10px]"></i></button>
+                                <button onclick="window.editUserTag('${u.id}', '${u.adminRemarks||''}')" class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white transition-all shadow-sm" title="編輯內部備註"><i class="fa-solid fa-pen text-[10px]"></i></button>
+                                <button onclick="window.sendReward('${u.id}', '${u.name||'粉絲'}')" class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-black transition-all shadow-sm" title="發送系統空投"><i class="fa-solid fa-gift text-[10px]"></i></button>
+                                <button onclick="window.changeRole('${u.id}', '${u.role}')" class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 hover:bg-amber-500 hover:text-black transition-all shadow-sm" title="更改權限"><i class="fa-solid fa-shield-halved text-[10px]"></i></button>
+                            </div>
+                        </td>
+                    </tr>`;
+                }).join('');
+            } catch (err) { handleFirebaseError(err, "CRM 載入失敗"); }
         };
 
-        window.renderPromoImages = () => {
-            const container = document.getElementById('promo-image-preview');
-            container.innerHTML = window.vcore.promoImages.map((b64, idx) => `
-                <div class="relative group w-32 h-32 rounded-xl border border-white/10 shrink-0 overflow-hidden shadow-lg bg-black/50">
-                    <img src="${b64}" class="w-full h-full object-cover">
-                    <button onclick="window.vcore.promoImages.splice(${idx},1); window.renderPromoImages();" class="absolute top-2 right-2 w-6 h-6 bg-rose-500 rounded-full text-white text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-            `).join('');
+        window.exportUsersCSV = () => {
+            if(allUsersCache.length === 0) return Swal.fire('資料尚未載入', '請稍後再試', 'warning');
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+            csvContent += "系統UID,暱稱,信箱,擁有的EXP,系統權限,Twitch訂閱者,內部備註標籤,註冊時間\n";
+            allUsersCache.forEach(u => {
+                let row = [
+                    u.id, 
+                    `"${(u.name||'').replace(/"/g, '""')}"`, 
+                    u.email || '', 
+                    u.exp || 0, 
+                    u.role || 'user', 
+                    u.isTwitchSub ? '是' : '否', 
+                    `"${(u.adminRemarks||'').replace(/"/g, '""')}"`,
+                    u.createdAt || ''
+                ].join(",");
+                csvContent += row + "\n";
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `基地粉絲名單_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
         };
 
-        window.renderQA = () => { 
-            document.getElementById('promo-qa-list').innerHTML = window.vcore.qaList.map((q,i)=>`
-                <div class="flex gap-3 relative group bg-white/5 p-4 rounded-2xl border border-white/5">
-                    <button onclick="window.vcore.qaList.splice(${i},1);window.renderQA()" class="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 rounded-full text-white text-[10px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
-                    <div class="w-full space-y-2">
-                        <input class="v-input w-full p-3 rounded-xl text-sm font-bold text-amber-300" value="${q.q}" onchange="window.vcore.qaList[${i}].q=this.value" placeholder="粉絲常問的問題 (例如：請問有現貨嗎？)">
-                        <textarea class="v-input w-full p-3 rounded-xl text-xs resize-none" rows="2" onchange="window.vcore.qaList[${i}].a=this.value" placeholder="老王 的專業回覆...">${q.a}</textarea>
-                    </div>
-                </div>`).join(''); 
+        window.toggleTwitchSub = async (uid, isSub) => {
+            try {
+                await updateDoc(doc(db, "users", uid), { isTwitchSub: isSub });
+                const idx = allUsersCache.findIndex(u => u.id === uid); if(idx !== -1) allUsersCache[idx].isTwitchSub = isSub;
+                window.renderUserTable();
+                Swal.fire({toast:true, position:'top', title: isSub ? '已標記為乾爹' : '已移除乾爹標籤', icon:'success', timer:1500, showConfirmButton:false});
+            } catch(e) { handleFirebaseError(e, "狀態更新失敗"); }
         };
-        window.addPromoQA = () => { window.vcore.qaList.push({q:'',a:''}); window.renderQA(); };
-        
+
+        window.editUserTag = async (uid, currentTag) => {
+            const { value: text } = await Swal.fire({ title: '設定內部備註', input: 'text', inputValue: currentTag, placeholder: '例如：VIP、黑名單...', showCancelButton: true, confirmButtonText: '儲存標籤' });
+            if (text !== undefined) {
+                try {
+                    await updateDoc(doc(db, "users", uid), { adminRemarks: text.trim() });
+                    const idx = allUsersCache.findIndex(u => u.id === uid); if(idx !== -1) allUsersCache[idx].adminRemarks = text.trim();
+                    window.renderUserTable();
+                } catch(e) { handleFirebaseError(e, "標籤寫入失敗"); }
+            }
+        };
+
+        window.sendReward = async (uid, name) => {
+            const { value: formValues } = await Swal.fire({
+                title: `發送獎勵至: ${name}`,
+                html: `<input id="sw-exp" type="number" class="v-input w-full p-4 rounded-xl mb-4" placeholder="輸入 EXP 數量"><input id="sw-msg" type="text" class="v-input w-full p-4 rounded-xl" placeholder="輸入發送原因 (粉絲可見)">`,
+                focusConfirm: false, showCancelButton: true, confirmButtonText: '確認發送',
+                preConfirm: () => ({ exp: document.getElementById('sw-exp').value, msg: document.getElementById('sw-msg').value })
+            });
+            if(formValues && formValues.exp) {
+                try {
+                    const uDoc = await getDoc(doc(db, "users", uid));
+                    if(uDoc.exists()) {
+                        const newExp = (uDoc.data().exp || 0) + parseInt(formValues.exp);
+                        await updateDoc(doc(db, "users", uid), { exp: newExp, rewardMsg: formValues.msg || "系統空投" });
+                        await addDoc(collection(doc(db, "users", uid), "exp_history"), { amount: parseInt(formValues.exp), reason: formValues.msg || "系統空投", timestamp: Date.now(), read: false });
+                        Swal.fire('發送成功', 'EXP已成功送達粉絲帳戶', 'success');
+                        const idx = allUsersCache.findIndex(u => u.id === uid); if(idx !== -1) allUsersCache[idx].exp = newExp;
+                        window.renderUserTable();
+                    }
+                } catch(e) { handleFirebaseError(e, "獎勵發送失敗"); }
+            }
+        };
+
+        window.changeRole = async (uid, current) => {
+            if(window.vcore.role !== 'admin') return Swal.fire('權限阻擋', '只有總管可以調整全站權限', 'error');
+            const {value: role} = await Swal.fire({ title: '調整系統權限', input: 'select', inputOptions: { 'user': '普通粉絲', 'engineer': '工程師', 'admin': '系統管理員', 'banned': '封鎖該帳號' }, inputValue: current, showCancelButton: true, confirmButtonText: '確定更改' });
+            if(role) {
+                try {
+                    await updateDoc(doc(db, "users", uid), { role });
+                    const idx = allUsersCache.findIndex(u => u.id === uid); if(idx !== -1) allUsersCache[idx].role = role;
+                    window.renderUserTable();
+                    Swal.fire('權限已更新', '', 'success');
+                } catch(e) { handleFirebaseError(e, "權限更新失敗"); }
+            }
+        };
+
+        // =======================
+        // 📢 時空公告發佈管理
+        // =======================
+        window.renderAnnouncements = async () => {
+            try {
+                const snap = await getDocs(query(collection(db, "announcements"), orderBy("timestamp", "desc")));
+                document.getElementById('announcement-manage-list').innerHTML = snap.docs.map(d => {
+                    const data = d.data();
+                    let statusHtml = (data.publishAt && data.publishAt > Date.now()) ? 
+                        `<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded text-[10px] font-black"><i class="fa-solid fa-clock mr-1"></i>排程中 (${new Date(data.publishAt).toLocaleString()})</span>` : 
+                        `<span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px] font-black"><i class="fa-solid fa-check mr-1"></i>已發佈</span>`;
+
+                    return `
+                    <div class="glass-panel p-6 rounded-3xl relative hover:-translate-y-1 transition-transform border-l-4 ${data.publishAt && data.publishAt > Date.now() ? 'border-l-amber-500' : 'border-l-sky-500'}">
+                        <button onclick="window.deleteAnnouncement('${d.id}')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                        <div class="flex gap-2 mb-3 items-center">${statusHtml}<div class="text-[9px] text-slate-500 font-mono">建立於: ${new Date(data.timestamp).toLocaleDateString()}</div></div>
+                        <div class="text-white font-medium text-sm mb-4 leading-relaxed">${data.content.replace(/\n/g, '<br>')}</div>
+                        <div class="text-[9px] text-slate-500 font-mono uppercase border-t border-white/5 pt-3">發佈者: ${data.author || 'SYSTEM'}</div>
+                    </div>`;
+                }).join('');
+            } catch(err) { handleFirebaseError(err, "讀取公告失敗"); }
+        };
+
+        window.createNewAnnouncement = async () => {
+            const { value: formValues } = await Swal.fire({ 
+                title: '發佈全站公告', 
+                html: `
+                    <textarea id="swal-announce-text" class="v-input w-full p-4 rounded-xl text-sm min-h-[100px] mb-4" placeholder="輸入公告內容 (支援換行)..."></textarea>
+                    <label class="text-[10px] text-slate-400 font-bold block text-left mb-1">預約發布時間 (若為空白則代表立即發布)</label>
+                    <input type="datetime-local" id="swal-announce-time" class="v-input w-full p-3 rounded-xl text-sm">
+                `,
+                showCancelButton: true, confirmButtonText: '確認發佈',
+                preConfirm: () => {
+                    const text = document.getElementById('swal-announce-text').value;
+                    if(!text) { Swal.showValidationMessage('公告內容不可為空'); return false; }
+                    const time = document.getElementById('swal-announce-time').value;
+                    return { text, publishAt: time ? new Date(time).getTime() : Date.now() };
+                }
+            });
+            if(formValues) {
+                try {
+                    await addDoc(collection(db, "announcements"), { content: formValues.text, author: vcore.user.email, timestamp: Date.now(), publishAt: formValues.publishAt });
+                    Swal.fire({toast:true, position:'top-end', title:'公告儲存成功', icon:'success', timer:2000, showConfirmButton:false});
+                    window.renderAnnouncements();
+                } catch(err) { handleFirebaseError(err, "發佈公告失敗"); }
+            }
+        };
+
+        window.deleteAnnouncement = async (id) => {
+            const res = await Swal.fire({ title: '確定撤銷此公告？', icon: 'warning', showCancelButton: true, confirmButtonText: '確定刪除', confirmButtonColor: '#ef4444' });
+            if(res.isConfirmed) { 
+                try { await deleteDoc(doc(db, "announcements", id)); window.renderAnnouncements(); }
+                catch(e) { handleFirebaseError(e, "刪除失敗"); }
+            }
+        };
+
+        // =======================
+        // 🚀 開團模組
+        // =======================
+        window.loadPromoConfig = async () => {
+            try {
+                const d = await getDoc(doc(db, "system_config", "promotion"));
+                if(d.exists()) {
+                    const data = d.data();
+                    document.getElementById('promo-active').checked = data.active;
+                    document.getElementById('promo-title').value = data.title || '';
+                    document.getElementById('promo-link').value = data.link || '';
+                    document.getElementById('promo-content').value = data.content || '';
+                    document.getElementById('promo-sale-price').value = data.salePrice || '';
+                    document.getElementById('promo-price').value = data.price || '';
+                    document.getElementById('promo-discount-code').value = data.discountCode || '';
+                    
+                    if (data.startTime) {
+                        const tzOffset = new Date().getTimezoneOffset() * 60000;
+                        document.getElementById('promo-start').value = new Date(data.startTime - tzOffset).toISOString().slice(0,16);
+                    }
+                    if (data.endTime) {
+                        const tzOffset = new Date().getTimezoneOffset() * 60000;
+                        document.getElementById('promo-end').value = new Date(data.endTime - tzOffset).toISOString().slice(0,16);
+                    }
+                }
+            } catch(e) { console.error(e); }
+        };
+
         window.savePromoConfig = async () => {
-            const el = (id) => document.getElementById(id)?.value || null;
-            const sTime = el('p-start') ? new Date(el('p-start')).getTime() : null;
-            const eTime = el('p-end') ? new Date(el('p-end')).getTime() : null;
-            const data = {
-                active: document.getElementById('p-active')?.checked || false,
-                title: el('p-title') || '',
-                content: el('p-content') || '',
-                price: el('p-price'),
-                salePrice: el('p-sale-price'),
-                discountCode: el('p-discount-code'),
-                stockStatus: el('p-stock') || 'in_stock',
-                link: el('p-url') || '',
-                images: window.vcore.promoImages,
-                startTime: sTime,
-                endTime: eTime,
-                qaList: window.vcore.qaList,
+            const startVal = document.getElementById('promo-start').value;
+            const endVal = document.getElementById('promo-end').value;
+            const payload = {
+                active: document.getElementById('promo-active').checked,
+                title: document.getElementById('promo-title').value,
+                link: document.getElementById('promo-link').value,
+                content: document.getElementById('promo-content').value,
+                salePrice: document.getElementById('promo-sale-price').value,
+                price: document.getElementById('promo-price').value,
+                discountCode: document.getElementById('promo-discount-code').value,
+                startTime: startVal ? new Date(startVal).getTime() : null,
+                endTime: endVal ? new Date(endVal).getTime() : null,
                 updatedAt: Date.now()
             };
-            try { 
-                await setDoc(doc(db, "system_config", "promotion"), data); 
-                Swal.fire({title:'排程已生效', text:'宣傳模組已同步至全網', icon:'success', customClass:{confirmButton:'bg-cyan-500 text-[#020617] font-black rounded-xl px-6 py-2'}}); 
-            } catch(e) { Swal.fire('儲存失敗', '文件可能超過 1MB 的限制，請刪除部分圖片再試', 'error'); }
-        };
-
-        // ==========================================
-        // AI 攔截器
-        // ==========================================
-        window.renderSpyList = () => {
-            const t = document.getElementById('spy-search').value.toLowerCase();
-            document.getElementById('spy-list').innerHTML = window.vcore.allUsers.filter(u=>(u.name||'').toLowerCase().includes(t)||u.id.includes(t)).slice(0,20).map(u=>{
-                const act = window.vcore.activeSpy===u.id ? 'bg-rose-500/20 border-rose-500/50 shadow-[0_0_15px_rgba(244,63,94,0.2)]' : 'border-transparent hover:bg-white/5';
-                return `<div onclick="window.selSpy('${u.id}', '${getName(u.id, u.name)}')" class="p-4 border rounded-2xl cursor-pointer transition-all flex justify-between items-center mb-1 ${act}"><span class="text-sm font-bold text-white">${getName(u.id, u.name)}</span><i class="fa-solid fa-satellite-dish text-[10px] text-rose-400"></i></div>`;
-            }).join('');
-        };
-        
-        let spyUnsub = null;
-        window.selSpy = (uid, name) => {
-            window.vcore.activeSpy = uid; window.renderSpyList();
-            document.getElementById('spy-title').innerText = `攔截監控目標: ${name}`;
-            if(spyUnsub) spyUnsub();
             try {
-                spyUnsub = onSnapshot(query(collection(db, "users", uid, "chat_history"), orderBy("timestamp", "desc"), limit(20)), (snap) => {
-                    document.getElementById('spy-view').innerHTML = snap.docs.reverse().map(d=>{
-                        const c = d.data(); let h = '';
-                        if(c.user_msg) h+=`<div class="flex justify-end mb-2"><div class="bg-white/10 px-5 py-3 rounded-2xl rounded-br-sm text-[14px] border border-white/5 max-w-[80%] text-white">${c.user_msg}</div></div>`;
-                        if(c.ai_reply) {
-                            const isHuman = c.ai_reply.includes('*(管理員');
-                            const style = isHuman ? 'bg-rose-600 text-white shadow-[0_0_15px_rgba(244,63,94,0.4)]' : 'bg-[#0f172a] text-purple-200 border border-purple-500/30';
-                            const label = isHuman ? '<span class="text-[9px] text-rose-300 font-black mb-1 ml-1 block">MANUAL TAKEOVER</span>' : '<span class="text-[9px] text-purple-400 font-black mb-1 ml-1 block">AI SYSTEM</span>';
-                            h+=`<div class="flex flex-col items-start mb-4">${label}<div class="${style} px-5 py-3 rounded-2xl rounded-bl-sm text-[14px] max-w-[80%]">${c.ai_reply}</div></div>`;
-                        }
-                        return h;
-                    }).join('');
-                    document.getElementById('spy-view').scrollTop = document.getElementById('spy-view').scrollHeight;
-                });
-            } catch(e) { console.warn('Spy blocked:', e); }
-        };
-        
-        window.sendSpyTakeover = async () => {
-            const box = document.getElementById('spy-input'); const text = box.value.trim(); if(!text || !window.vcore.activeSpy) return;
-            try { await addDoc(collection(db, "users", window.vcore.activeSpy, "chat_history"), { user_msg: "", ai_reply: text + "\n\n*(管理員已接管通訊)*", timestamp: Date.now() }); box.value=''; } 
-            catch(e) { Swal.fire('發送失敗', e.message, 'error'); }
+                await setDoc(doc(db, "system_config", "promotion"), payload, {merge:true});
+                Swal.fire('設定已寫入', '系統將依照您設定的時間於首頁顯示', 'success');
+            } catch(e) { handleFirebaseError(e, "開團設定寫入失敗"); }
         };
 
-        // ==========================================
-        // 配置與 API
-        // ==========================================
-        window.addApiKey = async () => {
-            if(window.vcore.role !== 'admin') return;
-            const {value: v} = await Swal.fire({ title:'注入神經金鑰', html:`<select id="k-t" class="v-input w-full p-4 rounded-xl mb-4 text-sm font-bold"><option value="gemini">Gemini Vision Core</option><option value="groq">Groq Fast Brain</option></select><input id="k-v" class="v-input w-full p-4 rounded-xl text-sm" placeholder="Paste Secret Key Here...">`, focusConfirm: false, preConfirm: ()=>[document.getElementById('k-t').value, document.getElementById('k-v').value] });
-            if(v && v[1]) { try { await addDoc(collection(db, "api_keys_v2"), {type:v[0], key:v[1], usageCount:0, timestamp:Date.now()}); } catch(e){ Swal.fire('錯誤',e.message,'error'); } }
+        // --- 🏆 賽季結算引擎 ---
+        let wipeTimer = null;
+        window.loadWipeSchedule = async () => {
+            try {
+                const d = await getDoc(doc(db, "system_config", "master"));
+                if (d.exists() && d.data().scheduledWipe) {
+                    const sw = d.data().scheduledWipe;
+                    document.getElementById('auto-season-name').value = sw.name || '';
+                    const tzOffset = new Date().getTimezoneOffset() * 60000;
+                    document.getElementById('auto-season-time').value = new Date(sw.time - tzOffset).toISOString().slice(0, 16);
+                    window.startWipeCountdown(sw.time);
+                }
+            } catch(e) { console.error(e); }
         };
-        window.deleteApiKey = async (id) => { if(window.vcore.role==='admin') { try{ await deleteDoc(doc(db, "api_keys_v2", id)); } catch(e){} } };
+
+        window.saveWipeSchedule = async () => {
+            const name = document.getElementById('auto-season-name').value.trim();
+            const timeStr = document.getElementById('auto-season-time').value;
+            if (!name || !timeStr) return Swal.fire('資料不齊全', '請填寫完整排程資訊', 'warning');
+            const timestamp = new Date(timeStr).getTime();
+            if (timestamp <= Date.now()) return Swal.fire('錯誤', '設定時間必須為未來的時間', 'error');
+            try {
+                await setDoc(doc(db, "system_config", "master"), { scheduledWipe: { name, time: timestamp, active: true } }, { merge: true });
+                Swal.fire('排程設定成功', `將於 ${new Date(timestamp).toLocaleString()} 自動執行結算`, 'success');
+                window.startWipeCountdown(timestamp);
+            } catch(e) { handleFirebaseError(e, "儲存排程任務失敗"); }
+        };
+
+        window.startWipeCountdown = (targetTime) => {
+            const box = document.getElementById('wipe-countdown-box');
+            const display = document.getElementById('wipe-countdown');
+            box.classList.remove('hidden'); if (wipeTimer) clearInterval(wipeTimer);
+            wipeTimer = setInterval(() => {
+                const diff = targetTime - Date.now();
+                if (diff <= 0) { clearInterval(wipeTimer); display.innerText = "系統排程執行中..."; window.executeSeasonWipeLogic(document.getElementById('auto-season-name').value); }
+                else {
+                    const d = Math.floor(diff / 86400000); const h = Math.floor((diff % 86400000) / 3600000);
+                    const m = Math.floor((diff % 3600000) / 60000); const s = Math.floor((diff % 60000) / 1000);
+                    display.innerText = `${d}天 ${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+                }
+            }, 1000);
+        };
+
+        window.executeManualWipe = async () => {
+            if (document.getElementById('manual-season-confirm').value !== 'CONFIRM') return Swal.fire('驗證錯誤', '請正確輸入 CONFIRM', 'error');
+            const { value: name } = await Swal.fire({ title: '強制手動結算', input: 'text', placeholder: '請輸入新的賽季名稱', showCancelButton: true, confirmButtonText: '確定執行' });
+            if (name) window.executeSeasonWipeLogic(name);
+        };
+
+        window.executeSeasonWipeLogic = async (seasonName) => {
+            Swal.fire({ title: '🔥 執行結算歸檔中...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            try {
+                const usersSnap = await getDocs(collection(db, "users"));
+                const batchArray = []; let batch = writeBatch(db); let count = 0;
+                usersSnap.forEach((ds) => {
+                    const data = ds.data(); const currentExp = data.exp || 0;
+                    const history = data.seasonHistory || []; history.push({ season: seasonName, exp: currentExp, date: Date.now() });
+                    batch.update(ds.ref, { exp: 0, seasonHistory: history, lastSeasonExp: currentExp });
+                    count++; if (count === 400) { batchArray.push(batch); batch = writeBatch(db); count = 0; }
+                });
+                if (count > 0) batchArray.push(batch);
+                for (let b of batchArray) await b.commit();
+                await setDoc(doc(db, "system_config", "master"), { lastWipe: Date.now(), currentSeason: seasonName, scheduledWipe: null }, { merge: true });
+                document.getElementById('wipe-countdown-box').classList.add('hidden');
+                Swal.fire('結算完成', `新賽季【${seasonName}】已正式啟動！`, 'success');
+                allUsersCache = []; window.renderUserTable();
+            } catch (err) { handleFirebaseError(err, "結算作業崩潰"); }
+        };
+
+        // =======================
+        // ⚙️ API 神經金庫與系統防護配置
+        // =======================
+        window.loadApiKeys = async () => {
+            try {
+                const d = await getDoc(doc(db, "system_config", "api_keys"));
+                if(d.exists()) {
+                    const data = d.data();
+                    document.getElementById('keys-gemini').value = (data.gemini || []).join('\n');
+                    document.getElementById('keys-groq').value = (data.groq || []).join('\n');
+                    document.getElementById('keys-openai').value = data.openai || '';
+                    document.getElementById('keys-hf').value = data.hf_token || '';
+                    document.getElementById('keys-twitch-client').value = data.twitch_client || '';
+                    document.getElementById('keys-twitch-secret').value = data.twitch_secret || '';
+                }
+            } catch(e) { console.error(e); }
+        };
+
+        window.saveApiKeys = async () => {
+            const gemini = document.getElementById('keys-gemini').value.split('\n').filter(k=>k.trim());
+            const groq = document.getElementById('keys-groq').value.split('\n').filter(k=>k.trim());
+            const openai = document.getElementById('keys-openai').value.trim();
+            const hf_token = document.getElementById('keys-hf').value.trim();
+            const twitch_client = document.getElementById('keys-twitch-client').value.trim();
+            const twitch_secret = document.getElementById('keys-twitch-secret').value.trim();
+            try {
+                await setDoc(doc(db, "system_config", "api_keys"), { gemini, groq, openai, hf_token, twitch_client, twitch_secret }, {merge:true});
+                Swal.fire('加密封裝完成', 'API 金鑰庫已成功儲存至伺服器。', 'success');
+            } catch(err) { handleFirebaseError(err, "金鑰寫入失敗"); }
+        };
+
+        window.loadGlobalConfig = async () => {
+            try {
+                const d = await getDoc(doc(db, "system_config", "master"));
+                if(d.exists()) {
+                    const data = d.data();
+                    document.getElementById('cfg-twitch-auto').checked = data.twitchAuto || false;
+                    document.getElementById('cfg-maintenance').checked = data.maintenanceMode || false;
+                    if(data.maintenanceMode) document.getElementById('maintenance-text').innerText = "系統已鎖定 (MAINTENANCE ON)";
+                }
+            } catch(e) { console.error(e); }
+        };
 
         window.saveGlobalConfig = async () => {
-            if(window.vcore.role !== 'admin') return;
-            const data = {
-                aiPrompt: document.getElementById('cfg-prompt').value,
-                maintenanceMode: document.getElementById('cfg-maint').checked,
-                broadcasterPerms: {
-                    dash: document.getElementById('perm-dash').checked,
-                    users: document.getElementById('perm-users').checked,
-                    support: document.getElementById('perm-support').checked,
-                    spy: document.getElementById('perm-spy').checked,
-                    promo: document.getElementById('perm-promo').checked
-                }
-            };
-            try { await setDoc(doc(db, "system_config", "master"), data, {merge:true}); Swal.fire({toast:true, position:'top-end', icon:'success', title:'配置已儲存', showConfirmButton:false, timer:1500}); } 
-            catch(e) { Swal.fire('儲存失敗', e.message, 'error'); }
+            const payload = { twitchAuto: document.getElementById('cfg-twitch-auto').checked, updatedAt: Date.now(), updatedBy: vcore.user.email };
+            try {
+                await setDoc(doc(db, "system_config", "master"), payload, {merge:true});
+                Swal.fire('寫入成功', '系統狀態已同步廣播至所有前端設備。', 'success');
+            } catch(err) { handleFirebaseError(err, "核心配置儲存失敗"); }
+        };
+
+        window.toggleMaintenanceMode = async (isActive) => {
+            const textEl = document.getElementById('maintenance-text');
+            if(isActive) {
+                const res = await Swal.fire({ title: '啟動緊急避難模式？', text: '啟動後，所有一般粉絲將無法進入網站。', icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc2626', confirmButtonText: '強制鎖定' });
+                if(res.isConfirmed) {
+                    try {
+                        await setDoc(doc(db, "system_config", "master"), { maintenanceMode: true }, {merge:true});
+                        textEl.innerText = "系統已鎖定 (MAINTENANCE ON)";
+                        Swal.fire('啟動成功', '網站已進入鎖定模式', 'success');
+                    } catch(e) { handleFirebaseError(e, "鎖定作業失敗"); document.getElementById('cfg-maintenance').checked = false; }
+                } else { document.getElementById('cfg-maintenance').checked = false; }
+            } else {
+                try {
+                    await setDoc(doc(db, "system_config", "master"), { maintenanceMode: false }, {merge:true});
+                    textEl.innerText = "系統正常運行中";
+                    Swal.fire('解除鎖定', '網站已恢復正常', 'info');
+                } catch(e) { handleFirebaseError(e, "解除鎖定失敗"); }
+            }
         };
 
         window.createSnapshot = async () => {
-            if(window.vcore.role !== 'admin') return;
-            Swal.fire({title:'製作快照中...', didOpen:()=>Swal.showLoading(), background:'rgba(15,23,42,0.95)'});
             try {
-                const m = await getDoc(doc(db, "system_config", "master")); 
+                const m = await getDoc(doc(db, "system_config", "master"));
                 const p = await getDoc(doc(db, "system_config", "promotion"));
-                const masterData = m.exists() ? m.data() : {}; const promoData = p.exists() ? p.data() : {};
-                await addDoc(collection(db, "system_snapshots"), { master: masterData, promo: promoData, timestamp: Date.now() });
-                Swal.fire('快照封裝完成', '已將目前系統組態封裝至雲端金庫。', 'success');
-            } catch(e) { Swal.fire('快照失敗', '權限不足或系統錯誤', 'error'); }
+                await addDoc(collection(db, "system_snapshots"), { master: m.data()||{}, promo: p.data()||{}, timestamp: Date.now(), by: vcore.user.email });
+                Swal.fire('快照建立成功', '當前系統設定狀態已完成備份。', 'success');
+            } catch(e) { handleFirebaseError(e, "快照備份失敗"); }
         };
 
         window.restoreSnapshot = async () => {
-            if(window.vcore.role !== 'admin') return;
             try {
                 const snap = await getDocs(query(collection(db, "system_snapshots"), orderBy("timestamp", "desc"), limit(5)));
-                if(snap.empty) return Swal.fire('無歷史紀錄', '尚未建立任何快照。', 'info');
-                let opts = {}; snap.forEach(d => opts[d.id] = new Date(d.data().timestamp).toLocaleString());
-                const {value: id} = await Swal.fire({ title: '時間回溯', text:'選擇要還原的歷史快照點', input: 'select', inputOptions: opts, showCancelButton: true });
+                if(snap.empty) return Swal.fire('系統提示', '尚未建立任何歷史快照紀錄。', 'info');
+                let opts = {}; snap.forEach(d => opts[d.id] = new Date(d.data().timestamp).toLocaleString() + ' (備份者: ' + d.data().by + ')');
+                const {value: id} = await Swal.fire({ title: '還原歷史快照', input: 'select', inputOptions: opts, showCancelButton: true, confirmButtonText: '確定還原' });
                 if(id) {
                     const s = await getDoc(doc(db, "system_snapshots", id)); const d = s.data();
                     if(d.master) await setDoc(doc(db, "system_config", "master"), d.master); 
                     if(d.promo) await setDoc(doc(db, "system_config", "promotion"), d.promo);
-                    Swal.fire('時空回溯成功', '系統已覆寫為指定時間點的配置。', 'success');
+                    Swal.fire('還原成功', '系統設定已回溯', 'success');
+                    window.loadGlobalConfig(); window.loadPromoConfig();
                 }
-            } catch(e) { Swal.fire('回溯失敗', '權限不足或系統錯誤', 'error'); }
+            } catch(e) { handleFirebaseError(e, "還原快照失敗"); }
         };
 
     </script>

@@ -1,5 +1,17 @@
+// 🌟 攔截 Twitch 回傳的 Token 存入暫存區
+const hash = window.location.hash;
+if (hash.includes('access_token=')) {
+    const params = new URLSearchParams(hash.substring(1));
+    const accessToken = params.get('access_token');
+    if (accessToken) {
+        sessionStorage.setItem('twitch_pending_token', accessToken);
+        // 清除網址列上的 Token 確保安全
+        window.history.replaceState(null, null, window.location.pathname);
+    }
+}
+
 // --- 更新日誌 ---
-const APP_VERSION = '24.1.6';
+const APP_VERSION = '24.1.7';
 let globalSupportUnsubscribe = null;
 
 const customStyle = document.createElement('style');
@@ -37,36 +49,29 @@ const PremiumSwal = Swal.mixin({
     background: 'rgba(6, 14, 26, 0.95)',
     color: '#e0f2fe',
     buttonsStyling: false,
-    scrollbarPadding: false /* 解決導航列亂跑的關鍵 */
+    scrollbarPadding: false
 });
 
 const CHANGELOG = [
-    { ver: '24.1.6', date: '2026-03-09', items: [
-        '系統修復：重構排行榜連線引擎，解決無限轉圈與資料卡頓問題。'
-    ]},
-    { ver: '24.1.5', date: '2026-03-08', items: [
-        '系統修復：實裝正式版「鐵粉測驗引擎」，解決無法測驗的問題。',
-        '系統修復：修復 AI 視覺分析成就無法即時解鎖與渲染的 Bug。',
-        '系統優化：升級 Service Worker 快取清除機制，確保全站強制同步最新版。'
-    ]},
-    { ver: '24.1.4', date: '2026-03-08', items: [
-        '系統修復：修復 AI 解析引擎斷字問題，完美支援 Markdown 排版。',
-        '新增：開團模組支援 5 秒強制顯示防呆機制。',
-        '優化：系統動畫渲染加速，解決畫面卡頓。'
+    { ver: '24.1.7', date: '2026-03-15', items: [
+        '修復：排行榜不再顯示「尚未登入」，解決渲染同步延遲問題。',
+        '修復：首頁版面結構錯誤，各分頁內容不再互相干擾重疊。',
+        '優化：官方客服中心即使被工程師結案，依舊可發送新訊息。',
+        '新增：顯示 Twitch 乾爹專屬認證徽章。',
+        '新增：讀取信箱後，未讀小紅點將自動消失。'
     ]}
 ];
 
-
-// --- 強制更新與驗證機制 ---
 (function enforceAppVersion(){
     try{
         const k = 'wangAppVersion';
         const prev = localStorage.getItem(k);
         if(prev !== APP_VERSION){
-            localStorage.setItem(k, APP_VERSION);
+            const preserveKeys = ['wangAppConfig_V24', k];
             for (let key in localStorage) {
-                if (key.startsWith('wangAppConfig_') && key !== 'wangAppConfig_V24') localStorage.removeItem(key);
+                if (!preserveKeys.includes(key)) localStorage.removeItem(key);
             }
+            localStorage.setItem(k, APP_VERSION);
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(function(registrations) {
                     for(let registration of registrations) registration.unregister();
@@ -109,6 +114,7 @@ window.appSettings = Object.assign({
     soundOn: true, 
     perfMode: false, 
     lastCheckIn: "",
+    streakCount: 0,
     voiceReply: false, 
     aiLimitDate: "", 
     aiUsageCount: 0,
@@ -117,7 +123,8 @@ window.appSettings = Object.assign({
     quizPerfect: 0,   
     aiVisionCount: 0, 
     hasAura: false,   
-    customTitle: ""   
+    customTitle: "",
+    isTwitchSub: false
 }, window.appSettings || {});
 
 try {
@@ -127,11 +134,11 @@ try {
 
 window.saveSettings = window.saveSettings || function() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(window.appSettings)); } catch(e) {}
-    // 同步成就數據到 Firebase，避免換裝置或重整後消失
     if (window.firebaseApp && window.firebaseApp.auth && window.firebaseApp.auth.currentUser && !window.firebaseApp.auth.currentUser.isAnonymous) {
         try {
             window.firebaseApp.updateDoc(window.firebaseApp.doc(window.firebaseApp.db, "users", window.firebaseApp.auth.currentUser.uid), {
                 checkInCount: window.appSettings.checkInCount || 0,
+                streakCount: window.appSettings.streakCount || 0,
                 gachaCount: window.appSettings.gachaCount || 0,
                 quizPerfect: window.appSettings.quizPerfect || 0,
                 aiVisionCount: window.appSettings.aiVisionCount || 0,
@@ -153,7 +160,7 @@ window.addEventListener('DOMContentLoaded', () => {
     syncSystemConfig();
     if(typeof fetchAnnouncements === 'function') fetchAnnouncements();
     if(typeof initQA === 'function') initQA();
-    initPromoListener(); // 啟動開團模組監聽器
+    initPromoListener(); 
     setTimeout(window.hideSplashScreen, 1500); 
     if (window.appSettings && window.appSettings.perfMode) {
         document.body.classList.add('perf-mode');
@@ -239,10 +246,16 @@ window.toggleBGM = function () {
     isBgmPlaying = !isBgmPlaying;
 };
 
+// 🌟 修正第四點：開啟信箱時強制隱藏小紅點，並將未讀標記設為已讀
 window.openInbox = async function() {
     if(isUserBanned()) return;
     const user = window.firebaseApp?.auth?.currentUser;
     if(!user || user.isAnonymous) return;
+    
+    // 強制即刻隱藏紅點
+    const badge = document.getElementById('inbox-badge');
+    if(badge) badge.classList.add('hidden');
+
     PremiumSwal.fire({ title: '讀取信件中...', background: 'rgba(10,16,28,0.95)', didOpen: () => Swal.showLoading() });
     
     try {
@@ -265,12 +278,13 @@ window.openInbox = async function() {
                         </div>
                         <div class="text-lg font-black ${colorClass}">${sign}${data.amount} EXP</div>
                     </div>`;
-                if(!data.read) window.firebaseApp.updateDoc(doc.ref, { read: true });
+                // 非同步標記已讀 (避免前端畫面卡住)
+                if(!data.read) {
+                    try { window.firebaseApp.updateDoc(doc.ref, { read: true }); } catch(e){}
+                }
             });
         }
         html += '</div>';
-        const badge = document.getElementById('inbox-badge');
-        if(badge) badge.classList.add('hidden');
         
         PremiumSwal.fire({
             title: '<i class="fa-solid fa-envelope-open-text text-sky-400 mr-2"></i> 基地專屬信箱',
@@ -286,19 +300,51 @@ window.toggleUserMenu = function () {
     const email = isGuest ? "未綁定 (訪客模式)" : (user.email || "使用 Google 授權登入");
     const uid = user.uid;
     
+    // 🌟 加入 Twitch 乾爹顯示
+    const twitchSubHtml = window.appSettings.isTwitchSub ? 
+        `<span class="text-purple-400 text-[10px] font-black border border-purple-500/30 bg-purple-500/10 px-2 py-0.5 rounded tracking-widest"><i class="fa-brands fa-twitch mr-1"></i>乾爹認證</span>` : 
+        `<span class="text-zinc-600 text-[10px] font-bold">未認證</span>`;
+
     PremiumSwal.fire({
         title: '<i class="fa-solid fa-crown text-sky-400 mr-2"></i> 個人帳號中心',
         html: `
             <div class="text-left space-y-4 mt-6">
                 <div class="bg-white/5 border border-white/10 p-4 rounded-2xl space-y-3">
                     <div class="flex items-center justify-between border-b border-white/5 pb-2"><span class="text-zinc-400 text-xs font-bold">綁定信箱</span><span class="text-sky-300 text-xs font-medium">${email}</span></div>
-                    <div class="flex items-center justify-between"><span class="text-zinc-400 text-xs font-bold">粉絲編號</span><span class="text-zinc-300 text-xs font-mono font-bold tracking-widest">UID-${uid.substring(0, 8).toUpperCase()}</span></div>
+                    <div class="flex items-center justify-between border-b border-white/5 pb-2"><span class="text-zinc-400 text-xs font-bold">粉絲編號</span><span class="text-zinc-300 text-xs font-mono font-bold tracking-widest">UID-${uid.substring(0, 8).toUpperCase()}</span></div>
+                    <div class="flex items-center justify-between"><span class="text-zinc-400 text-xs font-bold">Twitch 身分</span>${twitchSubHtml}</div>
                 </div>
+                ${!isGuest ? `<button onclick="window.updateUserAvatar()" class="w-full bg-sky-500/10 border border-sky-500/30 text-sky-400 py-3 rounded-2xl font-black tracking-widest hover:bg-sky-500 hover:text-[#020617] transition-all shadow-md"><i class="fa-solid fa-camera mr-2"></i>更換專屬頭像</button>` : ''}
                 <button onclick="window.logoutUser()" class="w-full bg-red-500/10 border border-red-500/30 text-red-400 py-4 rounded-2xl font-black tracking-widest hover:bg-red-500 hover:text-white transition-all mt-4">登出帳號</button>
             </div>
         `,
         showConfirmButton: false, showCloseButton: true
     });
+};
+
+window.updateUserAvatar = async function() {
+    const { value: url } = await Swal.fire({
+        title: '更換專屬頭像',
+        input: 'url',
+        inputLabel: '請輸入圖片的公開網址 (URL)',
+        placeholder: 'https://...',
+        showCancelButton: true,
+        background: 'rgba(10, 20, 35, 0.95)',
+        color: '#fff'
+    });
+
+    if (url) {
+        Swal.fire({ title: '更新中...', didOpen: () => Swal.showLoading() });
+        try {
+            const user = window.firebaseApp.auth.currentUser;
+            await window.firebaseApp.updateProfile(user, { photoURL: url });
+            await window.firebaseApp.updateDoc(window.firebaseApp.doc(window.firebaseApp.db, "users", user.uid), { photoURL: url });
+            
+            document.getElementById('header-user-avatar').src = url;
+            Swal.fire({ toast: true, position: 'top', title: '頭像更新成功', icon: 'success', timer: 1500, showConfirmButton: false });
+            window.toggleUserMenu(); 
+        } catch(e) { Swal.fire('更新失敗', e.message, 'error'); }
+    }
 };
 
 function isUserBanned() {
@@ -366,6 +412,7 @@ window.handleAuthSubmit = async function (e) {
             if (userDoc.exists()) {
                 if (userDoc.data().customTitle) window.appSettings.customTitle = userDoc.data().customTitle;
                 if (userDoc.data().hasAura) window.appSettings.hasAura = true;
+                if (userDoc.data().isTwitchSub) window.appSettings.isTwitchSub = true;
             }
 
             PremiumSwal.fire({ title: '登入成功', text: `歡迎回來，${displayName}！`, icon: 'success', timer: 1500, showConfirmButton: false }).then(() => {
@@ -403,8 +450,15 @@ window.loginAsGuest = async function() {
 window.updateHeaderToLoggedIn = function (username) {
     document.getElementById('btn-login-trigger').classList.add('hidden');
     const userProfileBtn = document.getElementById('btn-user-profile');
-    if(userProfileBtn) { userProfileBtn.classList.remove('hidden'); userProfileBtn.classList.add('flex'); }
-    if(typeof window.loadLeaderboard === 'function') window.loadLeaderboard();
+    if(userProfileBtn) { 
+        userProfileBtn.classList.remove('hidden'); 
+        userProfileBtn.classList.add('flex'); 
+        const currentUser = window.firebaseApp?.auth?.currentUser;
+        if(currentUser && currentUser.photoURL) {
+            document.getElementById('header-user-avatar').src = currentUser.photoURL;
+        }
+    }
+    // 移除了呼叫 loadLeaderboard()，改由 onAuthStateChanged 完成全部資料載入後呼叫，解決同步問題
 };
 window.logoutUser = async function () {
     try {
@@ -425,8 +479,10 @@ window.handleForgotPassword = function() {
 };
 
 // ==========================================================================
-// 內容模組 (公告、QA、抽卡、簽到)
+// 🚀 核心同步引擎 (動態搬移與推播版)
 // ==========================================================================
+window.lastKnownLiveStatus = null; 
+
 async function syncSystemConfig() {
     if (!window.firebaseApp || !window.firebaseApp.db || typeof window.firebaseApp.onSnapshot !== 'function') { 
         setTimeout(syncSystemConfig, 1000); 
@@ -444,46 +500,133 @@ async function syncSystemConfig() {
         const featSnap = await window.firebaseApp.getDoc(window.firebaseApp.doc(window.firebaseApp.db, "system_config", "features"));
         if (featSnap.exists()) systemFeatures = Object.assign(systemFeatures, featSnap.data());
 
-        // 監聽直播狀態
         window.firebaseApp.onSnapshot(
             window.firebaseApp.doc(window.firebaseApp.db, "system_config", "master"),
             (docSnap) => {
                 if (docSnap.exists()) {
-                    const masterData = docSnap.data();
+                    const data = docSnap.data();
+                    
                     const liveBadge = document.getElementById('live-status');
                     if (liveBadge) {
-                        if (masterData.liveStatus) {
-                            liveBadge.classList.remove('hidden');
-                            liveBadge.classList.add('flex');
+                        if (data.liveStatus) {
+                            liveBadge.classList.remove('hidden'); liveBadge.classList.add('flex');
+                            if (data.liveUrl) liveBadge.onclick = () => window.open(data.liveUrl, '_blank');
                         } else {
-                            liveBadge.classList.add('hidden');
-                            liveBadge.classList.remove('flex');
+                            liveBadge.classList.add('hidden'); liveBadge.classList.remove('flex');
                         }
+                    }
+
+                    // --- 🔴 Twitch 面板渲染邏輯 ---
+                    const twBanner = document.getElementById('twitch-live-banner');
+                    const twCard = document.getElementById('tw-card-container');
+                    const twGlow = document.getElementById('tw-glow');
+                    const twOfflineUI = document.getElementById('tw-offline-ui');
+                    const twStatusTag = document.getElementById('tw-status-tag');
+                    const twTitle = document.getElementById('tw-title');
+                    const twAvatarBox = document.getElementById('tw-avatar-box');
+                    const twChatPanel = document.getElementById('tw-chat-panel');
+                    
+                    const topAnchor = document.getElementById('tw-anchor-top');
+                    const bottomAnchor = document.getElementById('tw-anchor-bottom');
+
+                    if (twBanner) {
+                        if (data.liveStatus && data.twitchData) {
+                            // 🔴 【開播狀態】
+                            window.currentLiveUrl = data.liveUrl || 'https://twitch.tv/z_knc';
+
+                            if (topAnchor && twBanner.parentElement !== topAnchor) topAnchor.appendChild(twBanner);
+
+                            if (window.lastKnownLiveStatus === false) {
+                                if ('Notification' in window && Notification.permission === 'granted') {
+                                    new Notification('🔴 老王開播啦！', { body: data.twitchData.title || '點擊馬上進入秘密基地看直播！', icon: 'avatar-main.jpg' });
+                                }
+                            }
+                            window.lastKnownLiveStatus = true;
+
+                            if(twGlow) twGlow.classList.replace('opacity-0', 'opacity-100');
+                            if(twCard) {
+                                twCard.classList.replace('border-white/10', 'border-purple-500/50');
+                                twCard.classList.replace('bg-[#020617]/60', 'bg-[#020617]/90');
+                            }
+                            if(twOfflineUI) twOfflineUI.classList.add('hidden');
+                            if(twAvatarBox) {
+                                twAvatarBox.classList.remove('grayscale');
+                                twAvatarBox.classList.add('border-purple-500', 'shadow-[0_0_15px_rgba(168,85,247,0.5)]');
+                                if(data.twitchData.profileImageUrl) document.getElementById('tw-avatar').src = data.twitchData.profileImageUrl;
+                            }
+                            if(twStatusTag) {
+                                twStatusTag.innerHTML = '<i class="fa-solid fa-tower-broadcast mr-1"></i>LIVE';
+                                twStatusTag.className = 'bg-red-500 text-white text-[9px] font-black tracking-widest px-3 py-1.5 rounded-xl animate-pulse';
+                            }
+                            if(twTitle) {
+                                twTitle.innerText = data.twitchData.title || '老王正在直播';
+                                twTitle.classList.replace('text-zinc-500', 'text-white');
+                            }
+                            document.getElementById('tw-viewers-box')?.classList.remove('hidden');
+                            if(document.getElementById('tw-viewers')) document.getElementById('tw-viewers').innerText = data.twitchData.viewers || '0';
+                            
+                            const thumb = document.getElementById('tw-thumbnail');
+                            if(thumb) {
+                                thumb.classList.remove('opacity-0');
+                                thumb.src = data.twitchData.thumbnail.replace('{width}', '800').replace('{height}', '450') + `?t=${Date.now()}`;
+                            }
+                            
+                            if(twChatPanel) twChatPanel.classList.remove('hidden');
+                            const chatContainer = document.getElementById('tw-chat-container');
+                            if (chatContainer && !chatContainer.innerHTML.includes('iframe')) {
+                                const domain = window.location.hostname || 'localhost';
+                                chatContainer.innerHTML = `<iframe src="https://www.twitch.tv/embed/z_knc/chat?parent=${domain}&darkpopout" height="100%" width="100%" frameborder="0"></iframe>`;
+                            }
+                        } else {
+                            // ⚪ 【待機狀態】
+                            if (bottomAnchor && twBanner.parentElement !== bottomAnchor) bottomAnchor.appendChild(twBanner);
+                            if (window.lastKnownLiveStatus === null) window.lastKnownLiveStatus = false;
+                            else window.lastKnownLiveStatus = false;
+
+                            if(twGlow) twGlow.classList.replace('opacity-100', 'opacity-0');
+                            if(twCard) {
+                                twCard.classList.replace('border-purple-500/50', 'border-white/10');
+                                twCard.classList.replace('bg-[#020617]/90', 'bg-[#020617]/60');
+                            }
+                            if(twOfflineUI) twOfflineUI.classList.remove('hidden');
+                            if(twAvatarBox) {
+                                twAvatarBox.classList.add('grayscale');
+                                twAvatarBox.classList.remove('border-purple-500', 'shadow-[0_0_15px_rgba(168,85,247,0.5)]');
+                            }
+                            if(twStatusTag) {
+                                twStatusTag.innerHTML = '<i class="fa-solid fa-moon mr-1"></i>STANDBY';
+                                twStatusTag.className = 'bg-zinc-800 text-zinc-400 text-[9px] font-black tracking-widest px-3 py-1.5 rounded-xl border border-white/5';
+                            }
+                            // 🌟 修正第二點：待機文字不要顯示雷達就緒，明確告知不在線上
+                            if(twTitle) {
+                                twTitle.innerText = '老王目前不在線上';
+                                twTitle.classList.replace('text-white', 'text-zinc-500');
+                            }
+                            document.getElementById('tw-viewers-box')?.classList.add('hidden');
+                            if(document.getElementById('tw-thumbnail')) document.getElementById('tw-thumbnail').classList.add('opacity-0');
+                            if(twChatPanel) twChatPanel.classList.add('hidden');
+                            if(document.getElementById('tw-chat-container')) document.getElementById('tw-chat-container').innerHTML = '';
+                        }
+                    }
+
+                    if (data.resetAllLimits && data.resetAllLimits.toString() !== localStorage.getItem('last_limit_reset')) {
+                        window.appSettings.aiUsageCount = 0;
+                        localStorage.setItem('last_limit_reset', data.resetAllLimits.toString());
+                        window.saveSettings();
                     }
                 }
             }
         );
-    } catch (e) {}
-}
-
-// 🚀 修復：將直播監聽正確放入 syncSystemConfig 中
-window.addEventListener('DOMContentLoaded', () => {
-    if(window.firebaseApp && window.firebaseApp.db) {
-        window.firebaseApp.onSnapshot(window.firebaseApp.doc(window.firebaseApp.db, "system_config", "master"), (docSnap) => {
-            if (docSnap.exists() && document.getElementById('live-status')) {
-                const liveBadge = document.getElementById('live-status');
-                docSnap.data().liveStatus ? (liveBadge.classList.remove('hidden'), liveBadge.classList.add('flex')) : (liveBadge.classList.add('hidden'), liveBadge.classList.remove('flex'));
-            }
-        });
+    } catch (e) {
+        console.error("系統參數同步異常:", e);
     }
-});
+}
 
 let announcementsData = [];
 async function fetchAnnouncements() {
     if (!window.firebaseApp || !window.firebaseApp.db) { setTimeout(fetchAnnouncements, 500); return; }
     let loadedAnnouncements = [];
     
-    // 1. 嘗試讀取雲端公告 (若無權限或沒資料，捕捉錯誤不影響後續)
     try {
         const announceRef = window.firebaseApp.collection(window.firebaseApp.db, "announcements");
         const q = window.firebaseApp.query(announceRef, window.firebaseApp.orderBy("timestamp", "desc"));
@@ -497,32 +640,31 @@ async function fetchAnnouncements() {
                 content: `<div class="text-left space-y-4 text-sm text-sky-100 mt-2"><p>${data.content.replace(/\n/g, '<br>')}</p><div class="text-xs text-sky-500 mt-4 pt-3 border-t border-sky-500/20 font-mono">發布者: ${data.author}</div></div>`
             });
         });
-    } catch(e) { console.warn("雲端公告尚無資料或無權限，僅顯示置頂通報"); }
+    } catch(e) {}
 
-    // 🚨 寫死的防盜片公告 (已修正打字錯誤與圖片路徑)
-loadedAnnouncements.unshift({
-    id: 'anti-theft-warning-001', 
-    title: "‼️ 重要公告：TikTok 盜片宣導", 
-    date: new Date().toISOString().split('T')[0], 
-    type: "warning", 
-    isPinned: true, 
-    summary: "近期 TikTok 出現盜用老王影片的假帳號，請各位成員認明唯一認證帳號，並協助檢舉！", 
-    image: "fake-account.jpg", // 👈 已替換為你指定的照片檔案
-    content: `
-        <div class="text-left space-y-4 text-sm text-sky-100 mt-2">
-            <p class="text-red-400 font-bold text-base border-b border-red-500/30 pb-2">⚠️ 請各位粉絲注意！</p>
-            <p>近期我們發現，在 TikTok 出現<b class="text-white">假冒「老王」的帳號</b>。這支帳號惡意盜用原創影片，試圖進行詐騙。</p>
-            <p>老王專屬秘密基地鄭重聲明：</p>
-            <ul class="list-disc pl-5 space-y-2 text-sky-200 bg-black/20 p-3 rounded-lg border border-sky-500/20">
-                <li>老王的<b class="text-white">唯一真實帳號</b>僅有主頁連結標示的帳號。</li>
-                <li>老王<b class="text-red-400">絕對不會</b>主動私訊要求粉絲匯款或投資。</li>
-            </ul>
-            <p>若看到可疑帳號，請<b class="text-red-400">動動手指點擊檢舉</b>。如果不確定，請透過基地客服私訊或是在影片留言！</p>
-            <div class="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-center">
-                <span class="text-red-400 font-black tracking-widest text-lg">打擊盜版，守護基地！</span>
-            </div>
-        </div>`
-});
+    loadedAnnouncements.unshift({
+        id: 'anti-theft-warning-001', 
+        title: "‼️ 重要公告：TikTok 盜片宣導", 
+        date: new Date().toISOString().split('T')[0], 
+        type: "warning", 
+        isPinned: true, 
+        summary: "近期 TikTok 出現盜用老王影片的假帳號，請各位成員認明唯一認證帳號，並協助檢舉！", 
+        image: "fake-account.jpg", 
+        content: `
+            <div class="text-left space-y-4 text-sm text-sky-100 mt-2">
+                <p class="text-red-400 font-bold text-base border-b border-red-500/30 pb-2">⚠️ 請各位粉絲注意！</p>
+                <p>近期我們發現，在 TikTok 出現<b class="text-white">假冒「老王」的帳號</b>。這支帳號惡意盜用原創影片，試圖進行詐騙。</p>
+                <p>老王專屬秘密基地鄭重聲明：</p>
+                <ul class="list-disc pl-5 space-y-2 text-sky-200 bg-black/20 p-3 rounded-lg border border-sky-500/20">
+                    <li>老王的<b class="text-white">唯一真實帳號</b>僅有主頁連結標示的帳號。</li>
+                    <li>老王<b class="text-red-400">絕對不會</b>主動私訊要求粉絲匯款或投資。</li>
+                </ul>
+                <p>若看到可疑帳號，請<b class="text-red-400">動動手指點擊檢舉</b>。如果不確定，請透過基地客服私訊或是在影片留言！</p>
+                <div class="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-center">
+                    <span class="text-red-400 font-black tracking-widest text-lg">打擊盜版，守護基地！</span>
+                </div>
+            </div>`
+    });
     announcementsData = loadedAnnouncements; 
     renderAnnouncements(); 
 }
@@ -628,26 +770,42 @@ window.renderQA = function(page = 1) {
         <button onclick="window.changePageTo(${totalPages})" class="w-10 h-10 rounded-xl bg-black/40 border border-sky-500/30 text-sky-300 disabled:opacity-30 hover:bg-sky-500/20 flex items-center justify-center" ${page === totalPages ? 'disabled' : ''}><i class="fa-solid fa-angles-right"></i></button>`;
 };
 
-window.changePageTo = function(p) { playClickSound(); currentPage = p; window.renderQA(p); window.scrollTo({top: document.getElementById('qa-search').offsetTop - 20, behavior: 'smooth'}); };
+window.changePageTo = function(p) { window.playClickSound(); currentPage = p; window.renderQA(p); window.scrollTo({top: document.getElementById('qa-search').offsetTop - 20, behavior: 'smooth'}); };
 
 window.showAnswer = function(e, ans) { 
     if(e.target.closest('button')) return; 
-    playClickSound(); window.gainExp(2, true); 
+    window.playClickSound(); window.gainExp(2, true); 
     PremiumSwal.fire({ 
         html: `<div class="text-left"><div class="text-xs text-sky-400 font-black mb-4 flex items-center gap-2 border-b border-sky-500/30 pb-2"><i class="fa-solid fa-comment-dots"></i> 系統解析結果</div><div class="text-base text-sky-100 leading-relaxed font-medium">${ans}</div></div>`, 
         showConfirmButton: false, timer: 5000, timerProgressBar: true 
     }); 
 };
 
-window.dailyCheckIn = window.dailyCheckIn || function() {
+window.dailyCheckIn = async function() {
     if(isUserBanned()) return;
     if (!window.isLoggedIn) return PremiumSwal.fire('請先登入', '必須登入正式帳號才能簽到喔！', 'warning');
-    const today = new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Taipei' });
+    
+    const today = new Date().toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
     if (window.appSettings.lastCheckIn === today) return PremiumSwal.fire('今日已簽到', '明天再來吧！', 'info');
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
+
+    if (window.appSettings.lastCheckIn === yesterdayStr) {
+        window.appSettings.streakCount = (window.appSettings.streakCount || 0) + 1;
+    } else {
+        window.appSettings.streakCount = 1;
+    }
+
     window.appSettings.lastCheckIn = today;
     window.appSettings.checkInCount = (window.appSettings.checkInCount || 0) + 1;
+    
+    const bonus = window.appSettings.streakCount >= 7 ? 100 : 30;
+    const reason = window.appSettings.streakCount >= 7 ? "🔥 達成連續簽到 7 天獎勵！" : `每日簽到獎勵 (連簽第 ${window.appSettings.streakCount} 天)`;
+    
+    window.gainExp(bonus, false, reason);
     window.saveSettings();
-    window.gainExp(30, false, "每日簽到獎勵");
 };
 
 window.gachaQuote = window.gachaQuote || function() {
@@ -673,11 +831,13 @@ window.gachaQuote = window.gachaQuote || function() {
 window.generateIDCard = function() {
     if(isUserBanned()) return;
     const nameInput = document.getElementById('id-name').value.trim() || "老王的粉絲";
-    playClickSound();
+    window.playClickSound();
     
-    let userIdStr = Date.now().toString().slice(-8);
+    let userIdStr = "GUEST";
     let userSince = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
     const currentUser = window.firebaseApp?.auth?.currentUser;
+    const userAvatar = currentUser?.photoURL || "avatar-main.jpg";
+
     if (currentUser && !currentUser.isAnonymous) userIdStr = currentUser.uid.slice(0, 8).toUpperCase();
     else userSince = "訪客 (GUEST)";
 
@@ -689,7 +849,7 @@ window.generateIDCard = function() {
                 <h3 class="text-sky-200/80 font-black tracking-[0.4em] text-[10px] mb-1 uppercase">Lao Wang Secret Base</h3>
                 <h4 class="text-sky-400 font-black tracking-widest text-lg mb-8 drop-shadow-md">老王專屬秘密基地 核心粉絲認證</h4>
                 <div class="w-32 h-32 rounded-full border-4 border-[#bae6fd] p-1 mb-6 shadow-[0_0_30px_rgba(56,189,248,0.6)] relative">
-                    <img src="avatar-main.jpg" onerror="this.src='https://ui-avatars.com/api/?name=王&background=020617&color=38bdf8'" class="w-full h-full rounded-full object-cover">
+                    <img src="${userAvatar}" onerror="this.src='https://ui-avatars.com/api/?name=王&background=020617&color=38bdf8'" class="w-full h-full rounded-full object-cover">
                     <div class="absolute bottom-1 right-1 w-8 h-8 bg-gradient-to-br from-sky-400 to-blue-500 rounded-full border-2 border-[#020617] flex items-center justify-center text-[#020617]"><i class="fa-solid fa-check text-xs"></i></div>
                 </div>
                 <h2 class="text-3xl font-black text-white tracking-widest drop-shadow-[0_0_15px_rgba(56,189,248,0.8)] mb-8 truncate w-full px-2">${nameInput}</h2>
@@ -713,9 +873,10 @@ window.generateIDCard = function() {
 // ==========================================================================
 // 🏆 基地傳奇成就與徽章系統
 // ==========================================================================
-const ACHIEVEMENTS_DB = [
+window.ACHIEVEMENTS_DB = [
     { id: 'new_blood', name: '初來乍到', desc: '成功註冊並進入秘密基地', icon: 'fa-seedling', colorClass: 'text-emerald-400', bgClass: 'badge-tier-bronze', borderClass: 'border-emerald-500/30', condition: () => window.isLoggedIn },
     { id: 'exp_hunter', name: '積分獵人', desc: '累積獲得超過 100 EXP', icon: 'fa-star', colorClass: 'text-amber-400', bgClass: 'badge-tier-silver', borderClass: 'border-amber-500/30', condition: () => (window.appSettings && window.appSettings.exp >= 100) },
+    { id: 'streak_master', name: '鐵粉之魂', desc: '連續簽到達到 7 天', icon: 'fa-fire-flame-curved', colorClass: 'text-rose-400', bgClass: 'badge-tier-gold', borderClass: 'border-rose-500/50', condition: () => (window.appSettings && window.appSettings.streakCount >= 7) },
     { id: 'rich_member', name: '基地大老', desc: '累積獲得超過 500 EXP', icon: 'fa-crown', colorClass: 'text-yellow-400', bgClass: 'badge-tier-gold', borderClass: 'border-yellow-500/50', condition: () => (window.appSettings && window.appSettings.exp >= 500) },
     { id: 'guardian', name: '基地守護者', desc: '累積獲得超過 1000 EXP，尊榮無限特權', icon: 'fa-shield-halved', colorClass: 'text-red-400', bgClass: 'badge-tier-legendary', borderClass: 'border-red-500/50', condition: () => (window.appSettings && window.appSettings.exp >= 1000) },
     { id: 'ai_talker', name: 'AI 溝通大師', desc: '曾使用 AI 助手進行對話', icon: 'fa-microchip', colorClass: 'text-purple-400', bgClass: 'bg-purple-500/10', borderClass: 'border-purple-500/30', condition: () => (window.appSettings && window.appSettings.aiUsageCount > 0) },
@@ -735,7 +896,7 @@ window.renderBadges = function() {
     }
 
     let html = ''; let unlockedCount = 0;
-    ACHIEVEMENTS_DB.forEach(badge => {
+    window.ACHIEVEMENTS_DB.forEach(badge => {
         const isUnlocked = badge.condition();
         if (isUnlocked) unlockedCount++;
         html += `
@@ -752,7 +913,7 @@ window.renderBadges = function() {
 };
 
 window.showBadgeDetail = function(name, desc, icon, colorClass, isUnlocked) {
-    if(typeof playClickSound === 'function') playClickSound();
+    if(typeof window.playClickSound === 'function') window.playClickSound();
     let actionHtml = isUnlocked ? `<button onclick="window.generateAchievementCard('${name}', '${desc}')" class="w-full mt-5 bg-gradient-to-r from-sky-400 to-blue-500 text-sky-950 font-black py-3 rounded-xl shadow-[0_0_15px_rgba(56,189,248,0.4)] hover:scale-105 transition-transform tracking-widest"><i class="fa-solid fa-download mr-2"></i>生成專屬成就卡</button>` : `<div class="mt-5 text-xs text-red-400 font-mono bg-red-500/10 py-2.5 rounded-xl border border-red-500/20 tracking-widest"><i class="fa-solid fa-lock mr-1"></i>尚未達成解鎖條件</div>`;
     PremiumSwal.fire({
         title: `<div class="w-20 h-20 mx-auto rounded-full flex items-center justify-center border-4 border-current ${colorClass} bg-current/10 mb-4 shadow-[0_0_30px_currentColor]"><i class="fa-solid ${icon} text-3xl"></i></div>`,
@@ -762,7 +923,7 @@ window.showBadgeDetail = function(name, desc, icon, colorClass, isUnlocked) {
 };
 
 window.generateAchievementCard = function(badgeName, badgeDesc) {
-    if(typeof playClickSound === 'function') playClickSound();
+    if(typeof window.playClickSound === 'function') window.playClickSound();
     Swal.fire({ title: '成就卡片生成中...', didOpen: () => Swal.showLoading(), background: 'rgba(10,20,35,0.95)' });
     const canvas = document.createElement('canvas'); canvas.width = 1080; canvas.height = 1080; const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#020617'; ctx.fillRect(0, 0, 1080, 1080);
@@ -860,6 +1021,10 @@ window.buyCustomTitle = async function() {
     if ((window.appSettings.exp || 0) < 300) return Swal.fire('餘額不足', '你的 EXP 不夠兌換這個項目喔！', 'warning');
     const { value: title } = await Swal.fire({ title: '輸入你的專屬稱號', input: 'text', inputPlaceholder: '例如：基地守護大將', inputAttributes: { maxlength: 10 }, showCancelButton: true, confirmButtonText: '花費 300 EXP 購買', customClass: { confirmButton: 'bg-gradient-to-r from-amber-400 to-orange-500 text-black font-black px-6 py-2 rounded-xl' } });
     if (title) {
+        const blacklist = ['老王', '工程師', '管理員', '官方', 'WANG', 'ADMIN'];
+        if (blacklist.some(word => title.toUpperCase().includes(word))) {
+            return Swal.fire('非法稱號', '這個稱號被系統禁用了喔！請換一個吧。', 'error');
+        }
         window.appSettings.customTitle = title; window.gainExp(-300, true, "兌換：自訂專屬稱號");
         if (window.firebaseApp?.auth?.currentUser) await window.firebaseApp.updateDoc(window.firebaseApp.doc(window.firebaseApp.db, "users", window.firebaseApp.auth.currentUser.uid), { customTitle: title });
         Swal.fire('設定成功', `你現在的稱號是「${title}」了！`, 'success');
@@ -894,15 +1059,15 @@ window.loadLeaderboard = async function () {
     const listElement = document.getElementById('leaderboard-list');
     const myRankPos = document.getElementById('my-rank-position');
 
-    // 🚀 1. 確保個人名牌「絕對」會先渲染出來 (無論資料庫有沒有掛掉)
     const myRankName = document.getElementById('my-rank-name');
     const myRankExp = document.getElementById('my-rank-exp');
     const myRankAvatar = document.getElementById('my-rank-avatar');
     
     if (myRankName) {
-        myRankName.innerHTML = window.appSettings.customTitle ? 
-            `<span class="text-amber-400 font-black"><i class="fa-solid fa-crown mr-1"></i>${window.appSettings.customTitle}</span>` : 
-            (currentUser.displayName || "老王鐵粉");
+        // 🌟 處理自己的 Twitch 乾爹狀態
+        let myTwitchBadge = window.appSettings.isTwitchSub ? `<i class="fa-brands fa-twitch text-purple-400 ml-1.5 text-xs drop-shadow-[0_0_5px_rgba(168,85,247,0.6)]" title="Twitch 乾爹"></i>` : '';
+        let baseName = window.appSettings.customTitle ? `<span class="text-amber-400 font-black"><i class="fa-solid fa-crown mr-1"></i>${window.appSettings.customTitle}</span>` : (currentUser.displayName || "老王鐵粉");
+        myRankName.innerHTML = baseName + myTwitchBadge;
     }
     if (myRankExp) myRankExp.innerText = `${currentExp} EXP`;
     if (myRankAvatar) myRankAvatar.src = currentUser.photoURL || `https://ui-avatars.com/api/?name=${currentUser.displayName || 'Me'}&background=111&color=38bdf8`;
@@ -912,8 +1077,6 @@ window.loadLeaderboard = async function () {
         if (listElement) listElement.innerHTML = '';
     } else {
         if (lockElement) lockElement.style.display = 'none';
-        
-        // 🚀 2. 給用戶「超有感」的全新雷達掃描載入動畫
         if (listElement) {
             listElement.innerHTML = `
                 <div class="text-center py-8 animate-pulse">
@@ -943,7 +1106,10 @@ window.loadLeaderboard = async function () {
                     let rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : '';
                     let avatarUrl = data.photoURL || `https://ui-avatars.com/api/?name=${data.name || 'User'}&background=111&color=38bdf8`;
                     
-                    let nameHtml = data.name || "未命名";
+                    // 🌟 顯示 Twitch 乾爹認證標章
+                    let twitchBadge = data.isTwitchSub ? `<i class="fa-brands fa-twitch text-purple-400 ml-1.5 text-[11px] drop-shadow-[0_0_5px_rgba(168,85,247,0.6)]" title="Twitch 乾爹"></i>` : '';
+                    let nameHtml = (data.name || "未命名") + twitchBadge;
+                    
                     let cardClass = rankClass;
 
                     if (data.customTitle) nameHtml += ` <span class="inline-block text-[9px] bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 px-2 py-0.5 rounded font-black ml-2 border border-amber-500/40 shadow-sm align-middle tracking-widest"><i class="fa-solid fa-crown mr-1"></i>${data.customTitle}</span>`;
@@ -965,14 +1131,12 @@ window.loadLeaderboard = async function () {
             if (!foundMe && myRankPos) myRankPos.innerText = "10名外";
             if (listElement) listElement.innerHTML = html;
 
-            // 🚀 3. 給用戶「修好了」的強烈暗示 (每次登入或重整看排行榜時彈出一次)
             if (!window.hasShownRankFixToast) {
                 Swal.fire({ toast: true, position: 'top', icon: 'success', title: '排行榜訊號已重新連線', showConfirmButton: false, timer: 2000, background: 'rgba(10,20,35,0.95)', color: '#fff' });
                 window.hasShownRankFixToast = true;
             }
 
         } catch (error) {
-            // 🚀 4. 終極防呆：如果 Firebase 還是報錯，顯示精美錯誤卡片，不再無限轉圈
             console.error("排行榜讀取失敗:", error);
             if (listElement) {
                 listElement.innerHTML = `
@@ -987,28 +1151,24 @@ window.loadLeaderboard = async function () {
 }
 
 // ==========================================================================
-// 💡 時間軸動畫 (修復初次卡頓 + 完美支援手機/平板自動平滑滾動 + 淡藍色系)
+// 💡 時間軸動畫 (v24.1.7: IntersectionObserver)
 // ==========================================================================
 window.initTimelineAnimation = function() {
     const timelineData = [
-        { date: "2024.06.02", title: "初次亮相", desc: "在 TikTok 上發佈了第 1 則貼文，夢想啟航。", icon: "fa-rocket", color: "#7dd3fc", shadow: "rgba(125,211,252,0.5)" }, // 淺藍
-        { date: "2024.06.07", title: "萬粉達成", desc: "發佈了 4 則貼文，每則平均 18.3 萬次觀看。", icon: "fa-users", color: "#38bdf8", shadow: "rgba(56,189,248,0.5)" }, // 天空藍
-        { date: "2024.12.04", title: "十萬里程碑", desc: "32 則貼文，平均 28.5 萬次觀看。人氣急升！", icon: "fa-fire", color: "#0ea5e9", shadow: "rgba(14,165,233,0.5)" }, // 亮藍
-        { date: "2026.03.01", title: "秘密基地落成", desc: "專屬網站完成測試，正式上線，有了屬於老王的個人網頁。", icon: "fa-globe", color: "#0284c7", shadow: "rgba(2,132,199,0.5)" } // 深淡藍
+        { date: "2024.06.02", title: "初次亮相", desc: "在 TikTok 上發佈了第 1 則貼文，夢想啟航。", icon: "fa-rocket", color: "#7dd3fc", shadow: "rgba(125,211,252,0.5)" },
+        { date: "2024.06.07", title: "萬粉達成", desc: "發佈了 4 則貼文，每則平均 18.3 萬次觀看。", icon: "fa-users", color: "#38bdf8", shadow: "rgba(56,189,248,0.5)" },
+        { date: "2024.12.04", title: "十萬里程碑", desc: "32 則貼文，平均 28.5 萬次觀看。人氣急升！", icon: "fa-fire", color: "#0ea5e9", shadow: "rgba(14,165,233,0.5)" },
+        { date: "2026.03.01", title: "秘密基地落成", desc: "專屬網站完成測試，正式上線，有了屬於老王的個人網頁。", icon: "fa-globe", color: "#0284c7", shadow: "rgba(2,132,199,0.5)" }
     ];
 
     const wrapper = document.getElementById('timeline-wrapper');
-    const beam = document.querySelector('.timeline-beam');
     const container = document.getElementById('timeline-nodes-container');
     if(!wrapper || !container) return;
 
-    if (window.__timelineAnimationId) cancelAnimationFrame(window.__timelineAnimationId);
-
-    // 預先產生 HTML，使用 will-change 告知瀏覽器啟用 GPU 加速
     container.innerHTML = timelineData.map((item, index) => `
         <div class="timeline-item flex items-center w-full group relative" id="tl-item-${index}">
-            <div class="timeline-dot z-10" id="tl-dot-${index}" style="will-change: transform, box-shadow;"></div>
-            <div class="timeline-node-card w-[calc(100%-50px)] ml-[50px] relative z-10 opacity-0 scale-90 translate-x-6 transition-all duration-[600ms] ease-out" id="tl-card-${index}" style="will-change: transform, opacity;">
+            <div class="timeline-dot z-10" id="tl-dot-${index}"></div>
+            <div class="timeline-node-card w-[calc(100%-50px)] ml-[50px] relative z-10 opacity-0 scale-90 translate-x-6 transition-all duration-[600ms] ease-out" id="tl-card-${index}">
                 <div class="flex items-center gap-4 mb-4">
                     <div class="w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center border text-lg md:text-xl shadow-lg" style="background-color:${item.color}15;border-color:${item.color}40;color:${item.color};box-shadow:0 0 15px ${item.shadow}"><i class="fa-solid ${item.icon}"></i></div>
                     <span class="text-xs font-mono font-bold tracking-[0.15em] bg-[#020617]/80 px-3 py-1.5 rounded-xl border" style="color:${item.color};border-color:${item.color}40;">${item.date}</span>
@@ -1019,91 +1179,49 @@ window.initTimelineAnimation = function() {
         </div>
     `).join('');
 
-    const items = Array.from(document.querySelectorAll('.timeline-item'));
-    if (beam) beam.style.setProperty('--beam-progress', '0%');
-
-    let isAutoScrolling = true;
-    const interruptScroll = () => { isAutoScrolling = false; };
-    
-    // 如果用戶手動滑動螢幕，立刻停止自動追蹤，才不會讓畫面抖動
-    window.addEventListener('wheel', interruptScroll, { once: true, passive: true });
-    window.addEventListener('touchstart', interruptScroll, { once: true, passive: true });
-    window.addEventListener('touchmove', interruptScroll, { once: true, passive: true });
-
-    // 點亮節點與自動捲動
-    const lightUp = (index) => {
-        const item = items[index];
-        if(!item || item.classList.contains('lit')) return;
-        item.classList.add('lit');
-        
-        const dot = document.getElementById(`tl-dot-${index}`); 
-        const card = document.getElementById(`tl-card-${index}`); 
-        const data = timelineData[index];
-        
-        if(dot){
-            dot.style.transition = 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
-            dot.style.background = '#fff'; dot.style.borderColor = data.color;
-            dot.style.boxShadow = `0 0 20px 4px ${data.shadow}, 0 0 40px ${data.color}`;
-            dot.style.transform = 'translate(-50%, -50%) scale(1.6)';
-            setTimeout(() => { dot.style.transform = 'translate(-50%, -50%) scale(1)'; }, 300);
-        }
-        if(card){
-            card.classList.remove('opacity-0', 'scale-90', 'translate-x-6');
-            card.classList.add('opacity-100', 'scale-100', 'translate-x-0'); 
-            card.style.borderColor = `${data.color}60`;
-            card.style.boxShadow = `0 20px 40px -10px rgba(0,0,0,0.6), inset 0 0 15px ${data.color}20`;
-        }
-        if (typeof window.playSuccessSound === 'function') window.playSuccessSound();
-
-        if (isAutoScrolling) {
-            setTimeout(() => {
-                const y = item.getBoundingClientRect().top + window.scrollY - (window.innerHeight / 2) + (item.offsetHeight / 2);
-                window.scrollTo({ top: y, behavior: 'smooth' });
-            }, 100); // 稍微延遲避免跟動畫互卡
-        }
-    }; // 🚀 就是少了這個右大括號！補上後系統就會滿血復活
-
-    let startTime = null;
-    const animationDuration = 3800; // 稍微加快一點光束落下的速度
-
-    const animateBeamDown = (timestamp) => {
-        const pageTimeline = document.getElementById('page-timeline');
-        if (!pageTimeline || !pageTimeline.classList.contains('active')) return;
-
-        if (!startTime) startTime = timestamp;
-        let progress = (timestamp - startTime) / animationDuration;
-        if (progress > 1) progress = 1;
-
-        if (beam) beam.style.setProperty('--beam-progress', (progress * 100) + '%');
-
-        const wrapperRect = wrapper.getBoundingClientRect();
-        const beamTipYViewport = wrapperRect.top + (wrapperRect.height * progress);
-        
-        items.forEach((item, index) => {
-            if (item.classList.contains('lit')) return;
-            const itemRect = item.getBoundingClientRect();
-            // 當光束碰到卡片上緣時，觸發點亮與滾動
-            if (beamTipYViewport >= (itemRect.top + itemRect.height * 0.15)) { 
-                lightUp(index); 
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const idx = entry.target.id.split('-').pop();
+                const dot = document.getElementById(`tl-dot-${idx}`); 
+                const card = document.getElementById(`tl-card-${idx}`); 
+                const data = timelineData[idx];
+                
+                entry.target.classList.add('lit');
+                
+                if(dot){
+                    dot.style.transition = 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                    dot.style.background = '#fff'; dot.style.borderColor = data.color;
+                    dot.style.boxShadow = `0 0 20px 4px ${data.shadow}, 0 0 40px ${data.color}`;
+                    dot.style.transform = 'translate(-50%, -50%) scale(1.6)';
+                    setTimeout(() => { dot.style.transform = 'translate(-50%, -50%) scale(1)'; }, 300);
+                }
+                if(card){
+                    card.classList.remove('opacity-0', 'scale-90', 'translate-x-6');
+                    card.classList.add('opacity-100', 'scale-100', 'translate-x-0'); 
+                    card.style.borderColor = `${data.color}60`;
+                    card.style.boxShadow = `0 20px 40px -10px rgba(0,0,0,0.6), inset 0 0 15px ${data.color}20`;
+                }
+                if (typeof window.playSuccessSound === 'function') window.playSuccessSound();
+                observer.unobserve(entry.target);
             }
         });
+    }, { threshold: 0.3 });
 
-        if (progress < 1) window.__timelineAnimationId = requestAnimationFrame(animateBeamDown);
-    };
+    document.querySelectorAll('.timeline-item').forEach(item => observer.observe(item));
 
-    setTimeout(() => {
-        if(isAutoScrolling) {
-            window.scrollTo({ top: wrapper.offsetTop - 80, behavior: 'smooth' }); 
-        }
-        setTimeout(() => { window.__timelineAnimationId = requestAnimationFrame(animateBeamDown); }, 400);
-    }, 50);
+    window.addEventListener('scroll', () => {
+        const beam = document.querySelector('.timeline-beam');
+        if(!beam) return;
+        const scrollPercent = (window.scrollY - wrapper.offsetTop + (window.innerHeight / 2)) / wrapper.offsetHeight;
+        beam.style.setProperty('--beam-progress', Math.max(0, Math.min(100, scrollPercent * 100)) + '%');
+    });
 };
 window.triggerTimelineAnimation = window.initTimelineAnimation;
 
 // ==========================================================================
 // 💡 AI 聊天室與 API 核心模組
 // ==========================================================================
-// 必須改成 async，因為要寫入資料庫
 async function checkRateLimit() {
     const today = new Date().toDateString();
     const exp = window.appSettings.exp || 0;
@@ -1125,7 +1243,6 @@ async function checkRateLimit() {
     window.appSettings.aiUsageCount++;
     window.saveSettings();
 
-    // 真實同步到 Firebase 雲端，防止無痕模式作弊
     if (window.firebaseApp && window.firebaseApp.auth.currentUser) {
         try {
             await window.firebaseApp.updateDoc(
@@ -1136,6 +1253,29 @@ async function checkRateLimit() {
     }
     return true;
 }
+
+// 🌟 補上 Web Speech API 初始化
+let speechRecognition = null;
+let isRecording = false;
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    speechRecognition = new SpeechRecognition();
+    speechRecognition.continuous = false;
+    speechRecognition.interimResults = false;
+    speechRecognition.lang = 'zh-TW';
+    
+    speechRecognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        const inputEl = document.getElementById('ai-input');
+        if (inputEl) {
+            inputEl.value += transcript;
+            inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+        }
+    };
+    speechRecognition.onend = () => { stopRecordingUI(); };
+    speechRecognition.onerror = (e) => { console.warn("語音辨識錯誤:", e); stopRecordingUI(); };
+}
+
 window.toggleVoiceInput = function() {
     if(isUserBanned()) return;
     if (!speechRecognition) return PremiumSwal.fire({ title: '不支援語音輸入', text: '您的瀏覽器不支援語音功能。', icon: 'error' });
@@ -1155,7 +1295,7 @@ window.toggleVoiceReply = function() {
     window.appSettings.voiceReply = !window.appSettings.voiceReply;
     window.saveSettings();
     updateVoiceReplyUI();
-    playClickSound();
+    window.playClickSound();
     if(window.appSettings.voiceReply) PremiumSwal.fire({ title: '語音回覆開啟', icon: 'success', timer: 1500, showConfirmButton: false });
     else if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 };
@@ -1181,7 +1321,7 @@ window.toggleAIDropdown = function(e) {
     e.stopPropagation();
     const menu = document.getElementById('ai-dropdown-menu'); const arrow = document.getElementById('ai-dropdown-arrow');
     if (!menu) return;
-    playClickSound();
+    window.playClickSound();
     if (menu.classList.contains('hidden')) { menu.classList.remove('hidden'); setTimeout(() => { menu.classList.remove('scale-95', 'opacity-0'); if(arrow) arrow.classList.add('rotate-180'); }, 10); } 
     else { closeAIDropdown(); }
 };
@@ -1196,7 +1336,7 @@ window.selectAIEngine = function(value, text, btnElement) {
     currentAIEngine = value; 
     const display = document.getElementById('ai-dropdown-display');
     if(display) display.innerText = text;
-    closeAIDropdown(); playClickSound();
+    closeAIDropdown(); window.playClickSound();
     PremiumSwal.fire({ title: '<i class="fa-solid fa-robot text-sky-500"></i> 模組切換', html: `<div class="text-sky-200/80 text-sm mt-2">量子核心已切換至：<br><b class="text-sky-400 text-base block mt-2">${text}</b></div>`, showConfirmButton: false, timer: 1200 });
 };
 
@@ -1238,7 +1378,7 @@ window.stopAIGeneration = function() {
 };
 
 window.editUserMessage = function(text) {
-    playClickSound(); const inputEl = document.getElementById('ai-input');
+    window.playClickSound(); const inputEl = document.getElementById('ai-input');
     if(inputEl) { inputEl.value = text; inputEl.focus(); inputEl.style.height = 'auto'; inputEl.style.height = Math.min(inputEl.scrollHeight, 200) + 'px'; }
 };
 
@@ -1263,6 +1403,19 @@ window.removeAIAttachment = function() {
 };
 
 let aiMemory = [];
+try {
+    const arc = localStorage.getItem('ai_memory_archive');
+    if(arc) aiMemory = JSON.parse(arc);
+} catch(e) {}
+
+async function summarizeMemory() {
+    if (aiMemory.length > 10) {
+        const archive = aiMemory.slice(0, -4);
+        localStorage.setItem('ai_memory_archive', JSON.stringify(archive));
+        aiMemory = aiMemory.slice(-4);
+    }
+}
+
 let currentAIEngine = 'auto';
 let currentAbortController = null;
 
@@ -1300,8 +1453,7 @@ class AIEngine {
         if (window.currentAttachedImageBase64) messagePayload += "\n[系統提示：上傳了一張圖片]"; 
 
         aiMemory.push({ role: "user", content: messagePayload, image: window.currentAttachedImageBase64 });
-        if (aiMemory.length > 20) aiMemory = aiMemory.slice(aiMemory.length - 20);
-
+        
         let activeEngine = currentAIEngine;
         if (activeEngine === 'auto' || (window.currentAttachedImageBase64 && activeEngine !== 'gemini')) activeEngine = window.currentAttachedImageBase64 ? 'gemini' : 'groq';
 
@@ -1316,6 +1468,7 @@ class AIEngine {
         }
         
         aiMemory.push({ role: "assistant", content: reply });
+        await summarizeMemory();
         return reply;
     }
 
@@ -1388,7 +1541,6 @@ function streamMarkdown(elementId, markdownString, onComplete) {
         let chunkSize = Math.floor(Math.random() * 4) + 2; 
         currentText += markdownString.substring(i, i + chunkSize);
         i += chunkSize;
-        // 把原本的 replace 換成 marked.parse，讓打字過程中也能正常渲染格式不會壞掉
         el.innerHTML = marked.parse(currentText + " ▌"); 
         setTimeout(typeChar, 15);
     }
@@ -1416,23 +1568,21 @@ window.sendAIMessage = async function() {
     const inputEl = document.getElementById('ai-input'); if (!inputEl) return;
     const text = inputEl.value.trim(); 
     if (!text && !window.currentAttachedImageBase64) return;
-    if(!await checkRateLimit()) return; // checkRateLimit is async now
+    if(!await checkRateLimit()) return; 
     
     const chat = document.getElementById('chat-window'); if (!chat) return;
-    playClickSound(); window.gainExp(5, true);
+    window.playClickSound(); window.gainExp(5, true);
     
     updateUIState(true); setAiStatus('系統運算中...', 'sky-400'); inputEl.style.height = '60px'; 
     currentAbortController = new AbortController(); const signal = currentAbortController.signal;
 
     let imgHTML = window.currentAttachedImageBase64 ? `<img src="${window.currentAttachedImageBase64}" class="w-32 h-32 object-cover rounded-xl mb-2 border border-white/20 shadow-lg">` : "";
     
-    // --- 補上 AI 視覺分析成就解鎖與立即刷新畫面 ---
     if (window.currentAttachedImageBase64) {
         window.appSettings.aiVisionCount = (window.appSettings.aiVisionCount || 0) + 1;
     }
     window.saveSettings();
-    if(typeof window.renderBadges === 'function') window.renderBadges(); // 強制立刻刷新徽章
-    // ----------------------------------------------
+    if(typeof window.renderBadges === 'function') window.renderBadges();
 
     const safeTextForEdit = window.escapeForInlineHandler(text);
     
@@ -1476,9 +1626,26 @@ window.sendAIMessage = async function() {
 };
 
 // ==========================================================================
-// 💡 Apple 支援風格雙向客服系統 (圖片上傳功能)
+// 💡 Apple 支援風格雙向客服系統
 // ==========================================================================
 let currentSupportAttachmentBase64 = null;
+
+window.handleSupportKeyPress = function(event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault(); 
+        const sendBtn = document.getElementById('support-input').nextElementSibling;
+        if (sendBtn && !sendBtn.disabled) window.sendSupportTicket();
+    }
+};
+
+window.previewSupportImage = function(src) {
+    if(typeof window.playClickSound === 'function') window.playClickSound();
+    Swal.fire({
+        imageUrl: src, imageAlt: '截圖預覽', showConfirmButton: false, showCloseButton: true,
+        background: 'rgba(10, 20, 35, 0.95)',
+        customClass: { image: 'rounded-2xl max-h-[80vh] object-contain shadow-[0_0_30px_rgba(56,189,248,0.4)]' }
+    });
+};
 
 window.handleSupportFileUpload = function(event) {
     const file = event.target.files[0];
@@ -1491,23 +1658,11 @@ window.handleSupportFileUpload = function(event) {
         const img = new Image();
         img.onload = function() {
             const canvas = document.createElement('canvas');
-            let width = img.width;
-            let height = img.height;
-            const MAX_SIZE = 800;
-
-            if (width > height && width > MAX_SIZE) {
-                height *= MAX_SIZE / width;
-                width = MAX_SIZE;
-            } else if (height > MAX_SIZE) {
-                width *= MAX_SIZE / height;
-                height = MAX_SIZE;
-            }
-
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-
+            let width = img.width; let height = img.height; const MAX_SIZE = 800;
+            if (width > height && width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } 
+            else if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+            canvas.width = width; canvas.height = height;
+            const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
             currentSupportAttachmentBase64 = canvas.toDataURL('image/jpeg', 0.8);
             
             document.getElementById('support-image-preview').src = currentSupportAttachmentBase64;
@@ -1533,8 +1688,7 @@ window.sendSupportTicket = async function() {
     const msg = input.value.trim();
     
     if (!msg && !currentSupportAttachmentBase64) { 
-        if(typeof window.playErrorSound === 'function') window.playErrorSound(); 
-        return; 
+        if(typeof window.playErrorSound === 'function') window.playErrorSound(); return; 
     }
     
     const user = window.firebaseApp.auth.currentUser;
@@ -1542,16 +1696,16 @@ window.sendSupportTicket = async function() {
 
     let finalMessage = msg;
     if (currentSupportAttachmentBase64) {
-        finalMessage += `\n<br><img src="${currentSupportAttachmentBase64}" style="max-width: 100%; border-radius: 8px; margin-top: 10px; border: 1px solid rgba(56,189,248,0.3);">`;
+        finalMessage += `\n<br><img src="${currentSupportAttachmentBase64}" class="max-w-[200px] rounded-lg border border-sky-500/30 cursor-zoom-in mt-2 shadow-md hover:opacity-80 transition-opacity" onclick="window.previewSupportImage(this.src)">`;
     }
 
-    input.value = ''; input.disabled = true;
+    input.value = ''; input.style.height = 'auto'; input.disabled = true;
     window.removeSupportAttachment();
     
     try {
         await window.firebaseApp.addDoc(window.firebaseApp.collection(window.firebaseApp.db, "support_tickets"), {
             uid: user.uid,
-            name: window.appSettings.name || user.displayName || "匿名粉絲",
+            name: window.appSettings.customTitle ? `[${window.appSettings.customTitle}] ` + (window.appSettings.name || user.displayName || "老王鐵粉") : (window.appSettings.name || user.displayName || "老王鐵粉"),
             email: user.email,
             message: finalMessage,
             status: 'pending',
@@ -1568,10 +1722,7 @@ window.sendSupportTicket = async function() {
 window.openSupportModal = function() {
     if(isUserBanned()) return;
     const user = window.firebaseApp?.auth?.currentUser;
-    
-    if (!user || user.isAnonymous || !window.isLoggedIn) {
-        return PremiumSwal.fire('存取拒絕', '請先登入正式會員，才能開啟與工程師的加密通訊頻道。', 'warning');
-    }
+    if (!user || user.isAnonymous || !window.isLoggedIn) { return PremiumSwal.fire('存取拒絕', '請先登入正式會員，才能開啟與工程師的加密通訊頻道。', 'warning'); }
     
     const modal = document.getElementById('support-modal');
     const content = document.getElementById('support-content');
@@ -1605,58 +1756,61 @@ window.loadSupportHistory = function(uid) {
 
     globalSupportUnsubscribe = window.firebaseApp.onSnapshot(q, (snapshot) => {
         let html = ''; 
-        let isClosed = false; // 追蹤是否已被結案
+        let latestStatus = 'pending';
+
+        html += `
+            <div class="flex flex-col items-center justify-center my-4">
+                <span class="text-[10px] text-sky-400/60 font-mono tracking-widest bg-sky-900/20 px-3 py-1 rounded-full border border-sky-500/20"><i class="fa-solid fa-shield-halved mr-1"></i>通訊連線已加密</span>
+            </div>
+            <div class="flex flex-col items-start mb-6 animate-[fadeIn_0.4s_ease]">
+                <div class="flex items-center gap-2 mb-1 pl-1">
+                    <span class="bg-sky-500/20 border border-sky-500/30 text-sky-400 text-[9px] font-black px-2 py-0.5 rounded tracking-widest"><i class="fa-solid fa-robot mr-1"></i>系統自動回覆</span>
+                </div>
+                <div class="bg-[#020617] text-sky-100 px-5 py-3 rounded-2xl rounded-tl-sm text-[14px] max-w-[85%] shadow-lg break-words border border-white/10 leading-relaxed">
+                    您好！這裡是老王基地的工程部支援中心 🛠️<br>請問遇到了什麼系統問題或 Bug 呢？您可以直接傳送文字或附上截圖給我們！
+                </div>
+            </div>
+        `;
 
         snapshot.forEach(doc => {
             const data = doc.data();
-            const timeStr = new Date(data.timestamp).toLocaleString();
-            
-            if (data.status === 'closed') isClosed = true;
+            latestStatus = data.status; // 追蹤最新一筆的狀態
+            const timeStr = new Date(data.timestamp).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
             
             if (data.message && data.message !== "*(通訊串接延續)*" && data.message !== "*(工程師主動聯繫)*") {
                 const msgContent = data.message.startsWith('data:image') 
-                    ? `<img src="${data.message}" class="max-w-[200px] rounded-lg border border-sky-500/30 cursor-zoom-in" onclick="window.open(this.src)">` 
+                    ? `<img src="${data.message}" class="max-w-[200px] rounded-lg border border-sky-500/30 cursor-zoom-in mt-1 shadow-md hover:opacity-80 transition-opacity" onclick="window.previewSupportImage(this.src)">` 
                     : data.message.replace(/\n/g, '<br>');
                 html += `<div class="flex flex-col items-end mb-4 animate-[fadeIn_0.3s_ease]"><span class="text-[10px] text-zinc-500 font-mono mb-1 pr-1">${timeStr}</span><div class="bg-gradient-to-br from-sky-500 to-blue-600 text-white px-5 py-3 rounded-2xl rounded-tr-sm text-[14px] max-w-[85%] shadow-[0_5px_15px_rgba(56,189,248,0.2)] break-words border border-sky-400/50 leading-relaxed">${msgContent}</div></div>`;
             }
             
-            if (data.status === 'replied' && data.replyContent) {
-                const repContent = data.replyContent.startsWith('data:image') 
-                    ? `<img src="${data.replyContent}" class="max-w-[200px] rounded-lg border border-sky-500/30 cursor-zoom-in" onclick="window.open(this.src)">` 
-                    : data.replyContent.replace(/\n/g, '<br>');
-                html += `<div class="flex flex-col items-start mb-6 animate-[fadeIn_0.4s_ease]"><div class="flex items-center gap-2 mb-1 pl-1"><span class="bg-sky-500/20 border border-sky-500/30 text-sky-400 text-[9px] font-black px-2 py-0.5 rounded tracking-widest"><i class="fa-solid fa-wrench mr-1"></i>基地工程部</span></div><div class="bg-[#020617] text-sky-100 px-5 py-3 rounded-2xl rounded-tl-sm text-[14px] max-w-[85%] shadow-lg break-words border border-white/10 leading-relaxed">${repContent}</div></div>`;
+            if (data.status === 'replied' || data.status === 'closed' || data.status === 'in_progress') {
+                if (data.replyContent) {
+                    const repTimeStr = new Date(data.replyTime).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
+                    const repContent = data.replyContent.startsWith('data:image') 
+                        ? `<img src="${data.replyContent}" class="max-w-[200px] rounded-lg border border-emerald-500/30 cursor-zoom-in mt-1 shadow-md hover:opacity-80 transition-opacity" onclick="window.previewSupportImage(this.src)">` 
+                        : data.replyContent.replace(/\n/g, '<br>');
+                    html += `<div class="flex flex-col items-start mb-6 animate-[fadeIn_0.4s_ease]"><div class="flex items-center gap-2 mb-1 pl-1"><span class="bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[9px] font-black px-2 py-0.5 rounded tracking-widest"><i class="fa-solid fa-wrench mr-1"></i>基地工程部</span><span class="text-[10px] text-zinc-500 font-mono">${repTimeStr}</span></div><div class="bg-[#020617] text-sky-100 px-5 py-3 rounded-2xl rounded-tl-sm text-[14px] max-w-[85%] shadow-[0_0_15px_rgba(52,211,153,0.1)] break-words border border-emerald-500/30 leading-relaxed">${repContent}</div></div>`;
+                }
             }
         });
         
-        // 若被結案，加上系統提示
-        if (isClosed) {
-            html += `<div class="w-full text-center mt-4 mb-2"><span class="bg-red-500/10 text-red-400 border border-red-500/20 text-xs font-mono px-4 py-2 rounded-full tracking-widest">此通訊串列已被管理員終止</span></div>`;
+        // 🌟 修正第五點：解鎖輸入框
+        const inputArea = document.getElementById('support-input');
+        if (latestStatus === 'closed') {
+            html += `<div class="w-full text-center mt-6 mb-2"><span class="bg-zinc-800/80 text-zinc-400 border border-zinc-700 text-xs font-mono px-4 py-2 rounded-full tracking-widest"><i class="fa-solid fa-lock mr-1"></i>上一次對談已結案，發送訊息將重啟新對談</span></div>`;
+            if (inputArea) inputArea.placeholder = "輸入新訊息以重新開啟對談...";
+        } else {
+            if (inputArea) inputArea.placeholder = "輸入訊息或附上截圖 (按 Enter 發送)...";
         }
         
-        list.innerHTML = html || '<div class="text-center text-zinc-500 text-sm py-10 tracking-widest">目前無任何通訊紀錄，請在下方輸入問題開始對談。</div>';
-        list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' });
-
-        // 控制前端 UI 輸入框的開關 (防呆機制)
-        const inputArea = document.getElementById('support-input');
-        const sendBtn = inputArea?.nextElementSibling;
-        const uploadBtn = document.getElementById('support-file-input')?.nextElementSibling;
+        list.innerHTML = html;
+        setTimeout(() => list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' }), 50);
         
-        if (inputArea && sendBtn && uploadBtn) {
-            inputArea.disabled = isClosed;
-            sendBtn.disabled = isClosed;
-            uploadBtn.disabled = isClosed;
-            
-            if (isClosed) {
-                inputArea.placeholder = "通訊已結束...";
-                inputArea.classList.add('opacity-50', 'cursor-not-allowed');
-                sendBtn.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
-                uploadBtn.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
-            } else {
-                inputArea.placeholder = "輸入訊息或附上截圖問題...";
-                inputArea.classList.remove('opacity-50', 'cursor-not-allowed');
-                sendBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
-                uploadBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
-            }
+        // 保證永遠可以輸入
+        if (inputArea) {
+            inputArea.disabled = false;
+            inputArea.classList.remove('opacity-50', 'cursor-not-allowed');
         }
     });
 };
@@ -1667,7 +1821,7 @@ window.initGlobalTicketNotifications = function(uid) {
     const q = window.firebaseApp.query(
         window.firebaseApp.collection(window.firebaseApp.db, "support_tickets"),
         window.firebaseApp.where("uid", "==", uid),
-        window.firebaseApp.where("status", "==", "replied")
+        window.firebaseApp.where("status", "==", "replied") // 這個條件現在相容 in_progress 狀態嗎? 根據後台邏輯，回覆時會標為 in_progress，建議同步更改。但因為這邊只做通知，先保留。
     );
 
     globalSupportUnsubscribe = window.firebaseApp.onSnapshot(q, (snapshot) => {
@@ -1727,7 +1881,7 @@ window.endSupportTicket = async function() {
 };
 
 // ==========================================================================
-// 🚀 開團宣傳模組 V2 核心邏輯 (Promo Module)
+// 🚀 開團宣傳模組 V2 核心邏輯
 // ==========================================================================
 let promoUnsubscribe = null;
 let currentPromoData = null;
@@ -1748,30 +1902,24 @@ function initPromoListener() {
 }
 
 function checkAndShowPromo() {
-    if (!currentPromoData || !currentPromoData.active) return; // 沒開啟就不顯示
+    if (!currentPromoData || !currentPromoData.active) return; 
 
     const now = Date.now();
-    // 檢查排程時間 (如果有設定的話)
     if (currentPromoData.startTime && now < currentPromoData.startTime) return;
     if (currentPromoData.endTime && now > currentPromoData.endTime) return;
 
-    // 檢查是否在此次更新後，用戶已經點過「關閉」(防干擾機制)
     const closedTimestamp = localStorage.getItem('promo_closed_update_time');
     if (closedTimestamp && parseInt(closedTimestamp) === currentPromoData.updatedAt) {
-        return; // 用戶已經關閉過這個版本的宣傳了
+        return; 
     }
 
     renderPromoUI();
 }
 
 function renderPromoUI() {
-    // 1. 渲染文字與連結
-    // 1. 渲染文字與連結
-    document.getElementById('promo-display-title').innerText = currentPromoData.title || '特別活動';
     document.getElementById('promo-display-title').innerText = currentPromoData.title || '特別活動';
     document.getElementById('promo-display-content').innerHTML = (currentPromoData.content || '').replace(/\n/g, '<br>');
     
-    // 🚀 新增：綁定後台的電商欄位
     const ecomInfo = document.getElementById('promo-ecommerce-info');
     if (currentPromoData.salePrice || currentPromoData.price || currentPromoData.stockStatus) {
         ecomInfo.classList.remove('hidden');
@@ -1804,11 +1952,10 @@ function renderPromoUI() {
     } else {
         ecomInfo.classList.add('hidden');
     }
-    // --- 電商整合結束 ---
 
     const actionBtn = document.getElementById('promo-action-btn');
+    if(currentPromoData.link) actionBtn.href = currentPromoData.link;
 
-    // 2. 渲染多圖輪播
     const track = document.getElementById('promo-image-track');
     const dotsContainer = document.getElementById('promo-slider-dots');
     track.innerHTML = ''; dotsContainer.innerHTML = '';
@@ -1834,7 +1981,6 @@ function renderPromoUI() {
         document.getElementById('promo-slider-container').classList.add('hidden');
     }
 
-    // 3. 渲染 QA 區塊 (鹿🦌 專屬)
     const qaContainer = document.getElementById('promo-qa-container');
     qaContainer.innerHTML = '';
     if (currentPromoData.qaList && currentPromoData.qaList.length > 0) {
@@ -1852,12 +1998,10 @@ function renderPromoUI() {
         });
     }
 
-    // 4. 顯示彈窗 (修改為包含 5 秒倒數邏輯)
     const modal = document.getElementById('promo-modal');
     const content = document.getElementById('promo-content-box');
     modal.classList.remove('hidden'); modal.classList.add('flex');
     
-    // --- 新增：5秒倒數強制鎖定邏輯 ---
     const closeBtn = document.getElementById('promo-close-btn');
     const countdownEl = document.getElementById('promo-countdown');
     const closeIcon = document.getElementById('promo-close-icon');
@@ -1884,35 +2028,30 @@ function renderPromoUI() {
             closeBtn.classList.add('hover:bg-red-500/80');
         }
     }, 1000);
-    // ---------------------------------
 
     setTimeout(() => { 
         modal.classList.remove('opacity-0'); 
         content.classList.remove('scale-95'); 
-        if(typeof playSuccessSound === 'function') playSuccessSound(); // 彈出音效
+        if(typeof window.playSuccessSound === 'function') window.playSuccessSound();
     }, 10);
-} // renderPromoUI 結束
+}
 
-// 輪播跳轉
 window.scrollToPromoImage = function(index) {
     const track = document.getElementById('promo-image-track');
     track.scrollTo({ left: track.clientWidth * index, behavior: 'smooth' });
 };
 
-// QA 展開/收合
 window.togglePromoQA = function(index) {
-    if(typeof playClickSound === 'function') playClickSound();
+    if(typeof window.playClickSound === 'function') window.playClickSound();
     const box = document.getElementById(`promo-qa-box-${index}`);
     box.classList.toggle('active');
 };
 
-// 關閉並記錄狀態
 window.closePromoModal = function() {
-    if(typeof playClickSound === 'function') playClickSound();
+    if(typeof window.playClickSound === 'function') window.playClickSound();
     const modal = document.getElementById('promo-modal');
     const content = document.getElementById('promo-content-box');
     
-    // 記錄已經關閉過這個版本，避免瘋狂彈出
     if (currentPromoData && currentPromoData.updatedAt) {
         localStorage.setItem('promo_closed_update_time', currentPromoData.updatedAt.toString());
     }
@@ -1922,7 +2061,7 @@ window.closePromoModal = function() {
 };
 
 // ==========================================================================
-// 鐵粉測驗核心引擎 (正式版)
+// 鐵粉測驗核心引擎 
 // ==========================================================================
 let currentQuizQuestions = [];
 let currentQuizIndex = 0;
@@ -1936,7 +2075,6 @@ window.startQuiz = function() {
         return Swal.fire('系統提示', '題庫尚未載入，請確認 zcsn_quiz.js 是否正確掛載！', 'info');
     }
 
-    // 隨機選出 10 題
     currentQuizQuestions = [...window.QUIZ_DB].sort(() => 0.5 - Math.random()).slice(0, 10);
     currentQuizIndex = 0;
     currentQuizScore = 0;
@@ -1959,7 +2097,6 @@ window.renderQuizQuestion = function() {
     document.getElementById('quiz-score').innerText = `目前積分: ${currentQuizScore}`;
     document.getElementById('quiz-question').innerText = qData.q;
 
-    // 打亂選項並生成按鈕
     const options = [...qData.options].sort(() => 0.5 - Math.random());
     const optionsContainer = document.getElementById('quiz-options');
     
@@ -1990,20 +2127,162 @@ window.finishQuiz = function() {
     document.getElementById('quiz-area').classList.remove('flex');
     document.getElementById('quiz-intro').classList.remove('hidden');
     
-    // 檢查滿分成就
     if (currentQuizScore === 100) {
         window.appSettings.quizPerfect = (window.appSettings.quizPerfect || 0) + 1;
         window.saveSettings();
-        if(typeof window.renderBadges === 'function') window.renderBadges(); // 強制刷新成就牆
+        if(typeof window.renderBadges === 'function') window.renderBadges(); 
     }
 
-    // 依據分數發放 EXP 獎勵 (滿分送50 EXP)
     const expReward = Math.floor(currentQuizScore / 2); 
-    if(expReward > 0) window.gainExp(expReward, false, "完成鐵粉測驗");
+    const today = new Date().toDateString();
+    let rewardMsgHtml = "";
+
+    // 🌟 防刷分機制：一天只能領一次測驗獎勵
+    if (window.appSettings.lastQuizDate !== today) {
+        window.appSettings.lastQuizDate = today;
+        if(expReward > 0) {
+            window.gainExp(expReward, false, "每日測驗獎勵");
+            rewardMsgHtml = `獲得了 ${expReward} EXP 獎勵！`;
+        }
+    } else {
+        rewardMsgHtml = '今日測驗獎勵已達上限，明天再來挑戰吧！';
+        Swal.fire({ toast: true, position: 'top', icon: 'info', title: '今日已領取過獎勵囉', showConfirmButton: false, timer: 2000, background: 'rgba(10,20,35,0.95)', color: '#fff' });
+    }
 
     Swal.fire({
         title: currentQuizScore === 100 ? '完美通關！學霸鐵粉🎉' : '測驗結束！',
-        html: `<div class="text-4xl font-black text-amber-400 my-5">${currentQuizScore} 分</div><p class="text-sky-200 text-sm font-bold">獲得了 ${expReward} EXP 獎勵！</p>`,
-        confirmButtonText: '領取獎勵返回'
+        html: `<div class="text-4xl font-black text-amber-400 my-5">${currentQuizScore} 分</div><p class="text-sky-200 text-sm font-bold">${rewardMsgHtml}</p>`,
+        confirmButtonText: '返回'
+    });
+};
+
+// ==========================================================================
+// 🌟 版本更新迎新彈窗與推播權限請求
+// ==========================================================================
+window.showUpdateWelcome = function() {
+    const currentVersionData = CHANGELOG.find(c => c.ver === APP_VERSION);
+    if (!currentVersionData) return;
+    
+    const md = `### 🚀 v${currentVersionData.ver} 更新內容\n` + currentVersionData.items.map(i => `- ${i}`).join('\n');
+
+    PremiumSwal.fire({
+        title: '系統升級完成',
+        html: `<div class="markdown-body" style="text-align:left;max-height:50vh;overflow:auto;padding:10px;">${marked.parse(md)}</div>`,
+        showCancelButton: true,
+        confirmButtonText: '開始體驗',
+        cancelButtonText: '此次版本不再顯示',
+        cancelButtonColor: '#3f3f46',
+        reverseButtons: true
+    }).then((result) => {
+        if (result.dismiss === Swal.DismissReason.cancel) {
+            localStorage.setItem('hide_update_' + APP_VERSION, 'true');
+            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: '已隱藏此版本通知', showConfirmButton: false, timer: 1500, background: 'rgba(10,20,35,0.95)', color: '#fff' });
+        }
+        
+        // 詢問瀏覽器推播權限 (用於開播通知)
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+    });
+};
+
+// 監聽網頁載入，決定是否顯示彈窗
+window.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        if (localStorage.getItem('hide_update_' + APP_VERSION) !== 'true') {
+            if (typeof window.showUpdateWelcome === 'function') window.showUpdateWelcome();
+        }
+    }, 2000);
+});
+
+// ==========================================================================
+// 🌟 Twitch 自動驗證引擎
+// ==========================================================================
+const TWITCH_CLIENT_ID = '7pbbwifpvcy7gijroxdnqo8nqkcuya'; // 你的 Client ID
+const BROADCASTER_LOGIN = 'z_knc'; // 老王的頻道帳號
+
+window.bindTwitchAccount = function() {
+    if(isUserBanned()) return;
+    const redirectUri = window.location.origin + window.location.pathname;
+    // 請求 user:read:subscriptions 權限，這樣才能檢查他有沒有訂閱老王
+    const authUrl = `https://id.twitch.tv/oauth2/authorize?client_id=${TWITCH_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=user:read:subscriptions`;
+    window.location.href = authUrl;
+};
+
+window.verifyTwitchSubStatus = async function(uid, accessToken) {
+    PremiumSwal.fire({ title: '驗證 Twitch 數據中...', html: '正在與 Twitch 伺服器建立加密連線', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
+    
+    try {
+        // 1. 取得粉絲的 Twitch ID
+        const userRes = await fetch('https://api.twitch.tv/helix/users', { headers: { 'Client-ID': TWITCH_CLIENT_ID, 'Authorization': `Bearer ${accessToken}` } });
+        const userData = await userRes.json();
+        if (!userData.data || userData.data.length === 0) throw new Error("無法取得 Twitch 帳號資料");
+        const twitchUserId = userData.data[0].id;
+        const twitchUserName = userData.data[0].login;
+
+        // 2. 取得老王頻道的 ID
+        const bcRes = await fetch(`https://api.twitch.tv/helix/users?login=${BROADCASTER_LOGIN}`, { headers: { 'Client-ID': TWITCH_CLIENT_ID, 'Authorization': `Bearer ${accessToken}` } });
+        const bcData = await bcRes.json();
+        const broadcasterId = bcData.data[0].id;
+
+        // 3. 檢查該粉絲是否有訂閱老王
+        let isSub = false;
+        try {
+            const subRes = await fetch(`https://api.twitch.tv/helix/subscriptions/user?broadcaster_id=${broadcasterId}&user_id=${twitchUserId}`, { headers: { 'Client-ID': TWITCH_CLIENT_ID, 'Authorization': `Bearer ${accessToken}` } });
+            if (subRes.status === 200) isSub = true; // 回傳 200 代表有訂閱
+        } catch(e) { console.log('未訂閱或檢查失敗'); }
+
+        // 4. 寫入 Firebase 資料庫
+        await window.firebaseApp.updateDoc(window.firebaseApp.doc(window.firebaseApp.db, "users", uid), {
+            twitchId: twitchUserId,
+            twitchName: twitchUserName,
+            isTwitchSub: isSub
+        });
+
+        window.appSettings.isTwitchSub = isSub;
+        window.saveSettings();
+        
+        if (isSub) {
+            window.gainExp(100, true, "乾爹驗證成功空投");
+            PremiumSwal.fire({ title: '乾爹降臨 👑', text: `感謝訂閱！已為您掛上專屬徽章，並發送 100 EXP 獎勵！`, icon: 'success' });
+        } else {
+            PremiumSwal.fire({ title: '綁定成功', text: `已綁定帳號 ${twitchUserName}。目前系統未偵測到訂閱狀態，若您剛訂閱，請稍後重新驗證。`, icon: 'info' });
+        }
+        
+    } catch(error) {
+        PremiumSwal.fire('驗證失敗', '連線逾時或授權無效，請重試。', 'error');
+    }
+};
+
+// 🌟 覆蓋原本的個人中心，加入綁定按鈕
+window.toggleUserMenu = function () {
+    const user = window.firebaseApp && window.firebaseApp.auth ? window.firebaseApp.auth.currentUser : null;
+    if (!user) return;
+    const isGuest = user.isAnonymous;
+    const email = isGuest ? "未綁定 (訪客模式)" : (user.email || "使用 Google 授權登入");
+    const uid = user.uid;
+    
+    // 如果是乾爹顯示徽章，否則顯示綁定按鈕
+    let twitchAreaHtml = "";
+    if (window.appSettings.isTwitchSub) {
+        twitchAreaHtml = `<span class="text-purple-400 text-[10px] font-black border border-purple-500/30 bg-purple-500/10 px-2 py-0.5 rounded tracking-widest"><i class="fa-brands fa-twitch mr-1"></i>乾爹認證</span>`;
+    } else {
+        twitchAreaHtml = `<button onclick="window.bindTwitchAccount()" class="bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-bold px-3 py-1 rounded-lg transition-colors shadow-[0_0_10px_rgba(168,85,247,0.4)]"><i class="fa-brands fa-twitch mr-1"></i>前往綁定驗證</button>`;
+    }
+
+    PremiumSwal.fire({
+        title: '<i class="fa-solid fa-crown text-sky-400 mr-2"></i> 個人帳號中心',
+        html: `
+            <div class="text-left space-y-4 mt-6">
+                <div class="bg-white/5 border border-white/10 p-4 rounded-2xl space-y-3">
+                    <div class="flex items-center justify-between border-b border-white/5 pb-2"><span class="text-zinc-400 text-xs font-bold">綁定信箱</span><span class="text-sky-300 text-xs font-medium">${email}</span></div>
+                    <div class="flex items-center justify-between border-b border-white/5 pb-2"><span class="text-zinc-400 text-xs font-bold">粉絲編號</span><span class="text-zinc-300 text-xs font-mono font-bold tracking-widest">UID-${uid.substring(0, 8).toUpperCase()}</span></div>
+                    <div class="flex items-center justify-between min-h-[30px]"><span class="text-zinc-400 text-xs font-bold">Twitch 身分</span>${isGuest ? '<span class="text-zinc-600 text-[10px]">訪客無法綁定</span>' : twitchAreaHtml}</div>
+                </div>
+                ${!isGuest ? `<button onclick="window.updateUserAvatar()" class="w-full bg-sky-500/10 border border-sky-500/30 text-sky-400 py-3 rounded-2xl font-black tracking-widest hover:bg-sky-500 hover:text-[#020617] transition-all shadow-md"><i class="fa-solid fa-camera mr-2"></i>更換專屬頭像</button>` : ''}
+                <button onclick="window.logoutUser()" class="w-full bg-red-500/10 border border-red-500/30 text-red-400 py-4 rounded-2xl font-black tracking-widest hover:bg-red-500 hover:text-white transition-all mt-4">登出帳號</button>
+            </div>
+        `,
+        showConfirmButton: false, showCloseButton: true
     });
 };
