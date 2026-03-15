@@ -1,14 +1,15 @@
 {
-  "name": "老王專屬秘密基地 - V-CORE",
-  "short_name": "老王基地",
-  "description": "老王的專屬粉絲互動基地，結合 AI 助手、等級成就系統與動態時間軸，打造最酷的科技社群體驗。",
+  "id": "com.vcore.oldwang.app",
+  "name": "老王專屬網站 | 粉絲管理 系統",
+  "short_name": "老王專屬網站",
+  "description": "老王專屬網站 - 提供老王的最新動態、Q&A 資料庫以及粉絲專屬互動平台。",
   "lang": "zh-TW",
   "dir": "ltr",
   "start_url": "./?source=pwa",
   "display": "standalone",
-  "orientation": "portrait",
-  "theme_color": "#030303",
-  "background_color": "#030303",
+  "orientation": "portrait-primary",
+  "theme_color": "#020617",
+  "background_color": "#020617",
   "categories": ["entertainment", "social", "utilities"],
   "icons": [
     {
@@ -21,14 +22,14 @@
       "src": "avatar-main.jpg",
       "sizes": "512x512",
       "type": "image/jpeg",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     }
   ],
   "shortcuts": [
     {
       "name": "每日簽到",
       "short_name": "簽到",
-      "description": "立即進入基地進行每日簽到獲取 EXP",
+      "description": "立即進入系統進行每日簽到",
       "url": "./?action=checkin",
       "icons": [
         {
@@ -39,10 +40,10 @@
       ]
     },
     {
-      "name": "呼叫 AI 助手",
-      "short_name": "AI 助手",
-      "description": "開啟老王專屬 AI 系統進行互動",
-      "url": "./?tab=page-ai",
+      "name": "開啟支援服務",
+      "short_name": "客服中心",
+      "description": "啟動端對端加密與工程師聯繫",
+      "url": "./?action=support",
       "icons": [
         {
           "src": "avatar-main.jpg",

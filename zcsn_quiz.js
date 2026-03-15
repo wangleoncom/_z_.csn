@@ -219,8 +219,8 @@ window.QUIZ_DB = [
     a: "3 月 2 日＋雙魚座"
   },
   {
-    q: "下列哪一項最符合老王的社群帳號資訊？",
-    options: ["TikTok：@z.knccc；Instagram：_z.csn", "TikTok：_z.csn；Instagram：@z.knccc", "TikTok：@z.knccc；Instagram：z_csn", "TikTok：@zk.nccc；Instagram：_z.csn"],
-    a: "TikTok：@z.knccc；Instagram：_z.csn"
+    q: "老王的體重多重？",
+    options: ["40公斤", "48公斤", "51公斤"],
+    a: "48公斤"
   }
 ];

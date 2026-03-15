@@ -1,13 +1,18 @@
 /**
  * ==========================================================================
- * V-CORE MAX 系統快取核心 (Service Worker)
- * 版本：v22.0.0
- * 策略：Stale-While-Revalidate (核心程式) / Cache First (靜態資源)
+ * V-CORE 系統快取核心 (Service Worker)
+ * 系統版本：24.1.8
+ * 架構設計：動態路由快取策略 (Dynamic Routing Cache Strategy)
+ * 維護團隊：V-CORE 前端工程團隊
  * ==========================================================================
  */
 
-const CACHE_NAME = 'VCORE-BASE-v24.1.7'; // 升級為 v24.1.7
-const CORE_ASSETS = [
+const APP_VERSION = '24.1.8';
+const CACHE_CORE = `vcore-core-v${APP_VERSION}`;
+const CACHE_STATIC = `vcore-static-v${APP_VERSION}`;
+
+// 系統核心預載入清單 (確保離線時基本架構可運作)
+const PRECACHE_ASSETS = [
     './',
     './index.html',
     './app.js',
@@ -15,123 +20,124 @@ const CORE_ASSETS = [
     './avatar-main.jpg'
 ];
 
-// --------------------------------------------------------------------------
-// 1. 安裝階段 (Install) - 強制接管與預載入核心資源
-// --------------------------------------------------------------------------
-self.addEventListener('install', event => {
-    // skipWaiting 強制讓新版 Service Worker 立即啟動，不等待舊版關閉
-    self.skipWaiting(); 
+// 動態路由排除清單 (嚴格禁止快取的外部 API 與敏感連線)
+const BYPASS_DOMAINS = [
+    'firestore.googleapis.com',
+    'firebaseinstallations.googleapis.com',
+    'identitytoolkit.googleapis.com',
+    'generativelanguage.googleapis.com',
+    'api.groq.com',
+    'api.twitch.tv',
+    'id.twitch.tv',
+    'api-inference.huggingface.co'
+];
+
+/**
+ * 1. 系統安裝階段 (Install Phase)
+ * 預先載入核心靜態資源，並強制替換舊版 Service Worker
+ */
+self.addEventListener('install', (event) => {
+    self.skipWaiting(); // 強制立即啟動新版，不等待所有客戶端分頁關閉
     event.waitUntil(
-        caches.open(CACHE_NAME).then(cache => {
-            console.log(`[SW] 系統核心 V-CORE 預載入中... 版本: ${CACHE_NAME}`);
-            return cache.addAll(CORE_ASSETS);
+        caches.open(CACHE_CORE).then((cache) => {
+            console.info(`[V-CORE 快取引擎] 正在安裝核心資源，版本：${APP_VERSION}`);
+            return cache.addAll(PRECACHE_ASSETS);
         })
     );
 });
 
-// --------------------------------------------------------------------------
-// 2. 啟動階段 (Activate) - 清理舊版快取，確保強制更新
-// --------------------------------------------------------------------------
-self.addEventListener('activate', event => {
+/**
+ * 2. 系統啟動階段 (Activate Phase)
+ * 清理過期的舊版快取叢集，並立即接管所有開啟的客戶端連線
+ */
+self.addEventListener('activate', (event) => {
+    const allowedCaches = [CACHE_CORE, CACHE_STATIC];
+    
     event.waitUntil(
-        caches.keys().then(cacheNames => {
+        caches.keys().then((cacheNames) => {
             return Promise.all(
-                cacheNames.map(cacheName => {
-                    // 只要名稱跟當前版本號不一樣，通通刪除
-                    if (cacheName !== CACHE_NAME) {
-                        console.log('[SW] 刪除過期快取模組:', cacheName);
+                cacheNames.map((cacheName) => {
+                    // 移除不在白名單內的舊版快取
+                    if (!allowedCaches.includes(cacheName)) {
+                        console.info(`[V-CORE 快取引擎] 刪除過期快取叢集：${cacheName}`);
                         return caches.delete(cacheName);
                     }
                 })
             );
         }).then(() => {
-            console.log('[SW] V-CORE 已完全接管網路層');
-            return self.clients.claim(); // 立即接管所有目前開啟的頁面
+            console.info(`[V-CORE 快取引擎] 版本 ${APP_VERSION} 已上線並接管網路請求。`);
+            return self.clients.claim(); // 立即取得所有分頁的控制權
         })
     );
 });
 
-// --------------------------------------------------------------------------
-// 3. 請求攔截階段 (Fetch) - 智慧型路由分發
-// --------------------------------------------------------------------------
-self.addEventListener('fetch', event => {
+/**
+ * 3. 網路請求攔截與分流 (Fetch Interception)
+ * 根據資源類型 (API, 靜態資源, 網頁核心) 自動套用對應的快取路由策略
+ */
+self.addEventListener('fetch', (event) => {
     const req = event.request;
     const url = new URL(req.url);
 
-    // [防呆] 忽略非 GET 請求與 Chrome Extension 等非 HTTP 請求
-    if (req.method !== 'GET' || !req.url.startsWith('http')) return;
-
-    // [隔離] 外部 API 請求：絕對不快取 (Network Only)
-    // 確保 Firebase 即時資料、Groq、Gemini 的運算不會拿到舊資料
-    if (
-        url.hostname.includes('firestore.googleapis.com') || 
-        url.hostname.includes('firebase') ||
-        url.hostname.includes('api.groq.com') ||
-        url.hostname.includes('generativelanguage.googleapis.com') ||
-        url.pathname.includes('/api/')
-    ) {
-        return; // 交給瀏覽器原生網路層處理
+    // [策略 A] 繞過特定 API 與外部服務 (Network Only 網路唯一)
+    // 確保即時資料庫、AI 推理與 OAuth 安全驗證絕不讀取到陳舊的快取資料
+    const shouldBypass = BYPASS_DOMAINS.some(domain => url.hostname.includes(domain)) || 
+                         req.method !== 'GET' ||
+                         url.pathname.includes('/api/');
+                         
+    if (shouldBypass) {
+        return; // 直接放行，交由瀏覽器原生網路層處理
     }
 
-    // [策略 A] 核心程式碼 (HTML, JS, CSS)：Stale-While-Revalidate
-    // 目標：確保畫面「秒開」，同時背景偷偷更新
-    const isCoreCode = url.pathname.match(/\.(html|js|css)$/) || url.pathname.endsWith('/');
+    // [策略 B] 靜態媒體資源 (Cache First, Network Fallback 快取優先)
+    // 針對圖片、音效與字體，降低伺服器頻寬負載，大幅提升二次載入速度
+    const isStaticAsset = req.destination === 'image' || req.destination === 'font' || req.destination === 'audio' || req.destination === 'video';
     
-    if (isCoreCode) {
+    if (isStaticAsset) {
         event.respondWith(
-            caches.open(CACHE_NAME).then(cache => {
-                return cache.match(req).then(cachedResponse => {
-                    // 建立一個前往網路抓取最新版本的 Promise
-                    const fetchPromise = fetch(req).then(networkResponse => {
-                        // 確定拿到正確且有效的回覆後，更新快取
-                        if (networkResponse && networkResponse.status === 200) {
-                            cache.put(req, networkResponse.clone());
-                        }
+            caches.match(req).then((cachedResponse) => {
+                if (cachedResponse) return cachedResponse; // 命中快取，光速回傳
+                
+                // 快取未命中，從網路請求並存入靜態快取池
+                return fetch(req).then((networkResponse) => {
+                    if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
                         return networkResponse;
-                    }).catch(err => {
-                        console.warn('[SW] 背景更新失敗，維持使用快取:', err);
-                    });
-                    
-                    // 魔法發生在這裡：
-                    // 如果有快取，立刻回傳快取 (極速體驗)，背景同時執行 fetchPromise 更新快取。
-                    // 如果沒快取，就乖乖等待 fetchPromise 完成。
-                    return cachedResponse || fetchPromise;
+                    }
+                    const responseToCache = networkResponse.clone();
+                    caches.open(CACHE_STATIC).then((cache) => cache.put(req, responseToCache));
+                    return networkResponse;
+                }).catch((err) => {
+                    console.warn(`[V-CORE 快取引擎] 靜態資源獲取失敗: ${url.href}`, err);
+                    // 靜默處理，避免拋出阻斷性錯誤干擾使用者體驗
                 });
             })
         );
-        return; // 處理完畢，提早 return
+        return;
     }
 
-    // [策略 B] 靜態資源 (圖片、音效、字體)：Cache First (快取優先)
-    // 目標：節省流量，只要抓過一次就永遠從快取拿
+    // [策略 C] 核心系統檔案 HTML/JS/CSS (Network First, Cache Fallback 網路優先)
+    // 確保使用者永遠拿到最新版的系統邏輯，若偵測到斷網或伺服器異常，則無縫降級使用本地快取
     event.respondWith(
-        caches.match(req).then(cachedResponse => {
-            if (cachedResponse) {
-                return cachedResponse; // 命中快取，直接回傳
+        fetch(req).then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+                const responseToCache = networkResponse.clone();
+                caches.open(CACHE_CORE).then((cache) => cache.put(req, responseToCache));
             }
-            // 沒命中快取，去網路抓，抓完存入快取
-            return fetch(req).then(networkResponse => {
-                if (networkResponse && networkResponse.status === 200) {
-                    const responseToCache = networkResponse.clone();
-                    caches.open(CACHE_NAME).then(cache => {
-                        cache.put(req, responseToCache);
-                    });
-                }
-                return networkResponse;
-            }).catch(err => {
-                // 如果離線且連圖片都抓不到，可以直接靜默處理或回傳預設圖
-                console.warn('[SW] 靜態資源獲取失敗:', err);
-            });
+            return networkResponse;
+        }).catch(() => {
+            console.warn(`[V-CORE 快取引擎] 網路離線或不穩定，降級讀取本地快取: ${url.href}`);
+            return caches.match(req);
         })
     );
 });
 
-// --------------------------------------------------------------------------
-// 4. 訊息監聽 (Message) - 允許前端手動觸發立即更新
-// --------------------------------------------------------------------------
-self.addEventListener('message', event => {
+/**
+ * 4. 背景通訊介面 (Message Handling)
+ * 提供前端主動發送指令給 Service Worker 進行強制作業的管道
+ */
+self.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'SKIP_WAITING') {
-        console.log('[SW] 收到前端強制更新指令');
+        console.info('[V-CORE 快取引擎] 收到前端 SKIP_WAITING 指令，強制進入更新程序。');
         self.skipWaiting();
     }
 });
