@@ -65,7 +65,7 @@ const PremiumSwal = Swal.mixin({
 });
 
 const CHANGELOG = [
-    { ver: '24.1.7', date: '2026-03-15', items: [
+    { ver: 'v24.1.7', date: '2026-03-15', items: [
         '核心：重構客服系統，斷開連線時自動抹除本地快取，落實資安防護。',
         '修復：排行榜不再顯示「尚未登入」，解決渲染同步延遲問題。',
         '修復：首頁版面結構錯誤，各分頁內容不再互相干擾重疊。',
@@ -2909,11 +2909,15 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+
+
 // ==========================================================================
-// 🛡️ 官方客服系統 (Client-Side Privacy Management & Support)
+// 🛡️ 官方客服系統 (Client-Side Privacy Management & Support) - V2 Thread Master 架構
 // ==========================================================================
 let currentSupportAttachmentBase64 = null;
-let globalNotificationUnsubscribe = null; // 獨立的推播監聽，防止被彈窗關閉清空
+let globalNotificationUnsubscribe = null; 
+let supportThreadUnsub = null; // 監聽主工單狀態
+let supportMsgUnsub = null;    // 監聽子對話紀錄
 
 window.handleSupportKeyPress = function(event) {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -2988,14 +2992,23 @@ window.sendSupportTicket = async function() {
     window.removeSupportAttachment();
     
     try {
-        await window.firebaseApp.addDoc(window.firebaseApp.collection(window.firebaseApp.db, "support_tickets"), {
-            uid: user.uid,
-            name: window.appSettings.customTitle ? `[${window.appSettings.customTitle}] ` + (window.appSettings.name || user.displayName || "老王鐵粉") : (window.appSettings.name || user.displayName || "老王鐵粉"),
-            email: user.email,
-            message: finalMessage,
-            status: 'pending',
+        // 1. 將對話封包寫入個人的 messages 子集合
+        await window.firebaseApp.addDoc(window.firebaseApp.collection(window.firebaseApp.db, "support_threads", user.uid, "messages"), {
+            role: 'user',
+            content: finalMessage,
             timestamp: Date.now()
         });
+
+        // 2. 更新或建立主工單狀態 (喚醒戰情室)
+        const displayTitle = window.appSettings.customTitle ? `[${window.appSettings.customTitle}] ` + (window.appSettings.name || user.displayName || "老王鐵粉") : (window.appSettings.name || user.displayName || "老王鐵粉");
+        await window.firebaseApp.setDoc(window.firebaseApp.doc(window.firebaseApp.db, "support_threads", user.uid), {
+            name: displayTitle,
+            email: user.email,
+            status: 'pending',
+            lastMessage: msg ? msg.substring(0, 30) : '[傳送了圖片]',
+            lastUpdated: Date.now()
+        }, { merge: true });
+
         if(typeof window.playSuccessSound === 'function') window.playSuccessSound();
     } catch (e) {
         PremiumSwal.fire('傳送失敗', e.message, 'error');
@@ -3025,25 +3038,38 @@ window.closeSupportModal = function() {
         modal.classList.add('opacity-0'); content.classList.add('scale-95');
         setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 300);
     }
-    if (globalSupportUnsubscribe) { globalSupportUnsubscribe(); globalSupportUnsubscribe = null; }
+    if (supportThreadUnsub) { supportThreadUnsub(); supportThreadUnsub = null; }
+    if (supportMsgUnsub) { supportMsgUnsub(); supportMsgUnsub = null; }
 };
 
 window.loadSupportHistory = function(uid) {
     const list = document.getElementById('support-history-list');
+    const inputArea = document.getElementById('support-input');
     if(!list) return;
-    if (globalSupportUnsubscribe) globalSupportUnsubscribe();
 
-    const q = window.firebaseApp.query(
-        window.firebaseApp.collection(window.firebaseApp.db, "support_tickets"), 
-        window.firebaseApp.where("uid", "==", uid), 
+    if (supportThreadUnsub) supportThreadUnsub();
+    if (supportMsgUnsub) supportMsgUnsub();
+
+    // 1. 監聽主工單狀態 (用來判斷是否結案並更改輸入框提示)
+    supportThreadUnsub = window.firebaseApp.onSnapshot(window.firebaseApp.doc(window.firebaseApp.db, "support_threads", uid), (docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.status === 'closed') {
+                if (inputArea) inputArea.placeholder = "對談已結案，輸入新訊息以重新開啟對談...";
+            } else {
+                if (inputArea) inputArea.placeholder = "描述您的問題或附上截圖 (按 Enter 送出)...";
+            }
+        }
+    });
+
+    // 2. 監聽子對話紀錄集合
+    const msgQuery = window.firebaseApp.query(
+        window.firebaseApp.collection(window.firebaseApp.db, "support_threads", uid, "messages"), 
         window.firebaseApp.orderBy("timestamp", "asc")
     );
 
-    globalSupportUnsubscribe = window.firebaseApp.onSnapshot(q, (snapshot) => {
-        let html = ''; 
-        let latestStatus = 'pending';
-
-        html += `
+    supportMsgUnsub = window.firebaseApp.onSnapshot(msgQuery, (snapshot) => {
+        let html = `
             <div class="flex flex-col items-center justify-center my-4">
                 <span class="text-[10px] text-sky-400/60 font-mono tracking-widest bg-sky-900/20 px-3 py-1 rounded-full border border-sky-500/20"><i class="fa-solid fa-shield-halved mr-1"></i>通訊連線已加密</span>
             </div>
@@ -3059,34 +3085,19 @@ window.loadSupportHistory = function(uid) {
 
         snapshot.forEach(doc => {
             const data = doc.data();
-            latestStatus = data.status; 
             const timeStr = new Date(data.timestamp).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
             
-            if (data.message && data.message !== "*(通訊串接延續)*" && data.message !== "*(工程師主動聯繫)*") {
-                const msgContent = data.message.startsWith('data:image') 
-                    ? `<img src="${data.message}" class="max-w-[200px] rounded-lg border border-sky-500/30 cursor-zoom-in mt-1 shadow-md hover:opacity-80 transition-opacity" onclick="window.previewSupportImage(this.src)">` 
-                    : data.message.replace(/\n/g, '<br>');
+            const msgContent = data.content.startsWith('data:image') 
+                ? `<img src="${data.content}" class="max-w-[200px] rounded-lg border border-sky-500/30 cursor-zoom-in mt-1 shadow-md hover:opacity-80 transition-opacity" onclick="window.previewSupportImage(this.src)">` 
+                : data.content.replace(/\n/g, '<br>');
+
+            if (data.role === 'user') {
                 html += `<div class="flex flex-col items-end mb-4 animate-[fadeIn_0.3s_ease]"><span class="text-[10px] text-zinc-500 font-mono mb-1 pr-1">${timeStr}</span><div class="bg-gradient-to-br from-sky-500 to-blue-600 text-white px-5 py-3 rounded-2xl rounded-tr-sm text-[14px] max-w-[85%] shadow-[0_5px_15px_rgba(56,189,248,0.2)] break-words border border-sky-400/50 leading-relaxed">${msgContent}</div></div>`;
-            }
-            
-            if (data.status === 'replied' || data.status === 'closed' || data.status === 'in_progress') {
-                if (data.replyContent) {
-                    const repTimeStr = new Date(data.replyTime).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
-                    const repContent = data.replyContent.startsWith('data:image') 
-                        ? `<img src="${data.replyContent}" class="max-w-[200px] rounded-lg border border-emerald-500/30 cursor-zoom-in mt-1 shadow-md hover:opacity-80 transition-opacity" onclick="window.previewSupportImage(this.src)">` 
-                        : data.replyContent.replace(/\n/g, '<br>');
-                    html += `<div class="flex flex-col items-start mb-6 animate-[fadeIn_0.4s_ease]"><div class="flex items-center gap-2 mb-1 pl-1"><span class="bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[9px] font-black px-2 py-0.5 rounded tracking-widest"><i class="fa-solid fa-wrench mr-1"></i>基地工程部</span><span class="text-[10px] text-zinc-500 font-mono">${repTimeStr}</span></div><div class="bg-[#020617] text-sky-100 px-5 py-3 rounded-2xl rounded-tl-sm text-[14px] max-w-[85%] shadow-[0_0_15px_rgba(52,211,153,0.1)] break-words border border-emerald-500/30 leading-relaxed">${repContent}</div></div>`;
-                }
+            } else if (data.role === 'admin') {
+                if (data.isInternalNote) return; // 前台不渲染內部備註
+                html += `<div class="flex flex-col items-start mb-6 animate-[fadeIn_0.4s_ease]"><div class="flex items-center gap-2 mb-1 pl-1"><span class="bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[9px] font-black px-2 py-0.5 rounded tracking-widest"><i class="fa-solid fa-wrench mr-1"></i>基地工程部</span><span class="text-[10px] text-zinc-500 font-mono">${timeStr}</span></div><div class="bg-[#020617] text-sky-100 px-5 py-3 rounded-2xl rounded-tl-sm text-[14px] max-w-[85%] shadow-[0_0_15px_rgba(52,211,153,0.1)] break-words border border-emerald-500/30 leading-relaxed">${msgContent}</div></div>`;
             }
         });
-        
-        const inputArea = document.getElementById('support-input');
-        if (latestStatus === 'closed') {
-            html += `<div class="w-full text-center mt-6 mb-2"><span class="bg-zinc-800/80 text-zinc-400 border border-zinc-700 text-xs font-mono px-4 py-2 rounded-full tracking-widest"><i class="fa-solid fa-lock mr-1"></i>上一次對談已結案，發送訊息將重啟新對談</span></div>`;
-            if (inputArea) inputArea.placeholder = "輸入新訊息以重新開啟對談...";
-        } else {
-            if (inputArea) inputArea.placeholder = "輸入訊息或附上截圖 (按 Enter 發送)...";
-        }
         
         list.innerHTML = html;
         setTimeout(() => window.fluidScroll(list, list.scrollHeight, 600));
@@ -3128,11 +3139,8 @@ window.endSupportTicket = async function() {
             link.click();
         }
         
-        // 🛡️ 切斷資料流監聽，並將用戶端的敏感畫面清空
-        if (globalSupportUnsubscribe) {
-            globalSupportUnsubscribe();
-            globalSupportUnsubscribe = null;
-        }
+        if (supportThreadUnsub) { supportThreadUnsub(); supportThreadUnsub = null; }
+        if (supportMsgUnsub) { supportMsgUnsub(); supportMsgUnsub = null; }
         
         const list = document.getElementById('support-history-list');
         if (list) {
@@ -3150,15 +3158,10 @@ window.endSupportTicket = async function() {
         try {
             const user = window.firebaseApp.auth.currentUser;
             if (user) {
-                const q = window.firebaseApp.query(
-                    window.firebaseApp.collection(window.firebaseApp.db, "support_tickets"),
-                    window.firebaseApp.where("uid", "==", user.uid),
-                    window.firebaseApp.where("status", "!=", "closed")
-                );
-                const snapshot = await window.firebaseApp.getDocs(q);
-                snapshot.forEach(docSnap => {
-                    window.firebaseApp.updateDoc(docSnap.ref, { status: 'closed', closedAt: Date.now(), closedBy: 'Client_User' });
-                });
+                // 將主工單狀態改為 closed
+                await window.firebaseApp.setDoc(window.firebaseApp.doc(window.firebaseApp.db, "support_threads", user.uid), {
+                    status: 'closed', closedAt: Date.now(), closedBy: 'Client_User', lastUpdated: Date.now()
+                }, { merge: true });
             }
         } catch (e) {
             console.warn("客服狀態更新失敗", e);
@@ -3169,39 +3172,46 @@ window.endSupportTicket = async function() {
     }
 };
 
-// 🌟 全域背景推播通知 (工程師回覆)
+// 🌟 全域背景推播通知 (工程師回覆) - 改為監聽最新的一筆 message
 window.initGlobalTicketNotifications = function(uid) {
     if (globalNotificationUnsubscribe) globalNotificationUnsubscribe();
 
     const q = window.firebaseApp.query(
-        window.firebaseApp.collection(window.firebaseApp.db, "support_tickets"),
-        window.firebaseApp.where("uid", "==", uid),
-        window.firebaseApp.where("status", "==", "replied") 
+        window.firebaseApp.collection(window.firebaseApp.db, "support_threads", uid, "messages"),
+        window.firebaseApp.orderBy("timestamp", "desc"),
+        window.firebaseApp.limit(1)
     );
 
     globalNotificationUnsubscribe = window.firebaseApp.onSnapshot(q, (snapshot) => {
         snapshot.docChanges().forEach((change) => {
-            if (change.type === "modified" || change.type === "added") {
+            if (change.type === "added") {
                 const data = change.doc.data();
-                const lastNotified = localStorage.getItem('last_notified_ticket_' + change.doc.id) || 0;
+                const lastNotified = localStorage.getItem('last_notified_msg_' + uid) || 0;
 
-                if (data.replyTime > lastNotified) {
-                    localStorage.setItem('last_notified_ticket_' + change.doc.id, data.replyTime);
-
-                    if(typeof window.playSuccessSound === 'function') window.playSuccessSound();
+                // 若是官方傳的，且不是內部備註，且大於上次通知時間
+                if (data.role === 'admin' && !data.isInternalNote && data.timestamp > lastNotified) {
                     
-                    const modal = document.getElementById('support-modal');
-                    // 如果客服視窗沒打開才跳通知
-                    if (!modal || modal.classList.contains('hidden')) {
-                        PremiumSwal.fire({
-                            title: '<i class="fa-solid fa-envelope-open-text text-sky-400"></i> 收到工程師新訊息！',
-                            html: `<div class="text-left bg-sky-900/20 p-4 rounded-xl border border-sky-500/30 mt-3 text-sm text-sky-100">${(data.replyContent || '').replace(/\n/g, '<br>')}</div>`,
-                            confirmButtonText: '前往客服中心查看',
-                        }).then((result) => {
-                            if (result.isConfirmed && typeof window.openSupportModal === 'function') {
-                                window.openSupportModal();
-                            }
-                        });
+                    // 避免重新載入網頁時把舊資料當新通知彈出 (10秒內發送的才算新)
+                    if (Date.now() - data.timestamp < 10000) {
+                        localStorage.setItem('last_notified_msg_' + uid, data.timestamp);
+
+                        if(typeof window.playSuccessSound === 'function') window.playSuccessSound();
+                        
+                        const modal = document.getElementById('support-modal');
+                        if (!modal || modal.classList.contains('hidden')) {
+                            PremiumSwal.fire({
+                                title: '<i class="fa-solid fa-envelope-open-text text-sky-400"></i> 收到工程師新訊息！',
+                                html: `<div class="text-left bg-sky-900/20 p-4 rounded-xl border border-sky-500/30 mt-3 text-sm text-sky-100">${(data.content || '[圖片訊息]').replace(/\n/g, '<br>')}</div>`,
+                                confirmButtonText: '前往客服中心查看',
+                            }).then((result) => {
+                                if (result.isConfirmed && typeof window.openSupportModal === 'function') {
+                                    window.openSupportModal();
+                                }
+                            });
+                        }
+                    } else {
+                        // 如果是載入出來的舊資料，默默更新時間戳就好，不要吵使用者
+                        localStorage.setItem('last_notified_msg_' + uid, data.timestamp);
                     }
                 }
             }
