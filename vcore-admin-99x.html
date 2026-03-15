@@ -644,50 +644,50 @@
         // 🌟 [全新模組] 原生 Web Push 推播通知引擎 (給工程部/管理員使用)
         let pushNotificationUnsub = null;
         window.initAdminNotifications = function() {
-            if (!("Notification" in window)) return; // 瀏覽器不支援
+            if (!("Notification" in window)) return;
             if (Notification.permission !== "granted") {
-                Notification.requestPermission(); // 請求權限
+                Notification.requestPermission();
             }
 
-            // 監聽有變動的工單 (粉絲傳新訊息 或 建立新工單)
-            const q = query(collection(db, "support_tickets"), where("status", "in", ["pending", "in_progress"]), orderBy("timestamp", "desc"), limit(20));
+            // 修正：改為監聽 support_threads，並以 lastUpdated 作為時間基準
+            const q = query(collection(db, "support_threads"), where("status", "in", ["pending", "in_progress"]), orderBy("lastUpdated", "desc"), limit(20));
             if(pushNotificationUnsub) pushNotificationUnsub();
             
             pushNotificationUnsub = onSnapshot(q, (snap) => {
                 snap.docChanges().forEach((change) => {
                     if (change.type === 'added' || change.type === 'modified') {
                         const data = change.doc.data();
+                        const uid = change.doc.id; // 新版 UID 就是文件 ID
                         
-                        // 避免自己剛發送的回覆觸發通知自己
-                        if (data.replyBy === vcore.user.email && (Date.now() - data.replyTime < 5000)) return; 
+                        // 避免自己剛發送的回覆觸發通知自己 (透過最後更新時間與登入者判斷)
+                        if (data.status === 'in_progress' && (Date.now() - data.lastUpdated < 5000)) return; 
                         
                         // 透過 sessionStorage 確保同一則訊息不重複跳通知
-                        const notifKey = `notif_ticket_${change.doc.id}_${data.timestamp}`;
+                        const notifKey = `notif_thread_${uid}_${data.lastUpdated}`;
                         if (!sessionStorage.getItem(notifKey)) {
                             sessionStorage.setItem(notifKey, 'true');
                             
-                            // 只要不是初次載入舊資料，才發送通知 (避免一登入就被通知轟炸)
-                            if (Date.now() - data.timestamp < 60000) { 
+                            // 只要不是初次載入舊資料，才發送通知
+                            if (Date.now() - data.lastUpdated < 60000) { 
                                 if (Notification.permission === "granted") {
                                     const isAlert = data.isEscalated;
                                     const title = isAlert ? "🚨 [重大異常] 客服中心警報" : "💬 收到粉絲新訊息";
                                     const options = {
-                                        body: `粉絲 UID: ${data.uid.substring(0,8)}\n內容: ${data.message.replace(/<[^>]*>?/gm, '').substring(0, 40)}...`,
+                                        body: `粉絲: ${data.name || uid.substring(0,8)}\n內容: ${(data.lastMessage || '').replace(/<[^>]*>?/gm, '').substring(0, 40)}...`,
                                         icon: "avatar-main.jpg",
                                         badge: "avatar-main.jpg",
                                         vibrate: isAlert ? [500, 200, 500, 200, 500] : [200, 100, 200]
                                     };
                                     const n = new Notification(title, options);
-                                    n.onclick = () => { window.focus(); window.switchTab('tab-support'); window.selectTicket(data.uid, data.name || '用戶'); };
+                                    n.onclick = () => { window.focus(); window.switchTab('tab-support'); window.selectTicket(uid, data.name || '用戶'); };
                                     
-                                    // 播放提示音
                                     try {
                                         const audioUrl = isAlert 
                                             ? 'https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg' 
                                             : 'https://actions.google.com/sounds/v1/notifications/positive_alert.ogg';
                                         const audio = new Audio(audioUrl);
                                         audio.volume = 0.5;
-                                        audio.play().catch(e => {}); // 瀏覽器可能會阻擋自動播放
+                                        audio.play().catch(e => {});
                                     } catch(e) {}
                                 }
                             }
@@ -808,7 +808,7 @@
                     </div>`;
                 }).join('');
 
-                const tkSnap = await getDocs(query(collection(db, "support_tickets"), where("status", "==", "pending")));
+               const tkSnap = await getDocs(query(collection(db, "support_threads"), where("status", "==", "pending")));
                 animateValue("st-tickets", 0, tkSnap.size, 800);
                 
                 const ctx = document.getElementById('trendChart').getContext('2d');
@@ -858,11 +858,11 @@
                 const terminal = document.getElementById('live-terminal-box');
                 terminal.innerHTML = '<div><span class="text-emerald-300">sys@vcore:~$</span> Connection established. Fetching live datastream...</div>';
                 
-                const tkSnap = await getDocs(query(collection(db, "support_tickets"), orderBy("timestamp", "desc"), limit(5)));
+                const tkSnap = await getDocs(query(collection(db, "support_threads"), orderBy("lastUpdated", "desc"), limit(5)));
                 const uSnap = await getDocs(query(collection(db, "users"), orderBy("createdAt", "desc"), limit(5)));
                 
                 let events = [];
-                tkSnap.forEach(d => events.push({ type: 'TICKET', time: d.data().timestamp, msg: `New ticket by UID:${d.data().uid.substring(0,8)} (Status: ${d.data().status})` }));
+                tkSnap.forEach(d => events.push({ type: 'TICKET', time: d.data().lastUpdated, msg: `Ticket updated by UID:${d.id.substring(0,8)} (Status: ${d.data().status})` }));
                 uSnap.forEach(d => { let ts = d.data().createdAt ? new Date(d.data().createdAt).getTime() : 0; events.push({ type: 'USER', time: ts, msg: `New user: ${d.data().name} [UID:${d.id.substring(0,8)}]` }); });
                 events.sort((a,b) => a.time - b.time);
                 
@@ -928,7 +928,8 @@
                                 <button onclick="window.editUserTag('${u.id}', '${u.adminRemarks||''}')" class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white transition-all shadow-sm border border-blue-500/30" title="編輯內部備註"><i class="fa-solid fa-pen text-[10px]"></i></button>
                                 <button onclick="window.sendReward('${u.id}', '${u.name||'粉絲'}')" class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-black transition-all shadow-sm border border-emerald-500/30" title="發送系統空投"><i class="fa-solid fa-gift text-[10px]"></i></button>
                                 <button onclick="window.changeRole('${u.id}', '${u.role}')" class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 hover:bg-amber-500 hover:text-black transition-all shadow-sm border border-amber-500/30" title="更改系統權限"><i class="fa-solid fa-shield-halved text-[10px]"></i></button>
-                            </div>
+                                <button onclick="window.openSupportChat('${u.id}', '${displayName}')" class="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white transition-all shadow-sm border border-rose-500/30" title="強制開啟對話通道"><i class="fa-solid fa-comment-dots text-[10px]"></i></button>
+                                </div>
                         </td>
                     </tr>`;
                 }).join('');
@@ -1002,41 +1003,48 @@
         };
 
         // =======================
-        // [模組] 4. 官方問題管理系統 (Support Center)
+        // [全新重構] 4. 官方問題管理系統 (Support Center v2 - Thread Master 架構)
         // =======================
         let activeTicketId = null;
-        let tkUnsub = null;
+        let tkListUnsub = null;
+        let tkMessagesUnsub = null;
         window.currentTicketHistory = [];
-        window.currentTicketEscalated = false; // 追蹤目前重大異常狀態
+        window.currentTicketEscalated = false;
 
+        // 解決病灶 2 & 5：效能優化與監聽主工單狀態
         window.initTicketSystem = async () => {
             const showClosed = document.getElementById('tk-show-closed').checked;
-            const q = showClosed ? 
-                query(collection(db, "support_tickets"), orderBy("timestamp", "desc"), limit(50)) :
-                query(collection(db, "support_tickets"), where("status", "!=", "closed"), orderBy("status", "asc"), orderBy("timestamp", "desc"), limit(50));
-            
-            onSnapshot(q, (snap) => {
-                let html = ''; const now = Date.now();
+
+            // 升級：改為監聽以 UID 為單位的「主工單 (support_threads)」
+            let q = query(collection(db, "support_threads"), orderBy("lastUpdated", "desc"), limit(50));
+            if (!showClosed) {
+                q = query(collection(db, "support_threads"), where("status", "!=", "closed"), orderBy("lastUpdated", "desc"), limit(50));
+            }
+
+            if (tkListUnsub) tkListUnsub(); // 確保不會重複監聽浪費資源
+
+            tkListUnsub = onSnapshot(q, (snap) => {
+                let html = '';
                 snap.forEach(d => {
                     const data = d.data();
-                    if ((data.status === 'in_progress' || data.status === 'replied') && (!data.replyTime || data.timestamp > data.replyTime)) {
-                        if (now - data.timestamp > 15 * 60 * 1000) { updateDoc(doc(db, "support_tickets", d.id), { status: 'pending' }); return; }
-                    }
+                    const uid = d.id; // UID 即是文件 ID，確保一人一單
+                    const displayName = (data.name && data.name !== "匿名粉絲") ? data.name : `用戶: ${uid.substring(0,8)}`;
 
-                    let sClass = 'text-zinc-500 border-zinc-500/30 bg-black/40'; let sText = '已結案';
-                    if (data.status === 'pending') { sClass = 'text-rose-400 border-rose-400/30 bg-rose-400/10 shadow-[0_0_10px_rgba(244,63,94,0.2)] animate-pulse'; sText = '待回覆'; }
-                    if (data.status === 'in_progress' || data.status === 'replied') { sClass = 'text-amber-400 border-amber-400/30 bg-amber-400/10'; sText = '進行中'; }
+                    let sClass = 'text-zinc-500 border-zinc-500/30 bg-black/40';
+                    let sText = '已結案';
+                    
+                    // 新增功能：明確的「待處理」閃爍偵測
+                    if (data.status === 'pending') { sClass = 'text-rose-400 border-rose-400/30 bg-rose-400/10 shadow-[0_0_10px_rgba(244,63,94,0.2)] animate-pulse'; sText = '🔴 待處理'; }
+                    if (data.status === 'in_progress') { sClass = 'text-amber-400 border-amber-400/30 bg-amber-400/10'; sText = '🟡 進行中'; }
                     if (data.isEscalated) { sClass = 'text-red-500 border-red-500/50 bg-red-500/20 font-black'; sText = '🚨 重大異常'; }
 
-                    const displayName = (data.name && data.name !== "匿名粉絲") ? data.name : `用戶: ${data.uid.substring(0,8)}`;
-
                     html += `
-                    <div onclick="window.selectTicket('${data.uid}', '${displayName}')" class="p-4 bg-white/5 border border-white/10 rounded-2xl cursor-pointer hover:bg-white/10 transition-all ${data.uid === activeTicketId ? 'border-rose-500/50 bg-rose-500/10 shadow-[0_0_15px_rgba(244,63,94,0.2)]' : ''}">
+                    <div onclick="window.selectTicket('${uid}', '${displayName}')" class="p-4 bg-white/5 border border-white/10 rounded-2xl cursor-pointer hover:bg-white/10 transition-all ${uid === activeTicketId ? 'border-rose-500/50 bg-rose-500/10 shadow-[0_0_15px_rgba(244,63,94,0.2)]' : ''}">
                         <div class="flex justify-between items-start mb-2">
                             <span class="font-bold text-white text-xs tracking-wider truncate max-w-[120px]">${displayName}</span>
                             <span class="status-pill ${sClass}">${sText}</span>
                         </div>
-                        <div class="text-[10px] text-slate-400 truncate leading-relaxed">${data.message.replace(/<[^>]*>?/gm, '')}</div>
+                        <div class="text-[10px] text-slate-400 truncate leading-relaxed">${data.lastMessage || '無對話紀錄'}</div>
                     </div>`;
                 });
                 document.getElementById('ticket-list').innerHTML = html || `<div class='text-center p-10 text-slate-600 text-xs font-mono border border-white/5 rounded-2xl bg-black/20'>目前任務隊列清空</div>`;
@@ -1055,122 +1063,145 @@
             document.getElementById('tk-display-uid').innerText = `系統識別碼: ${uid}`;
             document.getElementById('tk-status-select').classList.remove('hidden');
             document.getElementById('btn-escalate').classList.remove('hidden');
+
+            // 解決「鎖死不能發訊息」問題：只要點進對話，強制解鎖輸入框
             document.getElementById('tk-input-area').classList.remove('opacity-50', 'pointer-events-none');
-            
-            if(tkUnsub) tkUnsub();
-            tkUnsub = onSnapshot(query(collection(db, "support_tickets"), where("uid", "==", uid), orderBy("timestamp", "asc")), (snap) => {
-                let html = ''; window.currentTicketHistory = [];
-                let currentStatus = 'pending';
-                window.currentTicketEscalated = false;
+
+            if(tkMessagesUnsub) tkMessagesUnsub();
+
+            // 監聽主狀態 (控制 UI 與異常按鈕)
+            onSnapshot(doc(db, "support_threads", uid), (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    window.currentTicketEscalated = !!data.isEscalated;
+                    document.getElementById('tk-status-select').value = data.status || 'in_progress';
+
+                    // 解決病灶 4：異常狀態穩定跟隨主工單，不會被新對話洗掉
+                    const escBtn = document.getElementById('btn-escalate');
+                    const escText = document.getElementById('escalate-text');
+                    if(window.currentTicketEscalated) {
+                        escBtn.className = "hidden md:flex items-center gap-1 text-[10px] bg-red-500 text-white border border-red-500 px-3 py-1.5 rounded-lg hover:bg-red-600 transition-all font-black tracking-widest shadow-[0_0_10px_rgba(239,68,68,0.5)]";
+                        escText.innerText = "取消異常標記";
+                    } else {
+                        escBtn.className = "hidden md:flex items-center gap-1 text-[10px] bg-red-500/10 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-lg hover:bg-red-500 hover:text-white transition-all font-bold tracking-widest";
+                        escText.innerText = "標記異常";
+                    }
+                }
+            });
+
+            // 解決病灶 1：對話紀錄改為監聽獨立的 messages 子集合
+            tkMessagesUnsub = onSnapshot(query(collection(db, "support_threads", uid, "messages"), orderBy("timestamp", "asc")), (snap) => {
+                let html = '';
+                window.currentTicketHistory = [];
 
                 snap.forEach(d => {
-                    const data = d.data(); currentStatus = data.status;
-                    if(data.isEscalated) window.currentTicketEscalated = true;
+                    const data = d.data();
+                    const timeStr = new Date(data.timestamp).toLocaleString('en-GB', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-                    if(data.message) {
-                        const timeStr = new Date(data.timestamp).toLocaleString('en-GB', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-                        html += `<div class="flex flex-col items-start mb-6 animate-slide-up"><div class="text-[9px] text-slate-500 font-mono mb-1 ml-1">${timeStr}</div><div class="bg-slate-800 border border-slate-700 text-slate-200 px-5 py-3.5 rounded-2xl rounded-tl-sm text-sm max-w-[85%] shadow-md leading-relaxed break-words">${data.message}</div></div>`;
-                        window.currentTicketHistory.push({ role: 'user', content: data.message.replace(/<[^>]*>?/gm, '') });
-                    }
-                    if(data.replyContent) {
-                        const repTimeStr = new Date(data.replyTime).toLocaleString('en-GB', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    if(data.role === 'user') {
+                        html += `<div class="flex flex-col items-start mb-6 animate-slide-up"><div class="text-[9px] text-slate-500 font-mono mb-1 ml-1">${timeStr}</div><div class="bg-slate-800 border border-slate-700 text-slate-200 px-5 py-3.5 rounded-2xl rounded-tl-sm text-sm max-w-[85%] shadow-md leading-relaxed break-words">${data.content}</div></div>`;
+                        window.currentTicketHistory.push({ role: 'user', content: data.content.replace(/<[^>]*>?/gm, '') });
+                    } else if (data.role === 'admin') {
                         const isInternal = data.isInternalNote;
-                        const bubbleStyle = isInternal 
-                            ? "bg-amber-900/40 text-amber-200 border border-amber-500/30" 
+                        const bubbleStyle = isInternal
+                            ? "bg-amber-900/40 text-amber-200 border border-amber-500/30"
                             : "bg-gradient-to-br from-rose-500 to-pink-600 text-white border border-rose-400/30 shadow-[0_5px_15px_rgba(244,63,94,0.3)]";
-                        const roleTag = isInternal ? `🔒 內部備註 (由 ${data.replyBy} 建立)` : `由 ${data.replyBy || '官方'} 發送`;
+                        const roleTag = isInternal ? `🔒 內部備註 (由 ${data.author} 建立)` : `由 ${data.author || '官方'} 發送`;
 
-                        html += `<div class="flex flex-col items-end mb-6 animate-slide-up"><div class="text-[9px] text-slate-500 font-mono mb-1 mr-1">${repTimeStr}</div><div class="${bubbleStyle} px-5 py-3.5 rounded-2xl rounded-tr-sm text-sm max-w-[85%] leading-relaxed break-words">${data.replyContent}</div><span class='text-[8px] text-rose-400/80 mt-1 uppercase font-black tracking-widest'>${roleTag}</span></div>`;
-                        if(!isInternal) window.currentTicketHistory.push({ role: 'assistant', content: data.replyContent.replace(/<[^>]*>?/gm, '') });
+                        html += `<div class="flex flex-col items-end mb-6 animate-slide-up"><div class="text-[9px] text-slate-500 font-mono mb-1 mr-1">${timeStr}</div><div class="${bubbleStyle} px-5 py-3.5 rounded-2xl rounded-tr-sm text-sm max-w-[85%] leading-relaxed break-words">${data.content}</div><span class='text-[8px] text-rose-400/80 mt-1 uppercase font-black tracking-widest'>${roleTag}</span></div>`;
+                        if(!isInternal) window.currentTicketHistory.push({ role: 'assistant', content: data.content.replace(/<[^>]*>?/gm, '') });
                     }
                 });
 
-                // 更新異常標記按鈕的狀態 UI
-                const escBtn = document.getElementById('btn-escalate');
-                const escText = document.getElementById('escalate-text');
-                if(window.currentTicketEscalated) {
-                    escBtn.className = "hidden md:flex items-center gap-1 text-[10px] bg-red-500 text-white border border-red-500 px-3 py-1.5 rounded-lg hover:bg-red-600 transition-all font-black tracking-widest shadow-[0_0_10px_rgba(239,68,68,0.5)]";
-                    escText.innerText = "取消異常標記";
-                } else {
-                    escBtn.className = "hidden md:flex items-center gap-1 text-[10px] bg-red-500/10 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-lg hover:bg-red-500 hover:text-white transition-all font-bold tracking-widest";
-                    escText.innerText = "標記異常";
-                }
-
-                document.getElementById('tk-status-select').value = currentStatus === 'replied' ? 'in_progress' : currentStatus;
-                if(currentStatus === 'closed') html += `<div class='w-full text-center py-6 border-t border-white/5 mt-4'><span class='bg-zinc-800 text-zinc-400 border border-zinc-600 px-6 py-2.5 rounded-full text-xs font-black tracking-widest shadow-inner'><i class='fa-solid fa-lock mr-2'></i>此工單已歸檔結案，若發送訊息將重啟連線</span></div>`;
-                
                 const box = document.getElementById('tk-chat-box');
-                box.innerHTML = html; setTimeout(() => { box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' }); }, 100);
+                box.innerHTML = html;
+                setTimeout(() => { box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' }); }, 100);
             }, (err) => handleFirebaseError(err, "對話讀取引擎異常"));
         };
 
-        // 🌟 修正：支援「開啟」與「取消」重大異常標記
         window.toggleEscalateTicket = async () => {
             if(!activeTicketId) return;
-            const newState = !window.currentTicketEscalated; // 狀態反轉
+            const newState = !window.currentTicketEscalated;
             try {
-                const q = query(collection(db, "support_tickets"), where("uid", "==", activeTicketId), orderBy("timestamp", "desc"), limit(1));
-                const snap = await getDocs(q);
-                if(!snap.empty) {
-                    await updateDoc(doc(db, "support_tickets", snap.docs[0].id), { isEscalated: newState });
-                    await window.logAdminAction(newState ? "TICKET_ESCALATE" : "TICKET_UNESCALATE", `將 UID:${activeTicketId} 的工單${newState?'標記為':'取消'}重大異常`);
-                    Swal.fire({ toast: true, position: 'top', title: newState ? '已標記為重大異常' : '已解除異常標記', icon: 'success', timer: 1500, showConfirmButton: false });
-                }
+                // 直接更新主工單的狀態
+                await setDoc(doc(db, "support_threads", activeTicketId), { isEscalated: newState, lastUpdated: Date.now() }, { merge: true });
+                await window.logAdminAction(newState ? "TICKET_ESCALATE" : "TICKET_UNESCALATE", `將 UID:${activeTicketId} 的工單${newState?'標記為':'取消'}重大異常`);
+                Swal.fire({ toast: true, position: 'top', title: newState ? '已標記為重大異常' : '已解除異常標記', icon: 'success', timer: 1500, showConfirmButton: false });
             } catch(e) { handleFirebaseError(e, "異常標記切換失敗"); }
         };
 
+        // 解決病灶 3：不再暴力覆寫所有舊訊息，而是單純改變主單狀態
         window.updateTicketStatus = async (newStatus) => {
             if(!activeTicketId) return;
             try {
                 if (newStatus === 'closed') {
-                    const res = await Swal.fire({ title: '強制結案？', text: '系統將自動封存該用戶所有開放的支援工單。', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: '確定封存' });
+                    const res = await Swal.fire({ title: '確認結案？', text: '結案後對話將歸檔。但只要您發送訊息或粉絲再次聯繫，通道就會自動重啟。', icon: 'question', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: '確定封存' });
                     if(res.isConfirmed) {
-                        const q = query(collection(db, "support_tickets"), where("uid", "==", activeTicketId), where("status", "!=", "closed"));
-                        const snap = await getDocs(q);
-                        if(!snap.empty) {
-                            const batch = writeBatch(db);
-                            snap.forEach((docSnap) => { batch.update(docSnap.ref, { status: 'closed', closedAt: Date.now(), closedBy: vcore.user.email }); });
-                            await batch.commit();
-                            await window.logAdminAction("TICKET_CLOSE", `強制結案了 UID:${activeTicketId} 的支援工單`);
-                            Swal.fire({ toast: true, position: 'top', title: '資料已封存結案', icon: 'success', timer: 1500, showConfirmButton: false });
-                        }
-                    } else { document.getElementById('tk-status-select').value = 'in_progress'; }
-                } else {
-                    const q = query(collection(db, "support_tickets"), where("uid", "==", activeTicketId), orderBy("timestamp", "desc"), limit(1));
-                    const snap = await getDocs(q);
-                    if(!snap.empty) {
-                        await updateDoc(doc(db, "support_tickets", snap.docs[0].id), { status: newStatus });
-                        Swal.fire({ toast: true, position: 'top', title: '狀態已同步更新', icon: 'success', timer: 1000, showConfirmButton: false });
+                        await setDoc(doc(db, "support_threads", activeTicketId), { status: 'closed', closedAt: Date.now(), closedBy: vcore.user.email, lastUpdated: Date.now() }, { merge: true });
+                        await window.logAdminAction("TICKET_CLOSE", `結案了 UID:${activeTicketId} 的對話`);
+                        Swal.fire({ toast: true, position: 'top', title: '資料已封存結案', icon: 'success', timer: 1500, showConfirmButton: false });
+                    } else {
+                        document.getElementById('tk-status-select').value = 'in_progress';
                     }
+                } else {
+                    await setDoc(doc(db, "support_threads", activeTicketId), { status: newStatus, lastUpdated: Date.now() }, { merge: true });
+                    Swal.fire({ toast: true, position: 'top', title: '狀態已同步更新', icon: 'success', timer: 1000, showConfirmButton: false });
                 }
             } catch(e) { handleFirebaseError(e, "狀態覆寫失敗"); }
         };
 
         window.insertCannedResponse = (val) => { if(val) document.getElementById('tk-reply').value = val; document.getElementById('tk-canned-responses').value = ""; };
         window.handleTkKeyPress = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.sendTicketReply(); } };
-        
+
         window.sendTicketReply = async () => {
             if(!activeTicketId) return;
             const input = document.getElementById('tk-reply');
-            const msg = input.value.trim(); if(!msg) return;
+            const msg = input.value.trim();
+            if(!msg) return;
+
             const isInternal = document.getElementById('tk-is-internal').checked;
-            
-            input.value = ''; input.style.height = ''; document.getElementById('tk-is-internal').checked = false;
+            const displayName = document.getElementById('tk-display-name').innerText;
+
+            input.value = '';
+            input.style.height = '';
+            document.getElementById('tk-is-internal').checked = false;
+
             try {
-                if (isInternal) {
-                    await addDoc(collection(db, "support_tickets"), {
-                        uid: activeTicketId, message: "", status: "in_progress",
-                        replyContent: msg, replyTime: Date.now(), replyBy: vcore.user.email,
-                        isInternalNote: true, timestamp: Date.now()
-                    });
-                } else {
-                    const q = query(collection(db, "support_tickets"), where("uid", "==", activeTicketId), orderBy("timestamp", "desc"), limit(1));
-                    const snap = await getDocs(q);
-                    if(!snap.empty) await updateDoc(doc(db, "support_tickets", snap.docs[0].id), { status: 'in_progress', replyContent: msg, replyTime: Date.now(), replyBy: vcore.user.email, isEscalated: false });
-                }
+                // 1. 將訊息寫入統一的對話子集合
+                await addDoc(collection(db, "support_threads", activeTicketId, "messages"), {
+                    role: 'admin',
+                    content: msg,
+                    timestamp: Date.now(),
+                    isInternalNote: isInternal,
+                    author: vcore.user.email
+                });
+
+                // 2. 自動重啟邏輯：只要管理員講話，如果原本是 closed，就會自動變回 in_progress
+                await setDoc(doc(db, "support_threads", activeTicketId), {
+                    name: displayName,
+                    status: 'in_progress', 
+                    lastMessage: isInternal ? '[內部備註更新]' : msg.substring(0, 30),
+                    lastUpdated: Date.now()
+                }, { merge: true });
+
                 await window.logAdminAction("TICKET_REPLY", `回覆了 UID:${activeTicketId} 的工單。${isInternal ? '(內部備註)' : ''}`);
             } catch(err) { handleFirebaseError(err, "訊息封包傳送失敗"); }
         };
+
+       // 解決開單缺失：新增強制開啟對話通道功能
+        window.openSupportChat = (uid, name) => {
+            // 切換畫面到客服系統 (使用 *= 包含語法，避開引號跳脫地獄)
+            window.switchTab('tab-support', document.querySelector('button[onclick*="tab-support"]'));
+            window.selectTicket(uid, name);
+            
+            // 初始化/喚醒該用戶的主工單
+            setDoc(doc(db, "support_threads", uid), {
+                name: name,
+                lastUpdated: Date.now()
+            }, { merge: true }).catch(e => console.warn(e));
+        };
+        // =======================
+        // (接下來原本是 callAdminAI 的地方)
 
         // 🌟 核心：企業級 AI 全知輔助大腦
         window.callAdminAI = async (systemPrompt, input) => {
