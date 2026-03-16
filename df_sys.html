@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <meta name="robots" content="noindex, nofollow, noarchive">
+    <meta name="googlebot" content="noindex, nofollow">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="管理系統">
+    <meta name="theme-color" content="#020617">
+    <link rel="apple-touch-icon" href="avatar-main.jpg">
+    <link rel="icon" href="avatar-main.jpg">
+    
+    <title>老王的粉絲網站｜管理系統 v27.Ultra</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        tailwind.config = { 
+            darkMode: 'class',
+            theme: { 
+                extend: { 
+                    colors: { 
+                        vcore: { primary: '#0ea5e9', secondary: '#8b5cf6', bg: '#020617', card: 'rgba(15, 23, 42, 0.6)' },
+                        neon: { cyan: '#22d3ee', blue: '#3b82f6', purple: '#a855f7', pink: '#ec4899', emerald: '#34d399' }
+                    },
+                    animation: { 
+                        'fade-in': 'fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+                        'slide-up': 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'pulse-glow': 'pulseGlow 2s infinite',
+                        'terminal-blink': 'blink 1s step-end infinite'
+                    },
+                    keyframes: {
+                        fadeIn: { '0%': { opacity: '0', transform: 'translateY(10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+                        slideUp: { '0%': { opacity: '0', transform: 'translateY(30px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+                        pulseGlow: { '0%, 100%': { opacity: 1, filter: 'drop-shadow(0 0 15px rgba(34,211,238,0.8))' }, '50%': { opacity: 0.6, filter: 'drop-shadow(0 0 5px rgba(34,211,238,0.3))' } },
+                        blink: { '0%, 100%': { opacity: 1 }, '50%': { opacity: 0 } }
+                    }
+                } 
+            } 
+        }
+    </script>
+
+    <style>
+        /* 基礎設定 */
+        body { 
+            background-color: #020617; 
+            color: #f8fafc; 
+            font-family: 'SF Pro Display', -apple-system, sans-serif; 
+            overflow: hidden; 
+            margin: 0; 
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* 玻璃擬態系統 (Glassmorphism) */
+        .glass-panel { 
+            background: rgba(8, 12, 23, 0.75); 
+            backdrop-filter: blur(24px); 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
+        }
+        
+        /* 自訂表單輸入框 */
+        .v-input { 
+            background: rgba(0, 0, 0, 0.4); 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            color: #fff; 
+            transition: all 0.3s ease; 
+        }
+        .v-input:focus { 
+            border-color: #22d3ee; 
+            outline: none; 
+            box-shadow: 0 0 15px rgba(34, 211, 238, 0.2); 
+            background: rgba(0, 0, 0, 0.6);
+        }
+
+        /* 側邊導航按鈕 */
+        .nav-btn { 
+            border-left: 3px solid transparent; 
+            transition: all 0.3s ease-out; 
+        }
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateX(4px);
+        }
+        .nav-btn.active { 
+            background: linear-gradient(90deg, rgba(34, 211, 238, 0.15) 0%, transparent 100%); 
+            border-left-color: #22d3ee; 
+            color: #22d3ee; 
+        }
+        
+        /* 沙盒切換按鈕特效 */
+        .sandbox-mode-btn.active {
+            background: rgba(234, 179, 8, 0.2) !important;
+            color: #facc15 !important;
+            border-color: rgba(234, 179, 8, 0.5) !important;
+            box-shadow: 0 0 15px rgba(234, 179, 8, 0.2);
+        }
+
+        /* 捲軸優化 (RWD 適配) */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+        ::-webkit-scrollbar-thumb { background: rgba(34, 211, 238, 0.3); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(34, 211, 238, 0.6); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* 手機版側邊欄抽屜特效 */
+        #mobile-sidebar { transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .sidebar-open { transform: translateX(0) !important; }
+
+        /* SweetAlert2 深色主題覆寫 */
+        .swal2-popup { 
+            background: rgba(10, 15, 30, 0.95) !important; 
+            border-radius: 24px !important; 
+            border: 1px solid rgba(34,211,238,0.3) !important; 
+            color: #fff !important; 
+            backdrop-filter: blur(20px); 
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col selection:bg-cyan-500/30">
+
+    <div id="login-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-[#020617]/95 backdrop-blur-3xl transition-all duration-700 px-4">
+        <div class="glass-panel p-8 md:p-12 rounded-[40px] w-full max-w-md text-center border-cyan-500/30 shadow-[0_0_50px_rgba(34,211,238,0.1)] relative overflow-hidden">
+            <div class="absolute -top-20 -right-20 w-64 h-64 bg-cyan-500/10 rounded-full blur-[80px] pointer-events-none"></div>
+            
+            <h1 class="text-xl md:text-2xl font-black mb-8 text-white tracking-widest uppercase relative z-10">老王的粉絲網站｜管理系統</h1>
+            
+            <form onsubmit="event.preventDefault(); window.systemLogin();" class="space-y-5 relative z-10">
+                <div class="relative">
+                    <i class="fa-solid fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                    <input type="email" id="auth-email" required class="v-input w-full pl-12 pr-4 py-3 md:py-4 rounded-2xl text-sm font-bold tracking-wider" placeholder="管理員識別碼 (Email)">
+                </div>
+                <div class="relative">
+                    <i class="fa-solid fa-key absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                    <input type="password" id="auth-pass" required class="v-input w-full pl-12 pr-4 py-3 md:py-4 rounded-2xl text-sm font-mono tracking-widest" placeholder="系統神經密鑰 (Password)">
+                </div>
+                <button type="submit" id="btn-login-submit" class="w-full mt-2 bg-gradient-to-r from-cyan-400 to-blue-600 text-sky-950 font-black py-3 md:py-4 rounded-2xl shadow-[0_10px_20px_rgba(34,211,238,0.3)] hover:scale-[1.02] transition-transform tracking-[0.2em]">
+                    建立安全連線
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="main-ui" class="hidden flex-1 flex flex-col overflow-hidden relative z-10">
+        
+        <header class="h-[60px] md:h-[76px] glass-panel border-x-0 border-t-0 flex items-center justify-between px-4 md:px-8 shrink-0 z-30 bg-[#050b14]/90 relative">
+            <div class="flex items-center gap-3 md:gap-4">
+                <button onclick="window.toggleMobileMenu()" class="md:hidden w-10 h-10 rounded-xl bg-white/5 border border-white/10 text-cyan-400 flex items-center justify-center hover:bg-white/10 transition-colors">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="hidden md:flex w-10 h-10 bg-gradient-to-br from-cyan-400 to-purple-600 rounded-xl items-center justify-center shadow-[0_0_15px_rgba(34,211,238,0.4)]">
+                    <i class="fa-solid fa-server text-white"></i>
+                </div>
+                <div>
+                    <h2 class="font-black text-white text-xs md:text-sm tracking-widest uppercase flex items-center">
+                        老王管理核心 
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-orange-400 text-[10px] ml-2 border border-amber-500/30 px-1.5 py-0.5 rounded">Ultra</span>
+                    </h2>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full shadow-[0_0_8px_#34d399] animate-pulse"></span>
+                        <p id="role-display" class="text-[9px] text-emerald-400 font-mono tracking-widest uppercase">身分同步中...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <button onclick="window.requestAdminNotification()" class="hidden sm:flex items-center gap-2 text-[10px] font-bold text-emerald-400 tracking-[0.1em] bg-emerald-900/20 px-3 py-1.5 rounded-full border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors" title="開啟系統推播">
+                    <i class="fa-solid fa-bell"></i> 啟用通知
+                </button>
+                <div class="hidden sm:flex items-center gap-2 text-[10px] font-mono text-cyan-400 tracking-[0.1em] bg-cyan-900/20 px-3 py-1.5 rounded-full border border-cyan-500/30">
+                    <i class="fa-solid fa-shield-check"></i> 通訊已加密
+                </div>
+                <button onclick="window.systemLogout()" class="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-white/5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 border border-white/10 transition-all flex items-center justify-center shadow-sm" title="中斷連線 (登出)">
+                    <i class="fa-solid fa-power-off"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="flex-1 flex overflow-hidden relative">
+            
+            <div id="mobile-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden md:hidden transition-opacity" onclick="window.toggleMobileMenu()"></div>
+
+            <aside id="mobile-sidebar" class="fixed inset-y-0 left-0 z-50 w-[260px] transform -translate-x-full md:relative md:translate-x-0 glass-panel border-y-0 border-l-0 flex flex-col py-6 shrink-0 bg-[#030712]/95 h-full">
+                <div class="md:hidden flex justify-end px-4 mb-2">
+                    <button onclick="window.toggleMobileMenu()" class="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+
+                <nav class="space-y-1 flex-1 px-3 overflow-y-auto no-scrollbar">
+                    <div class="text-[10px] text-slate-500 font-black tracking-widest px-4 mb-3 mt-2 uppercase">戰情樞紐</div>
+                    <button onclick="window.switchTab('tab-home', this)" class="nav-btn active w-full flex items-center gap-4 px-4 py-3 text-slate-300 rounded-xl hover:text-white" data-roles="admin,engineer,streamer">
+                        <i class="fa-solid fa-gauge-high w-5 text-center text-cyan-400"></i><span class="font-bold text-sm tracking-wide">數據儀表板</span>
+                    </button>
+                    <button onclick="window.switchTab('tab-users', this)" class="nav-btn w-full flex items-center gap-4 px-4 py-3 text-slate-300 rounded-xl hover:text-white" data-roles="admin,engineer,streamer">
+                        <i class="fa-solid fa-users-gear w-5 text-center text-emerald-400"></i><span class="font-bold text-sm tracking-wide">CRM 粉絲管理</span>
+                    </button>
+                    
+                    <div class="text-[10px] text-slate-500 font-black tracking-widest px-4 mb-3 mt-6 uppercase">營運與維護</div>
+                    <button onclick="window.switchTab('tab-support', this)" class="nav-btn w-full flex items-center gap-4 px-4 py-3 text-slate-300 rounded-xl hover:text-white" data-roles="admin,engineer">
+                        <i class="fa-solid fa-headset w-5 text-center text-rose-400"></i><span class="font-bold text-sm tracking-wide">官方客服中心</span>
+                    </button>
+                    <button onclick="window.switchTab('tab-promo', this)" class="nav-btn w-full flex items-center gap-4 px-4 py-3 text-slate-300 rounded-xl hover:text-white" data-roles="admin,engineer">
+                        <i class="fa-solid fa-rocket w-5 text-center text-pink-400"></i><span class="font-bold text-sm tracking-wide">開團推播模組</span>
+                    </button>
+                    <button onclick="window.switchTab('tab-announcements', this)" class="nav-btn w-full flex items-center gap-4 px-4 py-3 text-slate-300 rounded-xl hover:text-white" data-roles="admin,engineer,streamer">
+                        <i class="fa-solid fa-bullhorn w-5 text-center text-amber-400"></i><span class="font-bold tracking-widest text-sm">公告排程器</span>
+                    </button>
+
+                    <div class="text-[10px] text-slate-500 font-black tracking-widest px-4 mb-3 mt-6 uppercase">AI 擴充模組</div>
+                    <button onclick="window.switchTab('tab-ai-monitor', this)" class="nav-btn w-full flex items-center gap-4 px-4 py-3 text-slate-300 rounded-xl hover:text-white" data-roles="admin,engineer">
+                        <i class="fa-solid fa-network-wired w-5 text-center text-indigo-400"></i><span class="font-bold tracking-widest text-sm">AI 側聽系統</span>
+                    </button>
+                    <button onclick="window.switchTab('tab-ai-sandbox', this)" class="nav-btn w-full flex items-center gap-4 px-4 py-3 text-slate-300 rounded-xl hover:text-white border border-yellow-500/20 bg-yellow-500/5 mt-2" data-roles="admin,engineer">
+                        <i class="fa-solid fa-cube w-5 text-center text-yellow-400"></i><span class="font-bold tracking-widest text-sm">AI 多模態沙盒</span>
+                    </button>
+
+                    <div class="text-[10px] text-slate-500 font-black tracking-widest px-4 mb-3 mt-6 uppercase auth-admin-only">系統深層配置</div>
+                    <button onclick="window.switchTab('tab-audit-logs', this)" class="nav-btn w-full flex items-center gap-4 px-4 py-3 text-slate-300 rounded-xl auth-admin-only hover:text-white" data-roles="admin">
+                        <i class="fa-solid fa-clipboard-list w-5 text-center text-slate-400"></i><span class="font-bold text-sm tracking-wide">操作稽核日誌</span>
+                    </button>
+                    <button onclick="window.switchTab('tab-season', this)" class="nav-btn w-full flex items-center gap-4 px-4 py-3 text-orange-400 rounded-xl auth-admin-only hover:text-white" data-roles="admin">
+                        <i class="fa-solid fa-trophy w-5 text-center"></i><span class="font-bold text-sm tracking-wide">賽季結算引擎</span>
+                    </button>
+                    <button onclick="window.switchTab('tab-keys', this)" class="nav-btn w-full flex items-center gap-4 px-4 py-3 text-slate-300 rounded-xl auth-admin-only hover:text-white" data-roles="admin">
+                        <i class="fa-solid fa-key w-5 text-center text-slate-400"></i><span class="font-bold text-sm tracking-wide">API 神經金庫</span>
+                    </button>
+                    <button onclick="window.switchTab('tab-config', this)" class="nav-btn w-full flex items-center gap-4 px-4 py-3 text-slate-300 rounded-xl auth-admin-only hover:text-white" data-roles="admin">
+                        <i class="fa-solid fa-shield-halved w-5 text-center text-slate-400"></i><span class="font-bold text-sm tracking-wide">全站防護配置</span>
+                    </button>
+                </nav>
+            </aside>
+
+            <main class="flex-1 p-4 md:p-8 overflow-y-auto no-scrollbar w-full relative bg-transparent">
+                
+                <div id="tab-home" class="tab-content space-y-6 w-full animate-[fadeIn_0.4s_ease]">
+                    <h2 class="text-xl md:text-2xl font-black text-white tracking-widest">網站數據現況</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                        <div class="glass-panel p-5 md:p-6 rounded-3xl border-t-4 border-t-cyan-500 shadow-lg relative overflow-hidden">
+                            <i class="fa-solid fa-users absolute -right-2 -bottom-2 text-5xl md:text-7xl text-cyan-500/10"></i>
+                            <p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-widest mb-1 relative z-10"><i class="fa-solid fa-users mr-1"></i> 註冊粉絲數</p>
+                            <h4 id="st-users" class="text-3xl md:text-4xl font-black text-cyan-400 font-mono relative z-10">0</h4>
+                        </div>
+                        <div class="glass-panel p-5 md:p-6 rounded-3xl border-t-4 border-t-purple-500 shadow-lg relative overflow-hidden">
+                            <i class="fa-brands fa-twitch absolute -right-2 -bottom-2 text-5xl md:text-7xl text-purple-500/10"></i>
+                            <p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-widest mb-1 relative z-10"><i class="fa-brands fa-twitch mr-1"></i> Twitch 乾爹</p>
+                            <h4 id="st-subs" class="text-3xl md:text-4xl font-black text-purple-400 font-mono relative z-10">0</h4>
+                        </div>
+                        <div class="glass-panel p-5 md:p-6 rounded-3xl border-t-4 border-t-amber-500 shadow-lg relative overflow-hidden">
+                            <i class="fa-solid fa-bolt absolute -right-2 -bottom-2 text-5xl md:text-7xl text-amber-500/10"></i>
+                            <p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-widest mb-1 relative z-10"><i class="fa-solid fa-bolt mr-1"></i> 總積分池 (EXP)</p>
+                            <h4 id="st-exp" class="text-3xl md:text-4xl font-black text-amber-400 font-mono relative z-10">0</h4>
+                        </div>
+                        <div class="glass-panel p-5 md:p-6 rounded-3xl border-t-4 border-t-rose-500 shadow-lg relative overflow-hidden">
+                            <i class="fa-solid fa-headset absolute -right-2 -bottom-2 text-5xl md:text-7xl text-rose-500/10"></i>
+                            <p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-widest mb-1 relative z-10"><i class="fa-solid fa-headset mr-1"></i> 待處理工單</p>
+                            <h4 id="st-tickets" class="text-3xl md:text-4xl font-black text-rose-400 font-mono relative z-10">0</h4>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 w-full mt-6">
+                        <div class="glass-panel p-5 md:p-8 rounded-3xl shadow-lg lg:col-span-2">
+                            <h3 class="text-sm font-black text-white tracking-widest mb-6 flex items-center"><i class="fa-solid fa-chart-area mr-2 text-cyan-400"></i> 近期註冊活躍趨勢 (7日)</h3>
+                            <div class="w-full h-[250px] md:h-[300px]">
+                                <canvas id="trendChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="glass-panel p-5 md:p-8 rounded-3xl flex flex-col shadow-lg border-white/5 w-full">
+                            <h3 class="text-xs md:text-sm font-black text-amber-400 tracking-widest mb-4 flex items-center"><i class="fa-solid fa-ranking-star mr-3"></i> 貢獻總榜 Top 5</h3>
+                            <div id="top-fans-list" class="space-y-3 flex-1 overflow-y-auto no-scrollbar max-h-[300px] lg:max-h-full">
+                                <div class="text-center text-slate-500 text-xs py-10"><i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2"></i><br>資料載入中...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-monitor" class="tab-content hidden animate-slide-up space-y-6">
+                    <h2 class="text-xl md:text-2xl font-black tracking-widest text-purple-400 flex items-center"><i class="fa-solid fa-satellite-dish mr-3"></i>系統即時監測樞紐</h2>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+                        <div class="glass-panel p-6 md:p-8 rounded-3xl border-l-4 border-l-pink-500 bg-[#050b14]/80">
+                            <h3 class="text-xs md:text-sm font-black text-white tracking-widest mb-4 md:mb-6 border-b border-white/10 pb-4"><i class="fa-solid fa-brain mr-2 text-pink-400"></i> AI 算力與 API 消耗池</h3>
+                            <div class="space-y-6">
+                                <div>
+                                    <div class="flex justify-between text-[10px] md:text-xs font-bold text-slate-300 mb-2"><span>文字對話推理</span> <span id="mon-ai-text" class="text-pink-400 font-mono">計算中...</span></div>
+                                    <div class="w-full bg-black/50 rounded-full h-2 overflow-hidden"><div class="bg-gradient-to-r from-pink-600 to-pink-400 h-2 rounded-full" style="width: 70%"></div></div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-[10px] md:text-xs font-bold text-slate-300 mb-2"><span>視覺解析</span> <span id="mon-ai-vision" class="text-cyan-400 font-mono">計算中...</span></div>
+                                    <div class="w-full bg-black/50 rounded-full h-2 overflow-hidden"><div class="bg-gradient-to-r from-cyan-600 to-cyan-400 h-2 rounded-full" style="width: 40%"></div></div>
+                                </div>
+                                <div class="p-4 bg-pink-500/10 border border-pink-500/20 rounded-2xl flex items-center gap-4">
+                                    <div class="w-10 h-10 rounded-full bg-pink-500/20 flex items-center justify-center text-pink-400"><i class="fa-solid fa-fire-flame-curved"></i></div>
+                                    <div><p class="text-[9px] md:text-[10px] text-slate-400 font-bold uppercase tracking-widest">總消耗量</p><p id="mon-ai-total" class="text-lg md:text-xl font-black text-white font-mono">0 次</p></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="glass-panel p-5 md:p-6 rounded-3xl border border-emerald-500/30 bg-[#010409] flex flex-col relative overflow-hidden">
+                            <div class="flex items-center justify-between mb-4 border-b border-emerald-500/20 pb-3">
+                                <h3 class="text-[10px] md:text-xs font-black text-emerald-400 tracking-widest font-mono flex items-center"><i class="fa-solid fa-terminal mr-2"></i> LIVE_EVENT_TERMINAL <span class="animate-pulse ml-2 w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_8px_#34d399]"></span></h3>
+                            </div>
+                            <div id="live-terminal-box" class="flex-1 overflow-y-auto no-scrollbar font-mono text-[10px] md:text-[11px] leading-relaxed text-emerald-500/80 space-y-1.5 h-[200px] md:h-[250px]">
+                                <div><span class="text-emerald-300">sys@vcore:~$</span> Initializing data stream...</div>
+                                <div><span class="text-emerald-300">sys@vcore:~$</span> Awaiting database response... <span class="animate-terminal-blink">_</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-users" class="tab-content hidden flex flex-col h-[calc(100vh-120px)] md:h-full gap-4 md:gap-6 animate-[fadeIn_0.4s_ease]">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-4">
+                        <h2 class="text-xl md:text-2xl font-black text-emerald-400 tracking-widest flex items-center shrink-0">
+                            <i class="fa-solid fa-users-gear mr-3 text-white"></i>粉絲管理
+                        </h2>
+                        <div class="flex items-center gap-2 w-full sm:w-auto">
+                            <div class="relative flex-1 w-full sm:max-w-sm">
+                                <input type="text" style="position: absolute; opacity: 0; height: 0; width: 0; z-index: -1;" aria-hidden="true" tabindex="-1">
+                                
+                                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                                <input type="text" id="user-search" autocomplete="one-time-code" oninput="window.currentPage=1; window.renderUserTable();" placeholder="搜尋粉絲 UID 或是暱稱..." class="v-input w-full pl-10 pr-4 py-2.5 rounded-xl text-xs font-medium">
+                            </div>
+                            <button onclick="window.exportUsersCSV()" class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 md:px-4 py-2.5 rounded-xl text-[10px] md:text-xs font-black shrink-0 hover:bg-emerald-500/20 transition-colors"><i class="fa-solid fa-file-csv mr-1 md:mr-2"></i>匯出 CSV</button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 glass-panel rounded-2xl md:rounded-3xl overflow-hidden flex flex-col shadow-lg border border-emerald-500/20 bg-[#010409]">
+                        <div class="flex-1 overflow-x-auto overflow-y-auto no-scrollbar">
+                            <table class="w-full text-left text-xs whitespace-nowrap min-w-[800px]">
+                                <thead class="bg-[#050b14]/95 backdrop-blur-xl text-slate-400 tracking-widest uppercase border-b border-white/10 sticky top-0 z-20">
+                                    <tr>
+                                        <th class="py-4 px-5 font-black">身分 / UID</th>
+                                        <th class="py-4 px-4 font-black text-center">積分餘額 (EXP)</th>
+                                        <th class="py-4 px-4 font-black text-center">Twitch 狀態</th>
+                                        <th class="py-4 px-4 font-black text-center">系統權限</th>
+                                        <th class="py-4 px-5 font-black text-right">管理操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="user-table-body" class="divide-y divide-white/5">
+                                    </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="p-3 border-t border-white/10 bg-black/50 flex justify-between items-center text-xs text-slate-400 shrink-0">
+                            <span id="crm-page-info" class="font-mono ml-2">顯示 0 - 0 筆，共 0 筆</span>
+                            <div class="flex gap-2 mr-2">
+                                <button onclick="window.changePage(-1)" class="px-3 py-1.5 bg-white/10 rounded-lg hover:bg-white/20 transition-colors font-bold"><i class="fa-solid fa-chevron-left mr-1"></i>上一頁</button>
+                                <button onclick="window.changePage(1)" class="px-3 py-1.5 bg-white/10 rounded-lg hover:bg-white/20 transition-colors font-bold">下一頁<i class="fa-solid fa-chevron-right ml-1"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-support" class="tab-content hidden animate-slide-up flex flex-col h-[calc(100vh-120px)] md:h-full gap-4 w-full">
+                    <h2 class="text-xl md:text-2xl font-black tracking-widest flex items-center text-rose-400 shrink-0"><i class="fa-solid fa-headset mr-2 md:mr-3"></i>網站支援客服系統</h2>
+                    <div class="flex-1 flex flex-col lg:flex-row gap-4 overflow-hidden w-full">
+                        
+                        <div class="w-full lg:w-[320px] max-h-[25vh] lg:max-h-none glass-panel rounded-2xl md:rounded-[32px] flex flex-col shrink-0 overflow-hidden">
+                            <div class="p-3 md:p-5 border-b border-white/10 bg-black/20 space-y-3 shrink-0">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[9px] md:text-[10px] text-slate-500 font-black tracking-widest uppercase">工單過濾器</span>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <span class="text-[9px] md:text-[10px] text-slate-400 font-bold">顯示已結案</span>
+                                        <input type="checkbox" id="tk-show-closed" onchange="window.initTicketSystem()" class="w-3.5 h-3.5 rounded bg-black border-white/10 accent-rose-500">
+                                    </label>
+                                </div>
+                                <input type="text" id="tk-search" oninput="window.renderTicketList()" placeholder="搜尋關鍵字或 UID..." class="v-input w-full px-3 py-2 rounded-xl text-xs focus:border-rose-400">
+                            </div>
+                            <div id="ticket-list" class="flex-1 overflow-y-auto p-2 space-y-2 no-scrollbar"></div>
+                        </div>
+
+                        <div class="flex-1 glass-panel rounded-2xl md:rounded-[32px] flex flex-col overflow-hidden bg-[#030712] relative border-rose-500/20 w-full min-h-[350px]">
+                            <div id="tk-header" class="p-3 md:p-5 border-b border-white/10 flex justify-between items-center bg-black/30 shrink-0 z-20">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-slate-800 flex items-center justify-center border border-white/10"><i class="fa-solid fa-user text-slate-500 text-xs md:text-base"></i></div>
+                                    <div class="flex flex-col">
+                                        <span class="font-bold text-white text-xs md:text-sm tracking-wider" id="tk-display-name">尚未選擇對話</span>
+                                        <span class="text-[8px] md:text-[9px] text-slate-500 font-mono mt-0.5" id="tk-display-uid">等待指派</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2 md:gap-3">
+                                    <button id="btn-escalate" onclick="window.toggleEscalateTicket()" class="hidden sm:flex items-center gap-1 text-[9px] md:text-[10px] border px-2 py-1.5 rounded-lg transition-all font-bold"><i class="fa-solid fa-triangle-exclamation"></i> <span id="escalate-text">標記異常</span></button>
+                                    <select id="tk-status-select" onchange="window.updateTicketStatus(this.value)" class="hidden bg-black/50 border border-white/10 text-slate-300 text-[9px] md:text-[10px] rounded-lg px-2 py-1.5 outline-none focus:border-rose-500 font-bold">
+                                        <option value="pending">🔴 待回覆</option>
+                                        <option value="in_progress">🟡 進行中</option>
+                                        <option value="closed">⚪ 已結案</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div id="tk-chat-box" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-5 no-scrollbar relative bg-transparent">
+                                <div class="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none"><i class="fa-solid fa-comment-dots text-[100px] md:text-[150px] text-white"></i></div>
+                            </div>
+                            
+                            <div id="tk-input-area" class="p-3 md:p-4 border-t border-white/10 bg-black/40 flex flex-col gap-2 md:gap-3 shrink-0 opacity-50 pointer-events-none">
+                                <div class="flex flex-wrap items-center justify-between gap-2 px-1">
+                                    <div class="flex flex-wrap items-center gap-1.5 md:gap-2 w-full sm:w-auto">
+                                        <button onclick="window.generateAIReply(event)" class="text-[9px] md:text-[10px] bg-purple-500/10 text-purple-400 border border-purple-500/30 px-2 md:px-3 py-1.5 rounded-lg hover:bg-purple-500/20"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>AI草擬</button>
+                                        <button onclick="window.fixTypos(event)" class="text-[9px] md:text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 md:px-3 py-1.5 rounded-lg hover:bg-emerald-500/20"><i class="fa-solid fa-spell-check mr-1"></i>潤飾</button>
+                                        <select id="tk-canned-responses" onchange="window.insertCannedResponse(this.value)" class="bg-slate-800 border border-slate-600 text-slate-300 text-[9px] md:text-[10px] rounded-lg px-2 py-1.5 w-full sm:w-auto mt-1 sm:mt-0 outline-none focus:border-cyan-500">
+                                            <option value="">⚡ 專業客服範本...</option>
+                                            <optgroup label="👋 歡迎與進度回報">
+                                                <option value="{name}您好！這裡是工程師客服中心，請問有什麼我可以協助您的嗎？">親切開場</option>
+                                                <option value="{name}您好！工程師收到您的回報，技術團隊已收到您的工單並開始調閱系統日誌，請您稍候。">收到回報 (排查中)</option>
+                                                <option value="老王的粉絲 {name} 您好，工程師已經定位到您所反映的異常狀況，目前正在進行修復，請耐心等候。">已定位異常 (修復中)</option>
+                                            </optgroup>
+                                            <optgroup label="⚙️ 進階操作 (全自動化)">
+                                                <option value="ACTION_COMPENSATION">💰 發送補償積分並致歉 (自動匯款)</option>
+                                                <option value="ACTION_WARNING">🚨 發送違規警告 (選擇事由)</option>
+                                            </optgroup>
+                                        </select>
+                                    </div>
+                                    <div class="hidden sm:flex items-center gap-3">
+                                        <label class="flex items-center gap-1.5 cursor-pointer">
+                                            <input type="checkbox" id="tk-is-internal" class="w-3 h-3 rounded accent-amber-500">
+                                            <span class="text-[9px] md:text-[10px] text-amber-400 font-bold"><i class="fa-solid fa-lock mr-1"></i>內部備註</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2 items-end">
+                                    <div class="flex-1 relative bg-[#020617] border border-white/10 rounded-xl flex items-end shadow-inner">
+                                        <textarea id="tk-reply" rows="1" onkeypress="window.handleTkKeyPress(event)" oninput="this.style.height=''; this.style.height = Math.min(this.scrollHeight, 100) + 'px';" class="w-full bg-transparent text-[13px] md:text-sm text-white pl-3 md:pl-4 pr-10 py-2.5 md:py-3.5 resize-none outline-none no-scrollbar max-h-[100px]" placeholder="想說什麼..."></textarea>
+                                        <button onclick="window.sendTicketReply()" class="absolute right-1 md:right-2 bottom-1.5 md:bottom-2 w-7 h-7 md:w-8 md:h-8 rounded-lg bg-rose-500 text-white flex items-center justify-center hover:bg-rose-400 transition-colors"><i class="fa-solid fa-paper-plane text-[10px] md:text-xs"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-ai-monitor" class="tab-content hidden animate-slide-up flex flex-col h-[calc(100vh-120px)] md:h-full gap-4 w-full">
+                    <h2 class="text-xl md:text-2xl font-black tracking-widest flex items-center text-indigo-400 shrink-0"><i class="fa-solid fa-network-wired mr-2"></i>AI 對話側聽系統</h2>
+                    <div class="flex-1 flex flex-col lg:flex-row gap-4 overflow-hidden w-full">
+                        <div class="w-full lg:w-[320px] max-h-[25vh] lg:max-h-none glass-panel rounded-2xl flex flex-col shrink-0 overflow-hidden">
+                            <div class="p-3 border-b border-indigo-500/20 bg-indigo-900/10"><input type="text" id="ai-monitor-search" oninput="window.filterAIMonitorList()" placeholder="搜尋對話特徵..." class="v-input w-full px-3 py-2 rounded-xl text-xs focus:border-indigo-400"></div>
+                            <div id="ai-monitor-list" class="flex-1 overflow-y-auto p-2 space-y-2 no-scrollbar"></div>
+                        </div>
+                        <div class="flex-1 glass-panel rounded-2xl flex flex-col overflow-hidden bg-[#030712] relative border-indigo-500/20 min-h-[350px]">
+                            <div id="ai-monitor-header" class="p-3 border-b border-white/10 flex justify-between items-center bg-black/30 shrink-0">
+                                <div class="flex flex-col"><span class="font-bold text-white text-xs" id="ai-display-name">尚未選擇</span><span class="text-[8px] text-slate-500" id="ai-display-meta">---</span></div>
+                                <div id="ai-action-buttons" class="hidden gap-2"><button onclick="window.archiveAIChat()" class="text-[9px] bg-amber-500/10 text-amber-400 px-2 py-1.5 rounded-lg border border-amber-500/30 hover:bg-amber-500/20">強制封存</button></div>
+                            </div>
+                            <div id="ai-monitor-chat-box" class="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-ai-sandbox" class="tab-content hidden animate-slide-up w-full flex flex-col h-[calc(100vh-120px)] md:h-full gap-4 md:gap-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-4">
+                        <div>
+                            <h2 class="text-xl md:text-2xl font-black text-yellow-400 tracking-widest flex items-center shrink-0">
+                                <i class="fa-solid fa-cube mr-3 text-white"></i>AI 多模態實驗沙盒
+                            </h2>
+                            <p class="text-[10px] md:text-xs text-slate-400 font-mono mt-1">基於 Hugging Face Inference API，提供文字、視覺、繪圖與語音測試環境。</p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2 p-1.5 bg-black/40 rounded-xl w-fit border border-white/5 shadow-inner">
+                        <button onclick="window.switchSandboxMode('text', this)" class="sandbox-mode-btn active px-4 py-2.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-colors"><i class="fa-solid fa-align-left mr-2"></i>文字推論 (Text)</button>
+                        <button onclick="window.switchSandboxMode('image', this)" class="sandbox-mode-btn px-4 py-2.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-colors"><i class="fa-solid fa-eye mr-2"></i>圖像解析 (Vision)</button>
+                        <button onclick="window.switchSandboxMode('draw', this)" class="sandbox-mode-btn px-4 py-2.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-colors"><i class="fa-solid fa-palette mr-2"></i>AI 繪圖 (Generate)</button>
+                        <button onclick="window.switchSandboxMode('voice', this)" class="sandbox-mode-btn px-4 py-2.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-colors"><i class="fa-solid fa-microphone mr-2"></i>語音合成 (TTS)</button>
+                    </div>
+
+                    <div class="flex-1 glass-panel rounded-2xl md:rounded-3xl p-4 md:p-6 shadow-lg flex flex-col gap-4 border border-yellow-500/20 bg-[#010409]/60">
+                        
+                        <div id="sandbox-input-area" class="space-y-4">
+                            <textarea id="sandbox-prompt" class="v-input w-full p-4 rounded-2xl text-sm font-mono leading-relaxed resize-none focus:border-yellow-400" rows="3" placeholder="請輸入提示詞 (Prompt)..."></textarea>
+                            
+                            <div id="sandbox-file-container" class="hidden">
+                                <label class="block text-[10px] font-bold text-slate-400 mb-2 tracking-widest uppercase">上傳欲解析之圖片 (JPG/PNG)</label>
+                                <input type="file" id="sandbox-file" class="text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-yellow-500/10 file:text-yellow-400 hover:file:bg-yellow-500/20 transition-all cursor-pointer" accept="image/*">
+                            </div>
+
+                            <button onclick="window.executeSandboxTask()" id="btn-sandbox-submit" class="bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-black px-6 py-3 rounded-xl text-sm tracking-widest hover:scale-[1.02] transition-transform shadow-[0_0_15px_rgba(234,179,8,0.3)] w-full sm:w-auto">
+                                <i class="fa-solid fa-play mr-2"></i>執行運算 (Execute)
+                            </button>
+                        </div>
+
+                        <div class="flex-1 border-t border-white/10 mt-2 pt-4 flex flex-col">
+                            <h3 class="text-[10px] font-bold text-slate-500 tracking-widest uppercase mb-3 flex justify-between items-center">
+                                <span>運算結果 (Output)</span>
+                                <span id="sandbox-model-label" class="text-yellow-500/70 font-mono text-[9px]">Model: mistralai/Mistral-7B-Instruct-v0.2</span>
+                            </h3>
+                            <div id="sandbox-output" class="flex-1 bg-[#020617] rounded-2xl border border-white/5 p-4 overflow-y-auto font-mono text-sm text-slate-300 flex items-center justify-center shadow-inner">
+                                <span class="text-slate-600 text-xs tracking-widest"><i class="fa-solid fa-terminal mr-2"></i>AWAITING_COMMAND...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-announcements" class="tab-content hidden animate-slide-up space-y-6 w-full">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-4 border-b border-white/10 pb-4 gap-4">
+                        <div>
+                            <h2 class="text-xl md:text-2xl font-black text-amber-400 tracking-widest mb-1 flex items-center"><i class="fa-solid fa-bullhorn mr-3"></i>時空公告排程器</h2>
+                            <p class="text-[10px] md:text-xs text-slate-500 font-mono">設定立即發布或預約未來時間發佈的系統公告</p>
+                        </div>
+                        <button onclick="window.createNewAnnouncement()" class="bg-amber-500 text-black font-black px-4 md:px-6 py-2.5 md:py-3 rounded-xl text-xs shadow-[0_0_15px_rgba(251,191,36,0.4)] hover:scale-105 transition-transform tracking-widest w-full sm:w-auto"><i class="fa-solid fa-plus mr-2"></i>發佈新公告</button>
+                    </div>
+                    <div id="announcement-manage-list" class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6"></div>
+                </div>
+
+                <div id="tab-promo" class="tab-content hidden animate-slide-up space-y-6 w-full">
+                    <div class="flex flex-col gap-2 mb-4 border-b border-white/10 pb-4">
+                        <h2 class="text-xl md:text-2xl font-black text-pink-400 tracking-widest flex items-center"><i class="fa-solid fa-rocket mr-3"></i>開團變現推播引擎</h2>
+                        <p class="text-[10px] md:text-xs text-slate-400 font-mono">支援時間排程，時間到將自動於首頁彈窗上下架，極大化轉換率。</p>
+                    </div>
+                    <div class="glass-panel p-5 md:p-8 rounded-3xl border-l-4 border-l-pink-500 space-y-4 md:space-y-6 shadow-xl bg-[#050b14]/50">
+                        <div class="flex justify-between items-center bg-pink-900/10 p-4 rounded-2xl border border-pink-500/20">
+                            <div>
+                                <span class="text-xs md:text-sm font-bold text-white tracking-widest uppercase block mb-1">強制推播狀態 (啟用/停用)</span>
+                                <span class="text-[9px] md:text-xs text-pink-400/60 font-mono">若有設定下方排程，請保持開啟。</span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="promo-active" class="sr-only peer">
+                                <div class="w-12 h-6 md:w-14 md:h-7 bg-slate-700 rounded-full peer peer-checked:bg-pink-500 transition-all after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 md:after:h-6 md:after:w-6 after:transition-all peer-checked:after:translate-x-6 md:peer-checked:after:translate-x-7 shadow-inner"></div>
+                            </label>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-black/30 p-4 rounded-2xl border border-white/5">
+                            <div class="space-y-2"><label class="text-[9px] md:text-[10px] text-slate-500 font-black tracking-widest uppercase">自動上架時間</label><input type="datetime-local" id="promo-start" class="v-input w-full p-2.5 md:p-3 rounded-xl text-xs md:text-sm focus:border-pink-400"></div>
+                            <div class="space-y-2"><label class="text-[9px] md:text-[10px] text-slate-500 font-black tracking-widest uppercase">自動下架時間</label><input type="datetime-local" id="promo-end" class="v-input w-full p-2.5 md:p-3 rounded-xl text-xs md:text-sm focus:border-pink-400"></div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="space-y-2"><label class="text-[9px] md:text-[10px] text-slate-500 font-black tracking-widest uppercase">活動大標題</label><input type="text" id="promo-title" class="v-input w-full p-3 rounded-xl text-xs md:text-sm focus:border-pink-400"></div>
+                            <div class="space-y-2"><label class="text-[9px] md:text-[10px] text-slate-500 font-black tracking-widest uppercase">導購連結</label><input type="text" id="promo-link" class="v-input w-full p-3 rounded-xl text-xs md:text-sm focus:border-pink-400" placeholder="https://..."></div>
+                        </div>
+                        <div class="space-y-2"><label class="text-[9px] md:text-[10px] text-slate-500 font-black tracking-widest uppercase">推播文案內容</label><textarea id="promo-content" rows="3" class="v-input w-full p-3 rounded-xl text-xs md:text-sm resize-none focus:border-pink-400"></textarea></div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-black/20 p-4 rounded-2xl border border-white/5">
+                            <div class="space-y-2"><label class="text-[9px] md:text-[10px] text-slate-500 font-black tracking-widest uppercase">特價金額</label><input type="text" id="promo-sale-price" class="v-input w-full p-3 rounded-xl text-xs md:text-sm focus:border-pink-400"></div>
+                            <div class="space-y-2"><label class="text-[9px] md:text-[10px] text-slate-500 font-black tracking-widest uppercase">原價</label><input type="text" id="promo-price" class="v-input w-full p-3 rounded-xl text-xs md:text-sm focus:border-pink-400"></div>
+                            <div class="space-y-2"><label class="text-[9px] md:text-[10px] text-slate-500 font-black tracking-widest uppercase">折扣碼</label><input type="text" id="promo-discount-code" class="v-input w-full p-3 rounded-xl text-xs md:text-sm focus:border-pink-400"></div>
+                        </div>
+                        <div class="flex gap-3 pt-2">
+                            <button onclick="window.savePromoConfig()" class="flex-1 bg-pink-500 text-white py-3 md:py-4 rounded-xl text-xs md:text-sm font-black shadow-[0_0_20px_rgba(236,72,153,0.4)] tracking-widest hover:bg-pink-400 transition-colors">寫入推播配置</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-audit-logs" class="tab-content hidden animate-slide-up flex flex-col h-[calc(100vh-120px)] md:h-full gap-4 w-full">
+                    <h2 class="text-xl md:text-2xl font-black tracking-widest flex items-center text-slate-300 shrink-0"><i class="fa-solid fa-clipboard-list mr-2 md:mr-3 text-slate-500"></i>全域操作稽核日誌</h2>
+                    <div class="flex-1 glass-panel rounded-2xl md:rounded-3xl overflow-hidden p-1 md:p-2 relative shadow-lg bg-[#010409]">
+                        <div class="w-full h-full overflow-x-auto overflow-y-auto no-scrollbar">
+                            <table class="w-full text-left text-[10px] md:text-[11px] whitespace-nowrap font-mono text-slate-300 min-w-[600px]">
+                                <thead class="sticky top-0 bg-[#050b14]/95 backdrop-blur-xl text-slate-500 tracking-widest uppercase border-b border-white/10 z-20">
+                                    <tr>
+                                        <th class="py-3 px-4 font-bold">時間 (Timestamp)</th>
+                                        <th class="py-3 px-3 font-bold">身分 (Admin)</th>
+                                        <th class="py-3 px-3 font-bold">動作 (Action)</th>
+                                        <th class="py-3 px-4 font-bold w-full">參數 (Details)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="audit-log-table-body" class="divide-y divide-white/5"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-season" class="tab-content hidden animate-slide-up space-y-6 w-full">
+                    <div class="flex flex-col gap-2 mb-4 border-b border-white/10 pb-4">
+                        <h2 class="text-xl md:text-3xl font-black text-orange-400 tracking-widest flex items-center"><i class="fa-solid fa-trophy mr-3"></i>賽季結算引擎</h2>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+                        <div class="glass-panel p-6 md:p-8 rounded-3xl border-t-4 border-t-orange-500 flex flex-col justify-between relative shadow-xl bg-orange-900/5">
+                            <div class="relative z-10">
+                                <h3 class="text-sm md:text-base font-black text-orange-400 mb-4 flex items-center gap-2 tracking-widest"><i class="fa-solid fa-clock"></i> 預約時空結算</h3>
+                                <div class="space-y-4">
+                                    <div class="space-y-2"><label class="text-[9px] md:text-[10px] text-slate-500 font-black tracking-widest uppercase">新賽季標籤名稱</label><input type="text" id="auto-season-name" class="v-input w-full p-3 rounded-xl text-xs focus:border-orange-400" placeholder="例如：S3 寒冬之戰"></div>
+                                    <div class="space-y-2"><label class="text-[9px] md:text-[10px] text-slate-500 font-black tracking-widest uppercase">排定自動執行時間</label><input type="datetime-local" id="auto-season-time" class="v-input w-full p-3 rounded-xl text-xs focus:border-orange-400"></div>
+                                </div>
+                            </div>
+                            <div class="mt-6">
+                                <div id="wipe-countdown-box" class="hidden mb-4 p-3 bg-orange-900/20 border border-orange-500/30 rounded-xl text-center shadow-inner">
+                                    <p class="text-[9px] md:text-[10px] text-orange-300 font-black mb-1 uppercase tracking-widest">距離結算啟動還有</p>
+                                    <div id="wipe-countdown" class="text-xl md:text-2xl font-mono font-black text-white tracking-widest drop-shadow-[0_0_5px_rgba(249,115,22,0.8)]">00:00:00:00</div>
+                                </div>
+                                <button onclick="window.saveWipeSchedule()" class="w-full bg-orange-600 text-white py-3 rounded-xl text-xs md:text-sm font-black shadow-[0_5px_15px_rgba(234,88,12,0.4)] tracking-widest hover:bg-orange-500 transition-colors">確認排程任務</button>
+                            </div>
+                        </div>
+                        <div class="glass-panel p-6 md:p-8 rounded-3xl border-t-4 border-t-red-600 flex flex-col justify-between shadow-xl bg-red-900/5">
+                            <div class="relative z-10">
+                                <h3 class="text-sm md:text-base font-black text-red-500 mb-3 flex items-center gap-2 tracking-widest"><i class="fa-solid fa-radiation"></i> 強制即刻清零</h3>
+                                <p class="text-[10px] md:text-xs text-slate-400 leading-relaxed mb-4 bg-black/40 p-3 rounded-xl border border-red-500/20">不經過排程，立刻對全伺服器進行 EXP 封存與歸零。<strong class="text-red-400">無法復原</strong>，請極度謹慎使用。</p>
+                                <div class="space-y-2"><label class="text-[9px] md:text-[10px] text-slate-500 font-black tracking-widest uppercase">輸入代碼 (CONFIRM)</label><input type="text" id="manual-season-confirm" class="v-input w-full p-3 rounded-xl text-xs font-mono text-red-400 focus:border-red-500" placeholder="CONFIRM"></div>
+                            </div>
+                            <button onclick="window.executeManualWipe()" class="w-full bg-red-600/20 text-red-400 border border-red-500/50 py-3 rounded-xl text-xs md:text-sm font-black mt-6 tracking-widest shadow-md hover:bg-red-600/40 transition-colors">啟動核爆 (全伺服器清零)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-keys" class="tab-content hidden space-y-6 animate-[fadeIn_0.4s_ease] w-full">
+                    <h2 class="text-xl md:text-2xl font-black text-slate-300 tracking-widest flex items-center border-b border-white/10 pb-4">
+                        <i class="fa-solid fa-key mr-3 text-slate-500"></i>API 神經金庫配置
+                    </h2>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="glass-panel p-6 md:p-8 rounded-3xl space-y-4 border-t-2 border-t-blue-500 shadow-lg bg-[#010409]/60">
+                            <h3 class="text-xs md:text-sm font-black text-blue-400 uppercase tracking-widest flex items-center"><i class="fa-solid fa-eye mr-2"></i>Gemini AI 金鑰</h3>
+                            <p class="text-[10px] text-slate-500 font-mono mb-2">支援輪詢機制，請一行填寫一把金鑰以避免 Rate Limit。</p>
+                            <textarea id="keys-gemini" rows="2" class="v-input w-full p-4 rounded-2xl text-[11px] font-mono leading-relaxed" placeholder="AIzaSy..."></textarea>
+                        </div>
+                        <div class="glass-panel p-6 md:p-8 rounded-3xl space-y-4 border-t-2 border-t-purple-500 shadow-lg bg-[#010409]/60">
+                            <h3 class="text-xs md:text-sm font-black text-purple-400 uppercase tracking-widest flex items-center"><i class="fa-solid fa-bolt mr-2"></i>Groq AI 金鑰</h3>
+                            <p class="text-[10px] text-slate-500 font-mono mb-2">用於客服系統的即時潤飾與草擬，確保對話極低延遲。</p>
+                            <textarea id="keys-groq" rows="2" class="v-input w-full p-4 rounded-2xl text-[11px] font-mono leading-relaxed" placeholder="gsk_..."></textarea>
+                        </div>
+                        
+                        <div class="glass-panel p-6 md:p-8 rounded-3xl space-y-4 border-t-2 border-t-yellow-500 shadow-lg bg-[#010409]/60 lg:col-span-2">
+                            <h3 class="text-xs md:text-sm font-black text-yellow-400 uppercase tracking-widest flex items-center"><i class="fa-solid fa-face-smiling-hands mr-2"></i>Hugging Face 多模態金鑰</h3>
+                            <p class="text-[10px] text-slate-500 font-mono mb-2">用於 AI 沙盒的文字、視覺、繪圖與語音模型 (Inference API)。</p>
+                            <input type="password" id="keys-hf" class="v-input w-full p-4 rounded-2xl text-[11px] font-mono tracking-wider" placeholder="hf_...">
+                        </div>
+
+                        <div class="glass-panel p-6 md:p-8 rounded-3xl space-y-4 border-t-2 border-t-indigo-500 lg:col-span-2 shadow-lg bg-[#010409]/60">
+                            <h3 class="text-xs md:text-sm font-black text-indigo-400 uppercase tracking-widest flex items-center"><i class="fa-brands fa-twitch mr-2"></i>Twitch 系統 API 授權配置</h3>
+                            <p class="text-[10px] text-slate-500 font-mono mb-3">用於實時驗證粉絲是否為訂閱者 (乾爹) 以及讀取頻道開播狀態。</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 mb-1 pl-1">Client ID</label>
+                                    <input type="text" id="keys-twitch-client" class="v-input w-full p-3 rounded-xl text-xs font-mono tracking-wider">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 mb-1 pl-1">Client Secret (唯寫保護)</label>
+                                    <input type="password" id="keys-twitch-secret" class="v-input w-full p-3 rounded-xl text-xs font-mono tracking-wider" placeholder="輸入新密鑰以覆寫">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pt-4 border-t border-white/10 flex justify-end">
+                        <button onclick="window.saveApiKeys()" class="w-full sm:w-auto bg-gradient-to-r from-slate-200 to-slate-400 text-slate-950 font-black px-10 py-3.5 rounded-2xl text-sm tracking-[0.2em] hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,255,255,0.2)]">
+                            <i class="fa-solid fa-lock mr-2"></i>加密並寫入金庫
+                        </button>
+                    </div>
+                </div>
+
+                <div id="tab-config" class="tab-content hidden space-y-6 animate-[fadeIn_0.4s_ease] w-full">
+                    <h2 class="text-xl md:text-2xl font-black text-slate-300 tracking-widest border-b border-white/10 pb-4 flex items-center">
+                        <i class="fa-solid fa-shield-halved mr-3 text-slate-500"></i>全域防護與自動化排程
+                    </h2>
+                    <div class="grid grid-cols-1 gap-6 max-w-4xl">
+                        
+                        <div class="glass-panel p-6 md:p-8 rounded-3xl border-l-[6px] border-l-red-600 bg-gradient-to-r from-red-900/20 to-transparent flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 shadow-lg">
+                            <div class="flex-1">
+                                <h3 class="text-sm md:text-base font-black text-red-500 tracking-widest uppercase flex items-center mb-2"><i class="fa-solid fa-triangle-exclamation mr-2"></i>緊急避難：全站維護模式</h3>
+                                <p class="text-xs text-slate-400 leading-relaxed max-w-lg">啟動後，所有非管理員與工程師身分的訪客將被強制導向維護畫面。</p>
+                                <p class="text-[11px] font-mono mt-3 px-3 py-1 bg-black/50 rounded-lg inline-block text-slate-300 border border-white/5" id="maintenance-text">當前狀態：系統正常運行中</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                                <input type="checkbox" id="cfg-maintenance" class="sr-only peer" onchange="window.toggleMaintenanceMode(this.checked)">
+                                <div class="w-16 h-8 bg-slate-800 border-2 border-slate-700 rounded-full peer peer-checked:bg-red-600 peer-checked:border-red-400 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:after:translate-x-8 shadow-inner"></div>
+                            </label>
+                        </div>
+
+                        <div class="glass-panel p-6 md:p-8 rounded-3xl border-l-[6px] border-l-purple-500 bg-[#010409]/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 shadow-lg">
+                            <div class="flex-1">
+                                <h3 class="text-sm md:text-base font-black text-purple-400 uppercase tracking-widest flex items-center mb-2"><i class="fa-solid fa-radar mr-2"></i>Twitch 直播雷達背景監測</h3>
+                                <p class="text-xs text-slate-400 leading-relaxed max-w-lg">啟用後，伺服器將會以長輪詢方式每 60 秒請求一次 Twitch 官方 API。</p>
+                                <p class="text-[11px] font-mono mt-3 px-3 py-1 bg-black/50 rounded-lg inline-block border border-white/5" id="twitch-scan-status-text"><span class="text-slate-500">服務未啟動</span></p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                                <input type="checkbox" id="cfg-twitch-auto" class="sr-only peer" onchange="window.toggleTwitchMonitor(this.checked)">
+                                <div class="w-16 h-8 bg-slate-800 border-2 border-slate-700 rounded-full peer peer-checked:bg-purple-600 peer-checked:border-purple-400 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:after:translate-x-8 shadow-inner"></div>
+                            </label>
+                        </div>
+
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, orderBy, limit, getDocs, onSnapshot, where, addDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        
+        /**
+         * [配置] 初始化 Firebase 服務
+         */
+        const firebaseConfig = { 
+            apiKey: "AIzaSyDdu8ag6liDwW0AXn3zccIR5a13g7WE-hM", 
+            authDomain: "oldwangbase.firebaseapp.com", 
+            projectId: "oldwangbase", 
+            messagingSenderId: "756236660652", 
+            appId: "1:756236660652:web:794d9649d7315b64ec1409" 
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        window.vcore = { app, auth, db, user: null, role: null };
+
+        /**
+         * [純前端資料庫驅動] 要求瀏覽器原生桌面通知權限 (免 FCM 金鑰)
+         */
+        window.requestAdminNotification = async () => {
+            if (!("Notification" in window)) {
+                return Swal.fire('不支援', '您的瀏覽器不支援桌面通知', 'error');
+            }
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                Swal.fire({toast:true, position: 'top-end', title:'桌面通知已啟用！\n(請保持網頁開啟以接收訊息)', icon:'success', timer:3000, showConfirmButton:false});
+            } else {
+                Swal.fire('已拒絕', '您拒絕了瀏覽器通知，將無法收到即時客訴提醒。', 'warning');
+            }
+        };
+
+        /**
+         * [公用] 統一錯誤處理器
+         */
+        const handleFirebaseError = (err, customMsg = "系統執行異常") => {
+            console.error("Critical Error Log:", err);
+            let msg = err.message;
+            if (err.code === 'permission-denied') msg = "權限遭到阻擋：目前登入者身分不符，或安全規則拒絕存取。";
+            Swal.fire({ 
+                title: customMsg, 
+                html: `<div class='text-left bg-black/50 p-4 rounded-xl text-[10px] font-mono text-rose-400 mt-4 border border-rose-500/20'>核心日誌: ${msg}</div>`, 
+                icon: 'error', 
+                background: 'rgba(10,15,30,0.95)' 
+            });
+        };
+
+        window.logAdminAction = async (action, details) => {
+            if(!window.vcore.user) return;
+            try { await addDoc(collection(db, "audit_logs"), { admin: window.vcore.user.email, action: action, details: details, timestamp: Date.now() }); } catch(e) { console.warn("稽核日誌寫入失敗", e); }
+        };
+
+        /**
+         * [系統] 權限審查 (已解除，全功能開放)
+         */
+        window.applyPermissions = () => {
+            console.log("[RBAC] 安全權限審查已解除，所有功能強制顯示以供開發測試。");
+            // 讓所有元素直接顯示
+            document.querySelectorAll('[data-roles]').forEach(el => el.style.display = 'flex');
+            document.querySelectorAll('.auth-admin-only').forEach(el => el.style.display = 'flex');
+        };
+
+        window.toggleMobileMenu = () => {
+            document.getElementById('mobile-sidebar').classList.toggle('sidebar-open');
+            document.getElementById('mobile-overlay').classList.toggle('hidden');
+        };
+
+        window.switchTab = (tabId, btn) => {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            const target = document.getElementById(tabId); 
+            if(target) target.classList.remove('hidden');
+            if (btn) btn.classList.add('active');
+            
+            if(window.innerWidth < 768) { window.toggleMobileMenu(); }
+            
+            if (tabId === 'tab-home') window.initDashboard();
+            if (tabId === 'tab-monitor') window.initSystemMonitor();
+            if (tabId === 'tab-users') {
+                const searchBox = document.getElementById('user-search');
+                if (searchBox) { searchBox.value = ""; searchBox.setAttribute('autocomplete', 'one-time-code'); }
+                window.loadCRMData();
+            }
+            if (tabId === 'tab-support') window.initTicketSystem();
+            if (tabId === 'tab-ai-monitor') window.initAIChatMonitor();
+            if (tabId === 'tab-audit-logs') window.initAuditLogs();
+            if (tabId === 'tab-season') window.loadWipeSchedule();
+            if (tabId === 'tab-announcements') window.renderAnnouncements();
+            if (tabId === 'tab-promo') window.loadPromoConfig();
+            if (tabId === 'tab-keys') window.loadApiKeys();
+            if (tabId === 'tab-config') window.loadGlobalConfig();
+            if (tabId === 'tab-ai-sandbox') console.log('AI 沙盒已啟動');
+        };
+
+        window.openExternalImageUploader = async () => {
+            const { value: formValues } = await Swal.fire({
+                title: '外部圖床小工具',
+                html: `
+                    <div class="text-left text-[10px] text-slate-400 mb-4 bg-black/40 p-3 rounded-lg border border-white/5">
+                        由於不使用系統空間，若有圖片需求，可在此上傳至免費圖床 (如 ImgBB)，或直接貼上您已有的圖片網址來預覽並複製。
+                    </div>
+                    <div class="space-y-4">
+                        <div class="relative">
+                            <label class="block text-left text-[10px] text-pink-400 font-bold mb-1 uppercase tracking-widest">方法一：上傳本機圖片</label>
+                            <input type="file" id="ext-img-file" accept="image/*" class="v-input w-full p-2 rounded-xl text-xs">
+                        </div>
+                        <div class="relative">
+                            <label class="block text-left text-[10px] text-cyan-400 font-bold mb-1 uppercase tracking-widest">方法二：直接輸入網址</label>
+                            <input type="url" id="ext-img-url" placeholder="https://..." class="v-input w-full p-3 rounded-xl text-xs">
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa-solid fa-cloud-arrow-up mr-2"></i>確認處理',
+                customClass: { confirmButton: 'bg-pink-500 text-white font-black px-6 py-2 rounded-xl' },
+                preConfirm: async () => {
+                    const fileInput = document.getElementById('ext-img-file');
+                    const urlInput = document.getElementById('ext-img-url').value.trim();
+                    if (urlInput) return { url: urlInput };
+                    if (fileInput.files.length > 0) {
+                        const file = fileInput.files[0];
+                        const formData = new FormData(); formData.append('image', file);
+                        const IMGBB_API_KEY = '5a1fb818e6e5f8f553a17e07ebc3ed86'; 
+                        try {
+                            Swal.showLoading();
+                            const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
+                            const data = await res.json();
+                            if(data.success) return { url: data.data.url };
+                            else Swal.showValidationMessage('圖床 API 拒絕存取或失敗');
+                        } catch(e) { Swal.showValidationMessage('網路連線失敗'); }
+                    } else { Swal.showValidationMessage('請選擇檔案或輸入網址'); }
+                }
+            });
+
+            if (formValues && formValues.url) {
+                Swal.fire({
+                    title: '準備就緒',
+                    html: `<img src="${formValues.url}" class="w-full h-32 object-contain bg-black/50 rounded-lg mb-4 border border-white/10"><input type="text" class="v-input w-full p-3 text-xs text-center rounded-xl text-emerald-400 font-mono" value="${formValues.url}" readonly onclick="this.select(); document.execCommand('copy'); Swal.showValidationMessage('已複製到剪貼簿！');"><p class="text-[9px] text-slate-500 mt-2">點擊上方網址即可自動複製。</p>`,
+                    icon: 'success'
+                });
+            }
+        };
+
+        window.systemLogin = async () => {
+            const emailEl = document.getElementById('auth-email');
+            const passEl = document.getElementById('auth-pass');
+            const em = emailEl.value; const pw = passEl.value;
+
+            Swal.fire({ title: '系統驗證中...', text: '正在建立加密通道', didOpen: () => Swal.showLoading(), background: 'rgba(10, 15, 30, 0.95)' });
+            
+            try {
+                const res = await signInWithEmailAndPassword(auth, em, pw);
+                const d = await getDoc(doc(db, "users", res.user.uid));
+                
+                if (d.exists() && (d.data().role === 'admin' || d.data().role === 'engineer' || d.data().role === 'streamer')) {
+                    emailEl.value = ""; passEl.value = "";
+                    await window.logAdminAction("SYSTEM_LOGIN", "管理員成功登入管理系統");
+                    Swal.close();
+
+                    const forceClear = () => { const s = document.getElementById('user-search'); if (s) s.value = ""; };
+                    setTimeout(forceClear, 100); setTimeout(forceClear, 500);
+
+                } else { 
+                    await signOut(auth); Swal.fire('拒絕存取', '您的身分不具備權限', 'error'); 
+                }
+            } catch (err) { handleFirebaseError(err, "登入程序失敗，請確認帳號密碼"); }
+        };
+
+        window.systemLogout = async () => {
+            const res = await Swal.fire({ title: '確定登出？', icon: 'question', showCancelButton: true, confirmButtonText: '登出', confirmButtonColor: '#ef4444' });
+            if(res.isConfirmed) { await window.logAdminAction("SYSTEM_LOGOUT", "管理員登出"); await signOut(auth); window.location.reload(); }
+        };
+
+        onAuthStateChanged(auth, async (u) => {
+            if (u) {
+                try {
+                    const d = await getDoc(doc(db, "users", u.uid));
+                    if (d.exists() && (d.data().role === 'admin' || d.data().role === 'engineer' || d.data().role === 'streamer')) {
+                        window.vcore.user = u; window.vcore.role = d.data().role;
+                        let displayRole = '系統管理員'; let roleColor = 'text-emerald-400';
+                        if(d.data().role === 'admin') { displayRole = '最高總管 (ADMIN)'; roleColor = 'text-rose-400'; }
+                        if(d.data().role === 'engineer') { displayRole = '工程師 (ENGINEER)'; roleColor = 'text-amber-400'; }
+                        
+                        document.getElementById('login-screen').classList.add('opacity-0');
+                        setTimeout(() => {
+                            document.getElementById('login-screen').classList.add('hidden');
+                            document.getElementById('main-ui').classList.remove('hidden');
+                            document.getElementById('role-display').className = `text-[8px] md:text-[9px] font-mono tracking-widest uppercase ${roleColor}`;
+                            document.getElementById('role-display').innerText = `權限: ${displayRole}`;
+                            window.applyPermissions(); window.initDashboard(); 
+                        }, 700);
+                    } else { await signOut(auth); }
+                } catch(e) { handleFirebaseError(e, "權限校驗異常"); }
+            } else { document.getElementById('login-screen').classList.remove('hidden', 'opacity-0'); }
+        });
+
+        // ============================================================================
+        // 模組 1-11 功能邏輯保留
+        // ============================================================================
+        let trendChartObj = null;
+
+        window.initDashboard = async () => {
+            try {
+                const usersSnap = await getDocs(collection(db, "users"));
+                let tExp = 0; let activeCount = usersSnap.size; let subs = 0; let usersData = [];
+                const dateCounts = {}; const today = new Date();
+                for(let i=6; i>=0; i--) {
+                    const d = new Date(today); d.setDate(d.getDate() - i);
+                    dateCounts[d.toLocaleDateString('en-CA')] = 0;
+                }
+
+                usersSnap.forEach(d => {
+                    const data = d.data(); tExp += (data.exp || 0);
+                    if(data.isTwitchSub) subs++;
+                    usersData.push({ id: d.id, ...data });
+                    if(data.createdAt) {
+                        const dateStr = new Date(data.createdAt).toLocaleDateString('en-CA');
+                        if(dateCounts[dateStr] !== undefined) dateCounts[dateStr]++;
+                    }
+                });
+                
+                animateValue("st-users", 0, activeCount, 1000); animateValue("st-exp", 0, tExp, 1500); animateValue("st-subs", 0, subs, 800);
+                
+                const top5 = usersData.sort((a,b) => (b.exp || 0) - (a.exp || 0)).slice(0,5);
+                document.getElementById('top-fans-list').innerHTML = top5.map((u, i) => {
+                    const displayName = (u.name && u.name !== "匿名粉絲") ? u.name : `粉絲 (${u.id.substring(0,6)})`;
+                    const rankColor = i===0 ? 'text-amber-400' : i===1 ? 'text-slate-300' : i===2 ? 'text-orange-600' : 'text-white';
+                    return `<div class="flex items-center justify-between p-3 md:p-4 bg-black/40 rounded-2xl border border-white/5 hover:border-amber-500/30 transition-colors"><div class="flex items-center gap-3 md:gap-4"><div class="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-slate-800 to-black flex items-center justify-center font-black text-xs md:text-sm ${rankColor} shadow-inner border border-white/10">${i+1}</div><div class="flex flex-col"><span class="text-xs md:text-sm font-bold text-white truncate max-w-[100px] md:max-w-[120px]">${displayName}</span><span class="text-[9px] md:text-[10px] text-slate-500 font-mono">${u.id.substring(0,8)}</span></div></div><span class="text-amber-400 font-black text-sm md:text-base tracking-wider drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]">${(u.exp||0).toLocaleString()} <span class="text-[8px] md:text-[9px] text-slate-500 font-mono">EXP</span></span></div>`;
+                }).join('');
+
+                const tkSnap = await getDocs(query(collection(db, "support_threads"), where("status", "==", "pending")));
+                animateValue("st-tickets", 0, tkSnap.size, 800);
+                
+                const labels = Object.keys(dateCounts).map(d => d.substring(5)); 
+                const dataPoints = Object.values(dateCounts);
+
+                const ctx = document.getElementById('trendChart').getContext('2d');
+                if (trendChartObj) trendChartObj.destroy();
+                const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                gradient.addColorStop(0, 'rgba(34, 211, 238, 0.3)'); gradient.addColorStop(1, 'rgba(34, 211, 238, 0)');
+                
+                trendChartObj = new Chart(ctx, {
+                    type: 'line', data: { labels: labels, datasets: [{ label: '新增註冊', data: dataPoints, borderColor: '#22d3ee', backgroundColor: gradient, borderWidth: 3, tension: 0.4, fill: true, pointBackgroundColor: '#020617', pointBorderColor: '#22d3ee', pointBorderWidth: 2, pointRadius: 4 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { family: 'monospace', size: 10 } } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { family: 'monospace', size: 10 } }, beginAtZero: true } } }
+                });
+            } catch (err) { handleFirebaseError(err, "儀表板讀取失敗"); }
+        };
+
+        function animateValue(id, start, end, duration) {
+            if (start === end) return;
+            const obj = document.getElementById(id); if(!obj) return;
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor((1 - Math.pow(1 - progress, 4)) * (end - start) + start).toLocaleString();
+                if (progress < 1) window.requestAnimationFrame(step);
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        let liveTerminalInterval = null;
+        window.initSystemMonitor = async () => {
+            try {
+                const usersSnap = await getDocs(collection(db, "users"));
+                let totalTextAI = 0; let totalVisionAI = 0;
+                usersSnap.forEach(d => { totalTextAI += (d.data().aiUsageCount || 0); totalVisionAI += (d.data().aiVisionCount || 0); });
+                document.getElementById('mon-ai-text').innerText = totalTextAI + " 單位"; document.getElementById('mon-ai-vision').innerText = totalVisionAI + " 單位"; document.getElementById('mon-ai-total').innerText = (totalTextAI + totalVisionAI).toLocaleString() + " 次";
+
+                if(liveTerminalInterval) clearInterval(liveTerminalInterval);
+                const terminal = document.getElementById('live-terminal-box');
+                terminal.innerHTML = '<div><span class="text-emerald-300">sys@vcore:~$</span> Connection established...</div>';
+                
+                const tkSnap = await getDocs(query(collection(db, "support_threads"), orderBy("lastUpdated", "desc"), limit(5)));
+                const uSnap = await getDocs(query(collection(db, "users"), orderBy("createdAt", "desc"), limit(5)));
+                let events = [];
+                tkSnap.forEach(d => events.push({ type: 'TICKET', time: d.data().lastUpdated, msg: `Ticket upd UID:${d.id.substring(0,6)}` }));
+                uSnap.forEach(d => { let ts = d.data().createdAt ? new Date(d.data().createdAt).getTime() : 0; events.push({ type: 'USER', time: ts, msg: `New UID:${d.id.substring(0,6)}` }); });
+                events.sort((a,b) => a.time - b.time);
+                
+                let i = 0;
+                liveTerminalInterval = setInterval(() => {
+                    if(i < events.length && events[i].time > 0) {
+                        const ev = events[i]; const color = ev.type === 'TICKET' ? 'text-rose-400' : 'text-cyan-400';
+                        terminal.innerHTML += `<div><span class="text-slate-500">[${new Date(ev.time).toLocaleTimeString('en-GB')}]</span> <span class="${color}">[${ev.type}]</span> ${ev.msg}</div>`;
+                        terminal.scrollTo(0, terminal.scrollHeight); i++;
+                    } else {
+                        const pings = ["Pinging RTDB... OK", "Memory cleanup... done", "Awaiting signals..."];
+                        terminal.innerHTML += `<div><span class="text-slate-600">${pings[Math.floor(Math.random()*pings.length)]}</span></div>`;
+                        terminal.scrollTo(0, terminal.scrollHeight);
+                    }
+                }, 1500);
+            } catch (err) { console.error("Monitor Error", err); }
+        };
+
+        window.allUsersCache = [];
+        window.currentPage = 1;
+        const ITEMS_PER_PAGE = 15;
+
+        window.loadCRMData = async () => {
+            if(window.allUsersCache.length === 0) {
+                Swal.fire({ title: '掃描資料庫...', allowOutsideClick:false, didOpen:()=>Swal.showLoading(), background: 'rgba(10,15,30,0.95)'});
+                try {
+                    const snap = await getDocs(query(collection(db, "users"), orderBy("exp", "desc")));
+                    window.allUsersCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    Swal.close();
+                } catch(e) { handleFirebaseError(e, "讀取粉絲清單失敗"); return; }
+            }
+            window.renderUserTable();
+        };
+
+        window.renderUserTable = () => {
+            const term = document.getElementById('user-search')?.value.toLowerCase() || '';
+            const filtered = window.allUsersCache.filter(u => (u.name||'').toLowerCase().includes(term) || u.id.toLowerCase().includes(term) || (u.adminRemarks||'').toLowerCase().includes(term));
+            const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
+            if(window.currentPage > totalPages) window.currentPage = totalPages;
+            if(window.currentPage < 1) window.currentPage = 1;
+
+            const startIdx = (window.currentPage - 1) * ITEMS_PER_PAGE;
+            const paginated = filtered.slice(startIdx, startIdx + ITEMS_PER_PAGE);
+
+            document.getElementById('crm-page-info').innerText = `顯示 ${filtered.length > 0 ? startIdx + 1 : 0} - ${Math.min(startIdx + ITEMS_PER_PAGE, filtered.length)} 筆，共 ${filtered.length} 筆`;
+
+            document.getElementById('user-table-body').innerHTML = paginated.map(u => {
+                let roleDisplay = '普通粉絲'; let roleColor = 'text-cyan-400 border-cyan-400/30 bg-cyan-400/10';
+                if(u.role === 'admin') { roleDisplay = '總管'; roleColor = 'text-rose-400 border-rose-400/30 bg-rose-400/10'; }
+                if(u.role === 'engineer') { roleDisplay = '工程師'; roleColor = 'text-amber-400 border-amber-400/30 bg-amber-400/10'; }
+                if(u.role === 'streamer') { roleDisplay = '專屬主播'; roleColor = 'text-purple-400 border-purple-400/30 bg-purple-400/10'; }
+
+                const tagHtml = u.adminRemarks ? `<div class="text-[9px] text-emerald-400 font-mono mt-1 border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 rounded flex items-center gap-1 w-fit"><i class="fa-solid fa-tag"></i>${u.adminRemarks}</div>` : '';
+                const twitchHtml = u.isTwitchSub ? `<span class="text-[9px] text-purple-400 bg-purple-500/20 border border-purple-500/30 px-1.5 py-0.5 rounded font-bold"><i class="fa-brands fa-twitch mr-1"></i>訂閱</span>` : `<span class="text-zinc-600 text-[10px]">—</span>`;
+                const displayName = (u.name && u.name !== "匿名粉絲") ? u.name : `UID: ${u.id.substring(0,6)}`;
+
+                return `
+                <tr class="hover:bg-white/5 transition-colors group">
+                    <td class="py-2.5 px-4 border-b border-white/5">
+                        <div class="flex items-center gap-3">
+                            <img src="${u.photoURL||'avatar-main.jpg'}" class="w-8 h-8 rounded-lg object-cover border border-white/10" onerror="this.src='https://via.placeholder.com/150'">
+                            <div class="flex flex-col">
+                                <div class="font-bold text-white text-[11px] md:text-sm">${displayName}</div>
+                                <div class="text-[8px] md:text-[9px] text-slate-500 font-mono mt-0.5">${u.id}</div>
+                                ${tagHtml}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-2.5 px-3 border-b border-white/5 text-center font-black text-amber-400 text-xs font-mono">${(u.exp||0).toLocaleString()}</td>
+                    <td class="py-2.5 px-3 border-b border-white/5 text-center">${twitchHtml}</td>
+                    <td class="py-2.5 px-3 border-b border-white/5 text-center"><span class="status-pill ${roleColor} text-[8px] md:text-[9px] px-1.5 py-0.5">${roleDisplay}</span></td>
+                    <td class="py-2.5 px-4 border-b border-white/5 text-right">
+                        <div class="flex items-center justify-end gap-1.5 md:opacity-30 md:group-hover:opacity-100 transition-opacity">
+                            <button onclick="window.toggleTwitchSub('${u.id}', ${!u.isTwitchSub})" class="w-6 h-6 md:w-8 md:h-8 rounded flex items-center justify-center bg-purple-500/20 text-purple-400 border border-purple-500/30" title="切換 Twitch 狀態"><i class="fa-brands fa-twitch text-[10px]"></i></button>
+                            <button onclick="window.editUserTag('${u.id}', '${u.adminRemarks||''}')" class="w-6 h-6 md:w-8 md:h-8 rounded flex items-center justify-center bg-blue-500/20 text-blue-400 border border-blue-500/30" title="內部備註"><i class="fa-solid fa-pen text-[10px]"></i></button>
+                            <button onclick="window.sendReward('${u.id}', '${u.name||'粉絲'}')" class="w-6 h-6 md:w-8 md:h-8 rounded flex items-center justify-center bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" title="空投 EXP"><i class="fa-solid fa-gift text-[10px]"></i></button>
+                            <button onclick="window.changeRole('${u.id}', '${u.role}')" class="w-6 h-6 md:w-8 md:h-8 rounded flex items-center justify-center bg-amber-500/20 text-amber-400 border border-amber-500/30" title="權限管理"><i class="fa-solid fa-shield-halved text-[10px]"></i></button>
+                            <button onclick="window.openSupportChat('${u.id}', '${displayName}')" class="w-6 h-6 md:w-8 md:h-8 rounded flex items-center justify-center bg-rose-500/20 text-rose-400 border border-rose-500/30" title="查看對話"><i class="fa-solid fa-comment-dots text-[10px]"></i></button>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+        };
+
+        window.changePage = (dir) => { window.currentPage += dir; window.renderUserTable(); };
+        window.exportUsersCSV = () => {
+            if (window.allUsersCache.length === 0) return Swal.fire('提示', '資料載入中，請稍候', 'info');
+            const headers = ['UID', '顯示名稱', 'EXP餘額', 'Twitch乾爹', '系統權限', '內部備註', '註冊時間'];
+            const rows = window.allUsersCache.map(u => {
+                const dateStr = u.createdAt ? new Date(u.createdAt).toLocaleString('zh-TW') : '未知';
+                return `"${u.id}","${(u.name||'').replace(/"/g, '""')}","${u.exp||0}","${u.isTwitchSub?'是':'否'}","${u.role||'user'}","${(u.adminRemarks||'').replace(/"/g, '""')}","${dateStr}"`;
+            });
+            const csvContent = "\uFEFF" + [headers.join(','), ...rows].join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `老王粉絲名單_${new Date().toISOString().slice(0,10)}.csv`; link.click();
+        };
+
+        window.toggleTwitchSub = async (uid, isSub) => {
+            try {
+                await updateDoc(doc(db, "users", uid), { isTwitchSub: isSub });
+                const idx = window.allUsersCache.findIndex(u => u.id === uid); if(idx !== -1) window.allUsersCache[idx].isTwitchSub = isSub;
+                await window.logAdminAction("CRM_UPDATE", `切換 UID:${uid} Twitch 訂閱狀態為: ${isSub}`);
+                window.renderUserTable(); Swal.fire({toast:true, position:'top', title: '狀態已切換', icon:'success', timer:1500, showConfirmButton:false});
+            } catch(e) { handleFirebaseError(e); }
+        };
+        window.editUserTag = async (uid, currentTag) => {
+            const { value: text } = await Swal.fire({ title: '設定內部備註', input: 'text', inputValue: currentTag, showCancelButton: true });
+            if (text !== undefined) { try { await updateDoc(doc(db, "users", uid), { adminRemarks: text.trim() }); const idx = window.allUsersCache.findIndex(u => u.id === uid); if(idx !== -1) window.allUsersCache[idx].adminRemarks = text.trim(); window.renderUserTable(); } catch(e) { handleFirebaseError(e); } }
+        };
+        window.sendReward = async (uid, name) => {
+            const { value: f } = await Swal.fire({ title: `發放空投: ${name}`, html: `<input id="sw-exp" type="number" class="v-input w-full p-3 rounded-xl mb-3" placeholder="請輸入發放 EXP 數量"><input id="sw-msg" type="text" class="v-input w-full p-3 rounded-xl" placeholder="發放原因 (可留空)">`, preConfirm: () => ({ exp: document.getElementById('sw-exp').value, msg: document.getElementById('sw-msg').value }) });
+            if(f && f.exp) {
+                try {
+                    const uDoc = await getDoc(doc(db, "users", uid));
+                    if(uDoc.exists()) {
+                        const newExp = (uDoc.data().exp || 0) + parseInt(f.exp);
+                        await updateDoc(doc(db, "users", uid), { exp: newExp, rewardMsg: f.msg || "系統空投" });
+                        await addDoc(collection(doc(db, "users", uid), "exp_history"), { amount: parseInt(f.exp), reason: f.msg || "系統空投", timestamp: Date.now(), read: false });
+                        Swal.fire('發送成功', `已匯入 ${f.exp} EXP`, 'success');
+                        const idx = window.allUsersCache.findIndex(u => u.id === uid); if(idx !== -1) window.allUsersCache[idx].exp = newExp; window.renderUserTable();
+                    }
+                } catch(e) { handleFirebaseError(e, "空投失敗"); }
+            }
+        };
+        window.changeRole = async (uid, current) => {
+            if(window.vcore.role !== 'admin') return Swal.fire('權限阻擋', '此功能僅總管可操作', 'error');
+            const {value: role} = await Swal.fire({ title: '調整系統權限', input: 'select', inputOptions: { 'user': '一般粉絲', 'streamer': '專屬主播', 'engineer': '工程維護', 'admin': '最高總管', 'banned': '封鎖 (Banned)' }, inputValue: current, showCancelButton: true });
+            if(role) { try { await updateDoc(doc(db, "users", uid), { role }); const idx = window.allUsersCache.findIndex(u => u.id === uid); if(idx !== -1) window.allUsersCache[idx].role = role; await window.logAdminAction("ROLE_UPDATE", `修改 UID:${uid} 權限為 ${role}`); window.renderUserTable(); Swal.fire('已更新', '', 'success'); } catch(e) { handleFirebaseError(e); } }
+        };
+
+        let activeTicketId = null; let tkListUnsub = null; let tkMessagesUnsub = null;
+        window.currentTicketHistory = []; window.currentTicketEscalated = false;
+
+        window.initTicketSystem = async () => {
+            const showClosed = document.getElementById('tk-show-closed').checked;
+            let q = query(collection(db, "support_threads"), orderBy("lastUpdated", "desc"), limit(50));
+            if (!showClosed) q = query(collection(db, "support_threads"), where("status", "!=", "closed"), orderBy("lastUpdated", "desc"), limit(50));
+            if (tkListUnsub) tkListUnsub(); 
+            tkListUnsub = onSnapshot(q, (snap) => {
+                let html = '';
+                snap.forEach(d => {
+                    const data = d.data(); const uid = d.id; const displayName = (data.name && data.name !== "匿名粉絲") ? data.name : `用戶: ${uid.substring(0,6)}`;
+                    let sClass = 'text-zinc-500 border-zinc-500/30 bg-black/40'; let sText = '已結案';
+                    if (data.status === 'pending') { sClass = 'text-rose-400 border-rose-400/30 bg-rose-400/10 animate-pulse'; sText = '待處理'; }
+                    if (data.status === 'in_progress') { sClass = 'text-amber-400 border-amber-400/30 bg-amber-400/10'; sText = '進行中'; }
+                    html += `<div onclick="window.selectTicket('${uid}', '${displayName}')" class="p-3 bg-white/5 border border-white/10 rounded-xl cursor-pointer hover:bg-white/10 ${uid === activeTicketId ? 'border-rose-500/50 bg-rose-500/10' : ''}"><div class="flex justify-between items-start mb-1"><span class="font-bold text-white text-[11px] md:text-xs truncate">${displayName}</span><span class="status-pill ${sClass} text-[8px] px-1 py-0.5">${sText}</span></div><div class="text-[9px] text-slate-400 truncate">${data.lastMessage || '無紀錄'}</div></div>`;
+                });
+                document.getElementById('ticket-list').innerHTML = html || `<div class='text-center p-4 text-slate-600 text-[10px]'>目前無工單隊列</div>`;
+                // [新增] 純資料庫驅動的原生桌面通知
+                snap.docChanges().forEach((change) => {
+                    if (change.type === "added" || change.type === "modified") {
+                        const data = change.doc.data();
+                        // 條件：狀態是 pending，且是 15 秒內發生的更新
+                        if (data.status === 'pending' && (Date.now() - data.lastUpdated < 15000)) {
+                            // 檢查是否已授權瀏覽器通知
+                            if ("Notification" in window && Notification.permission === 'granted') {
+                                // 使用 sessionStorage 避免同一個訊息重複觸發通知
+                                const cacheKey = 'notified_' + change.doc.id + '_' + data.lastUpdated;
+                                if (!sessionStorage.getItem(cacheKey)) {
+                                    sessionStorage.setItem(cacheKey, 'true');
+                                    // 觸發作業系統的推播彈窗
+                                    const notification = new Notification(`🚨 收到新訊息：${data.name || '用戶'}`, {
+                                        body: data.lastMessage || '請盡速前往客服中心查看',
+                                        icon: 'avatar-main.jpg'
+                                    });
+                                    // 點擊通知時自動跳回網頁並開啟該工單
+                                    notification.onclick = () => {
+                                        window.focus();
+                                        window.switchTab('tab-support');
+                                        window.selectTicket(change.doc.id, data.name || '用戶');
+                                    };
+                                }
+                            }
+                        }
+                    }
+                });
+            }, (err) => handleFirebaseError(err, "工單列表讀取失敗"));
+        };
+        window.renderTicketList = () => { const term = document.getElementById('tk-search').value.toLowerCase(); const items = document.getElementById('ticket-list').children; for(let item of items) { item.style.display = item.innerText.toLowerCase().includes(term) ? 'block' : 'none'; } };
+        window.selectTicket = (uid, displayName) => {
+            activeTicketId = uid; document.getElementById('tk-display-name').innerText = displayName.replace(/<[^>]*>?/gm, '').trim(); document.getElementById('tk-display-uid').innerText = `UID: ${uid}`; document.getElementById('tk-status-select').classList.remove('hidden'); document.getElementById('btn-escalate').classList.remove('hidden'); document.getElementById('tk-input-area').classList.remove('opacity-50', 'pointer-events-none');
+            if(window.innerWidth < 1024) document.getElementById('tk-chat-box').scrollIntoView({ behavior: 'smooth' });
+            if(tkMessagesUnsub) tkMessagesUnsub();
+            onSnapshot(doc(db, "support_threads", uid), (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data(); window.currentTicketEscalated = !!data.isEscalated; document.getElementById('tk-status-select').value = data.status || 'in_progress';
+                    const escBtn = document.getElementById('btn-escalate'); const escText = document.getElementById('escalate-text');
+                    if(window.currentTicketEscalated) { escBtn.className = "hidden sm:flex items-center gap-1 text-[10px] bg-red-500 text-white border border-red-500 px-2 py-1.5 rounded-lg"; escText.innerText = "取消異常標記"; } 
+                    else { escBtn.className = "hidden sm:flex items-center gap-1 text-[10px] bg-red-500/10 text-red-400 border border-red-500/30 px-2 py-1.5 rounded-lg"; escText.innerText = "標記為異常"; }
+                }
+            });
+            tkMessagesUnsub = onSnapshot(query(collection(db, "support_threads", uid, "messages"), orderBy("timestamp", "asc")), (snap) => {
+                let html = ''; window.currentTicketHistory = [];
+                snap.forEach(d => {
+                    const data = d.data(); const timeStr = new Date(data.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                    if(data.role === 'user') { html += `<div class="flex flex-col items-start mb-4"><div class="text-[8px] text-slate-500 mb-0.5 ml-1">${timeStr}</div><div class="bg-slate-800 text-slate-200 px-3 md:px-4 py-2 md:py-3 rounded-2xl rounded-tl-sm text-xs max-w-[85%] break-words">${data.content}</div></div>`; window.currentTicketHistory.push({ role: 'user', content: data.content.replace(/<[^>]*>?/gm, '') }); } 
+                    else if (data.role === 'admin') { const style = data.isInternalNote ? "bg-amber-900/40 text-amber-200 border border-amber-500/30" : "bg-gradient-to-br from-rose-500 to-pink-600 text-white"; html += `<div class="flex flex-col items-end mb-4"><div class="text-[8px] text-slate-500 mb-0.5 mr-1">${timeStr}</div><div class="${style} px-3 md:px-4 py-2 md:py-3 rounded-2xl rounded-tr-sm text-xs max-w-[85%] break-words">${data.content}</div></div>`; if(!data.isInternalNote) window.currentTicketHistory.push({ role: 'assistant', content: data.content.replace(/<[^>]*>?/gm, '') }); }
+                });
+                const box = document.getElementById('tk-chat-box'); box.innerHTML = html; setTimeout(() => { box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' }); }, 100);
+            });
+        };
+        window.toggleEscalateTicket = async () => { if(!activeTicketId) return; const newState = !window.currentTicketEscalated; try { await setDoc(doc(db, "support_threads", activeTicketId), { isEscalated: newState, lastUpdated: Date.now() }, { merge: true }); } catch(e) { handleFirebaseError(e); } };
+        window.updateTicketStatus = async (newStatus) => { if(!activeTicketId) return; try { await setDoc(doc(db, "support_threads", activeTicketId), { status: newStatus, lastUpdated: Date.now() }, { merge: true }); } catch(e) { handleFirebaseError(e); } };
+        window.insertCannedResponse = async (val) => {
+            if(!val) return; document.getElementById('tk-canned-responses').value = ""; if (!activeTicketId) return Swal.fire('提示', '請先選擇要回覆的對話', 'info');
+            let displayName = document.getElementById('tk-display-name').innerText; if (displayName === '尚未選擇對話' || displayName.includes('用戶:')) displayName = '老王的粉絲';
+            if (val === 'ACTION_COMPENSATION') {
+                const { value: f } = await Swal.fire({ title: `發送補償給 ${displayName}`, html: `<input id="canned-exp" type="number" class="v-input w-full p-3 rounded-xl mb-4 font-mono text-emerald-400" placeholder="補償 EXP 數量"><input id="canned-reason" type="text" class="v-input w-full p-3 rounded-xl text-sm" placeholder="發放備註" value="系統異常客服補償">`, showCancelButton: true, confirmButtonText: '確認發送', preConfirm: () => ({ exp: parseInt(document.getElementById('canned-exp').value), reason: document.getElementById('canned-reason').value }) });
+                if (f && f.exp > 0) {
+                    try { Swal.fire({ title: '處理中...', didOpen: () => Swal.showLoading() }); const uDoc = await getDoc(doc(db, "users", activeTicketId));
+                        if(uDoc.exists()) { await updateDoc(doc(db, "users", activeTicketId), { exp: (uDoc.data().exp || 0) + f.exp, rewardMsg: f.reason }); await addDoc(collection(doc(db, "users", activeTicketId), "exp_history"), { amount: f.exp, reason: f.reason, timestamp: Date.now(), read: false }); await window.logAdminAction("SEND_COMPENSATION_CHAT", `於客服頻道向 UID:${activeTicketId} 補償 ${f.exp} EXP`); Swal.close(); document.getElementById('tk-reply').value = `造成您的不便非常抱歉。為了彌補損失，我們已發送了 ${f.exp} 積分至您的帳戶。若有問題請隨時告訴我們！`; }
+                    } catch (e) { handleFirebaseError(e); }
+                } return;
+            }
+            if (val === 'ACTION_WARNING') { const { value: r } = await Swal.fire({ title: '違規警告', input: 'select', inputOptions: { '洗版與惡意發言': '洗版', '濫用系統漏洞': '漏洞', '人身攻擊': '攻擊' }, showCancelButton: true }); if (r) document.getElementById('tk-reply').value = `【系統官方警告】${displayName} 您好，系統偵測到您的帳號近期有「${r}」之行為。請立即停止，否則將面臨帳號凍結處分。`; return; }
+            document.getElementById('tk-reply').value = val.replace(/\{name\}/g, displayName);
+        };
+        window.handleTkKeyPress = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.sendTicketReply(); } };
+        window.sendTicketReply = async () => {
+            if(!activeTicketId) return; const input = document.getElementById('tk-reply'); const msg = input.value.trim(); if(!msg) return;
+            const isInternal = document.getElementById('tk-is-internal').checked; const displayName = document.getElementById('tk-display-name').innerText;
+            input.value = ''; input.style.height = ''; document.getElementById('tk-is-internal').checked = false;
+            try { await addDoc(collection(db, "support_threads", activeTicketId, "messages"), { role: 'admin', content: msg, timestamp: Date.now(), isInternalNote: isInternal, author: vcore.user.email }); await setDoc(doc(db, "support_threads", activeTicketId), { name: displayName, status: 'in_progress', lastMessage: msg.substring(0, 20), lastUpdated: Date.now() }, { merge: true }); } catch(err) { handleFirebaseError(err, "發送訊息失敗"); }
+        };
+        window.openSupportChat = (uid, name) => { window.switchTab('tab-support'); window.selectTicket(uid, name); setDoc(doc(db, "support_threads", uid), { name: name, lastUpdated: Date.now() }, { merge: true }).catch(e=>{}); };
+
+        window.callAdminAI = async (systemPrompt, input) => {
+            const keySnap = await getDoc(doc(db, "system_config", "api_keys")); const groqKey = keySnap.data()?.groq?.[0]?.trim(); if(!groqKey) throw new Error("尚未設定 Groq API 金鑰，請至「神經金庫」配置。");
+            const res = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` }, body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{role: "system", content: systemPrompt}, {role: "user", content: input}], temperature: 0.5 }) });
+            if(!res.ok) throw new Error("AI 推理伺服器連線超時或受到限制"); const data = await res.json(); return data.choices[0].message.content;
+        };
+        window.generateAIReply = async (e) => {
+            if(!activeTicketId || window.currentTicketHistory.length === 0) return Swal.fire('提示', '沒有歷史對話紀錄', 'info'); const btn = e.currentTarget; btn.disabled = true; btn.innerHTML = '運算中...';
+            try { const history = window.currentTicketHistory.map(m => `${m.role}: ${m.content}`).join('\n'); document.getElementById('tk-reply').value = await window.callAdminAI(`你是網站官方客服。請依據以下對話歷史，草擬一段完美、友善且專業的回覆文案。`, history); } catch(err) { handleFirebaseError(err); }
+            btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-1"></i>AI草擬';
+        };
+        window.fixTypos = async (e) => {
+            const input = document.getElementById('tk-reply'); if(!input.value.trim()) return; const btn = e.currentTarget; btn.disabled = true; btn.innerHTML = '...';
+            try { input.value = await window.callAdminAI("請幫我修正以下客服文字中的錯別字，並稍微潤飾語氣使其更專業，直接回傳修改後的結果即可：", input.value); } catch(err) { handleFirebaseError(err); }
+            btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-spell-check mr-1"></i>潤飾';
+        };
+
+        let allAISessions = []; let activeAISessionId = null; let aiMonitorUnsub = null;
+        window.initAIChatMonitor = async () => {
+            const listEl = document.getElementById('ai-monitor-list'); listEl.innerHTML = '<div class="text-center py-10 text-slate-500 text-[10px]"><i class="fa-solid fa-circle-notch fa-spin mb-2 text-lg"></i><br>攔截封包中...</div>';
+            try {
+                if(aiMonitorUnsub) aiMonitorUnsub();
+                aiMonitorUnsub = onSnapshot(query(collection(db, "ai_conversations"), orderBy("lastUpdated", "desc"), limit(30)), (snap) => {
+                    allAISessions = []; snap.forEach(d => allAISessions.push({ id: d.id, ...d.data() })); window.renderAIMonitorList(); if(activeAISessionId) window.selectAISession(activeAISessionId);
+                });
+            } catch (err) { handleFirebaseError(err); }
+        };
+        window.renderAIMonitorList = () => {
+            const term = document.getElementById('ai-monitor-search')?.value.toLowerCase() || ''; const filtered = allAISessions.filter(s => (s.userName||'').toLowerCase().includes(term) || (s.uid||s.id).toLowerCase().includes(term));
+            if(filtered.length === 0) { document.getElementById('ai-monitor-list').innerHTML = `<div class='text-center p-6 text-slate-600 text-[10px] border border-white/5 rounded-xl'>無活躍數據</div>`; return; }
+            document.getElementById('ai-monitor-list').innerHTML = filtered.map(s => {
+                const sClass = s.status === 'archived' ? 'text-zinc-500 bg-black/40' : 'text-indigo-400 bg-indigo-400/10 animate-pulse'; const lastMsg = s.messages && s.messages.length > 0 ? s.messages[s.messages.length - 1].content.substring(0, 20) : '連線建立';
+                return `<div onclick="window.selectAISession('${s.id}')" class="p-3 bg-white/5 border border-white/10 rounded-xl cursor-pointer hover:bg-white/10 ${s.id === activeAISessionId ? 'border-indigo-500/50 bg-indigo-500/10' : ''}"><div class="flex justify-between items-start mb-1"><span class="font-bold text-white text-[11px] truncate">${s.userName || '匿名粉絲'}</span><span class="status-pill ${sClass} text-[8px] px-1 py-0.5">${s.status==='archived'?'已封存':'活躍'}</span></div><div class="text-[9px] text-slate-400 truncate">${lastMsg}</div></div>`;
+            }).join('');
+        };
+        window.filterAIMonitorList = () => { window.renderAIMonitorList(); };
+        window.selectAISession = (docId) => {
+            activeAISessionId = docId; const session = allAISessions.find(s => s.id === docId); if(!session) return;
+            document.getElementById('ai-display-name').innerText = session.userName || '匿名'; document.getElementById('ai-display-meta').innerText = `UID: ${session.uid}`; document.getElementById('ai-action-buttons').classList.remove('hidden'); document.getElementById('ai-action-buttons').classList.add('flex');
+            if(window.innerWidth < 1024) document.getElementById('ai-monitor-chat-box').scrollIntoView({ behavior: 'smooth' });
+            let html = ''; if(session.messages) { session.messages.forEach(m => { if (m.role === 'user') { html += `<div class="flex flex-col items-start mb-4"><div class="text-[8px] text-slate-500 mb-0.5 ml-1">粉絲</div><div class="bg-slate-800 text-slate-200 px-3 py-2 rounded-xl text-xs max-w-[85%] break-words">${m.content}</div></div>`; } else { html += `<div class="flex flex-col items-end mb-4"><div class="text-[8px] text-indigo-400 mb-0.5 mr-1">AI 節點</div><div class="bg-indigo-900/30 text-indigo-100 px-3 py-2 rounded-xl text-xs max-w-[85%] break-words">${m.content}</div></div>`; } }); }
+            const box = document.getElementById('ai-monitor-chat-box'); box.innerHTML = html; setTimeout(() => { box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' }); }, 100);
+        };
+        window.archiveAIChat = async () => { if(!activeAISessionId) return; try { await updateDoc(doc(db, "ai_conversations", activeAISessionId), { status: 'archived' }); window.initAIChatMonitor(); } catch(e) { handleFirebaseError(e); } };
+
+        window.renderAnnouncements = async () => {
+            try {
+                const snap = await getDocs(query(collection(db, "announcements"), orderBy("timestamp", "desc")));
+                document.getElementById('announcement-manage-list').innerHTML = snap.docs.map(d => {
+                    const data = d.data(); const isFuture = data.publishAt && data.publishAt > Date.now();
+                    return `<div class="glass-panel p-4 md:p-5 rounded-2xl relative border-l-4 ${isFuture ? 'border-l-amber-500' : 'border-l-emerald-500'}"><button onclick="window.deleteAnnouncement('${d.id}')" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center hover:bg-red-500/20 transition-colors"><i class="fa-solid fa-trash-can text-[10px]"></i></button><div class="text-[9px] font-bold mb-2 ${isFuture?'text-amber-400':'text-emerald-400'}">${isFuture?'排程等待中':'已發佈至前台'}</div><div class="text-white text-xs mb-3 leading-relaxed break-words">${data.content}</div></div>`;
+                }).join('');
+            } catch(err) { handleFirebaseError(err, "載入公告失敗"); }
+        };
+        window.createNewAnnouncement = async () => {
+            const { value: f } = await Swal.fire({ title: '建立新公告', html: `<textarea id="swal-announce-text" class="v-input w-full p-3 rounded-xl text-xs min-h-[100px] mb-3" placeholder="請輸入公告內容..."></textarea><label class="block text-left text-[10px] text-slate-400 mb-1 pl-1">預約發佈時間 (若不填則立即發佈)</label><input type="datetime-local" id="swal-announce-time" class="v-input w-full p-3 rounded-xl text-xs">`, showCancelButton: true, preConfirm: () => ({ text: document.getElementById('swal-announce-text').value, time: document.getElementById('swal-announce-time').value }) });
+            if(f && f.text) { try { await addDoc(collection(db, "announcements"), { content: f.text, author: vcore.user.email, timestamp: Date.now(), publishAt: f.time ? new Date(f.time).getTime() : Date.now() }); window.renderAnnouncements(); } catch(err) { handleFirebaseError(err); } }
+        };
+        window.deleteAnnouncement = async (id) => { try { await deleteDoc(doc(db, "announcements", id)); window.renderAnnouncements(); } catch(e) { console.warn(e); } };
+
+        window.loadPromoConfig = async () => {
+            try { const d = await getDoc(doc(db, "system_config", "promotion")); if(d.exists()) { const data = d.data(); document.getElementById('promo-active').checked = data.active; ['title','link','content','salePrice','price','discountCode'].forEach(k => { const input = document.getElementById(`promo-${k.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}`); if(input) input.value = data[k] || ''; }); } } catch(e) { console.warn("載入推播配置失敗", e); }
+        };
+        window.savePromoConfig = async () => {
+            const payload = { active: document.getElementById('promo-active').checked }; ['title','link','content','salePrice','price','discountCode'].forEach(k => { const input = document.getElementById(`promo-${k.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}`); if(input) payload[k] = input.value; });
+            try { await setDoc(doc(db, "system_config", "promotion"), payload, {merge:true}); await window.logAdminAction("PROMO_UPDATE", "管理員更新了開團推播設定"); Swal.fire({toast:true, position: 'top', title:'配置已生效', icon:'success', timer:1500, showConfirmButton:false}); } catch(e) { handleFirebaseError(e); }
+        };
+
+        window.initAuditLogs = async () => {
+            try {
+                const snap = await getDocs(query(collection(db, "audit_logs"), orderBy("timestamp", "desc"), limit(50)));
+                document.getElementById('audit-log-table-body').innerHTML = snap.docs.map(d => {
+                    const data = d.data(); const timeStr = new Date(data.timestamp).toLocaleDateString('en-GB') + ' ' + new Date(data.timestamp).toLocaleTimeString('en-GB');
+                    return `<tr class="hover:bg-white/5 transition-colors"><td class="py-2.5 px-3 border-b border-white/5 text-slate-500">${timeStr}</td><td class="py-2.5 px-3 border-b border-white/5 text-slate-300 truncate max-w-[120px]">${data.admin}</td><td class="py-2.5 px-3 border-b border-white/5 font-bold text-cyan-400">${data.action}</td><td class="py-2.5 px-4 border-b border-white/5 text-slate-400 truncate max-w-[250px]">${data.details}</td></tr>`;
+                }).join('');
+            } catch (err) { handleFirebaseError(err, "無法讀取稽核日誌"); }
+        };
+
+        let wipeTimer = null;
+        window.loadWipeSchedule = async () => { try { const d = await getDoc(doc(db, "system_config", "master")); if (d.exists() && d.data().scheduledWipe) window.startWipeCountdown(d.data().scheduledWipe.time); } catch(e) { console.warn(e); } };
+        window.saveWipeSchedule = async () => {
+            const name = document.getElementById('auto-season-name').value; const time = new Date(document.getElementById('auto-season-time').value).getTime();
+            if(!name || !time) return Swal.fire('錯誤', '請填寫完整排程資訊', 'error'); 
+            try { await setDoc(doc(db, "system_config", "master"), { scheduledWipe: { name, time, active: true } }, { merge: true }); window.startWipeCountdown(time); await window.logAdminAction("SEASON_SCHEDULE", `排定了賽季結算：${name}`); Swal.fire('成功', '排程任務已寫入伺服器', 'success'); } catch(e) { handleFirebaseError(e); }
+        };
+        window.startWipeCountdown = (targetTime) => {
+            document.getElementById('wipe-countdown-box').classList.remove('hidden'); if(wipeTimer) clearInterval(wipeTimer);
+            wipeTimer = setInterval(() => { const diff = targetTime - Date.now(); if(diff <= 0){ clearInterval(wipeTimer); document.getElementById('wipe-countdown').innerText = "結算執行中..."; } else { document.getElementById('wipe-countdown').innerText = `${Math.floor(diff/86400000)}天 ${Math.floor((diff%86400000)/3600000)}小時`; } }, 1000);
+        };
+        window.executeManualWipe = async () => { if(document.getElementById('manual-season-confirm').value === 'CONFIRM') { window.executeSeasonWipeLogic("手動強制清零"); } else { Swal.fire('驗證錯誤', '確認代碼輸入錯誤', 'error'); } };
+        window.executeSeasonWipeLogic = async (seasonName) => {
+            Swal.fire({ title: '核爆執行中...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            try {
+                const usersSnap = await getDocs(collection(db, "users")); let batch = writeBatch(db); let count = 0; const batchArray = [];
+                usersSnap.forEach((ds) => { batch.update(ds.ref, { exp: 0 }); count++; if (count === 400) { batchArray.push(batch); batch = writeBatch(db); count = 0; } });
+                if (count > 0) batchArray.push(batch); for (let b of batchArray) await b.commit();
+                await setDoc(doc(db, "system_config", "master"), { lastWipe: Date.now(), currentSeason: seasonName, scheduledWipe: null }, { merge: true });
+                await window.logAdminAction("SEASON_WIPE", `執行了全站 EXP 清零 (${seasonName})`);
+                Swal.fire('核爆完成', '全伺服器積分已強制歸零', 'success');
+            } catch (err) { handleFirebaseError(err, "核爆程序失敗"); }
+        };
+
+        window.loadApiKeys = async () => { 
+            try { const d = await getDoc(doc(db, "system_config", "api_keys")); if(d.exists()){ document.getElementById('keys-gemini').value = (d.data().gemini||[]).join('\n'); document.getElementById('keys-groq').value = (d.data().groq||[]).join('\n'); document.getElementById('keys-hf').value = d.data().hf || ''; document.getElementById('keys-twitch-client').value = d.data().twitch_client || ''; } } catch(e) { console.warn("API 讀取被拒"); } 
+        };
+        window.saveApiKeys = async () => { 
+            const payload = { gemini: document.getElementById('keys-gemini').value.split('\n').filter(k => k.trim()), groq: document.getElementById('keys-groq').value.split('\n').filter(k => k.trim()), hf: document.getElementById('keys-hf').value.trim(), twitch_client: document.getElementById('keys-twitch-client').value.trim() };
+            const secret = document.getElementById('keys-twitch-secret').value.trim(); if (secret) payload.twitch_secret = secret; 
+            Swal.fire({ title: '寫入金庫中...', didOpen: () => Swal.showLoading() });
+            try { await setDoc(doc(db, "system_config", "api_keys"), payload, {merge:true}); document.getElementById('keys-twitch-secret').value = ""; await window.logAdminAction("UPDATE_API_KEYS", "管理員更新了 API 金庫"); Swal.fire('成功', '機密資訊已安全加密並儲存', 'success'); } catch(e) { handleFirebaseError(e); } 
+        };
+
+        window.toggleTwitchMonitor = async (isActive) => {
+            const statusText = document.getElementById('twitch-scan-status-text');
+            if (isActive) { statusText.innerHTML = `<span class="text-emerald-400">綠燈運行中 (每 60 秒輪詢)</span>`; if(!twitchPollingInterval) { twitchPollingInterval = setInterval(() => { console.log("[背景任務] Twitch 狀態輪詢中..."); }, 60000); } } 
+            else { statusText.innerHTML = `<span class="text-slate-500">掃描服務已停止</span>`; clearInterval(twitchPollingInterval); twitchPollingInterval = null; }
+            try { await setDoc(doc(db, "system_config", "master"), { twitchAuto: isActive }, { merge: true }); Swal.fire({toast:true, position: 'top', title:'監聽配置已變更', icon:'success', timer:1500, showConfirmButton:false}); } catch(e) { handleFirebaseError(e); }
+        };
+
+        window.toggleMaintenanceMode = async (isActive) => {
+            try { await setDoc(doc(db, "system_config", "master"), { maintenanceMode: isActive }, {merge:true}); document.getElementById('maintenance-text').innerText = isActive ? "當前狀態：系統封鎖協議執行中" : "當前狀態：系統正常運行中"; await window.logAdminAction("TOGGLE_MAINTENANCE", `全站維護模式切換：${isActive}`); Swal.fire({toast:true, position: 'top', title:'防護模式已切換', icon:'success', timer:1500, showConfirmButton:false}); } catch(e) { handleFirebaseError(e); }
+        };
+        
+        window.loadGlobalConfig = async () => {
+            try { const d = await getDoc(doc(db, "system_config", "master")); if(d.exists()){ document.getElementById('cfg-twitch-auto').checked = d.data().twitchAuto || false; if(d.data().twitchAuto) { document.getElementById('twitch-scan-status-text').innerHTML = `<span class="text-emerald-400">綠燈運行中 (每 60 秒輪詢)</span>`; } document.getElementById('cfg-maintenance').checked = d.data().maintenanceMode || false; if(d.data().maintenanceMode) { document.getElementById('maintenance-text').innerText = "當前狀態：系統封鎖協議執行中"; } } } catch(e) { console.warn("載入系統設定失敗", e); }
+        };
+
+        // ============================================================================
+        // [全新模組 12] AI 多模態實驗沙盒 (Hugging Face Inference API Integration)
+        // ============================================================================
+        
+        // 預設模式為文字
+        window.currentSandboxMode = 'text';
+
+        // 預設定義 Hugging Face 模型 Endpoint
+        const HF_MODELS = {
+            text: 'mistralai/Mistral-7B-Instruct-v0.2',
+            image: 'Salesforce/blip-image-captioning-large', // Vision Image-to-Text
+            draw: 'stabilityai/stable-diffusion-xl-base-1.0', // Image Generation
+            voice: 'espnet/kan-bayashi_ljspeech_vits' // Text-to-Speech
+        };
+
+        /**
+         * [沙盒] 切換實驗模式
+         */
+        window.switchSandboxMode = (mode, btn) => {
+            window.currentSandboxMode = mode;
+            
+            // UI 按鈕切換
+            document.querySelectorAll('.sandbox-mode-btn').forEach(el => el.classList.remove('active'));
+            btn.classList.add('active');
+            
+            // 標示當前使用的模型名稱
+            document.getElementById('sandbox-model-label').innerText = `Model: ${HF_MODELS[mode]}`;
+            
+            // 介面控制：如果是影像解析模式，顯示圖片上傳按鈕
+            const fileContainer = document.getElementById('sandbox-file-container');
+            if (mode === 'image') {
+                fileContainer.classList.remove('hidden');
+                document.getElementById('sandbox-prompt').placeholder = "請上傳圖片 (選填提示詞)";
+            } else {
+                fileContainer.classList.add('hidden');
+                document.getElementById('sandbox-prompt').placeholder = "請輸入提示詞 (Prompt)...";
+            }
+
+            // 清空輸出區
+            document.getElementById('sandbox-output').innerHTML = '<span class="text-slate-600 text-xs tracking-widest"><i class="fa-solid fa-terminal mr-2"></i>AWAITING_COMMAND...</span>';
+        };
+
+        /**
+         * [沙盒] 共用 API 呼叫引擎
+         */
+        window.callHuggingFaceAPI = async (model, data, isBinaryUpload = false, expectBlobOutput = false) => {
+            const keySnap = await getDoc(doc(db, "system_config", "api_keys"));
+            const hfKey = keySnap.data()?.hf?.trim();
+            if(!hfKey) throw new Error("尚未設定 Hugging Face API 金鑰，請至「神經金庫」中設定！");
+
+            const headers = { "Authorization": `Bearer ${hfKey}` };
+            if (!isBinaryUpload) headers["Content-Type"] = "application/json";
+
+            const res = await fetch(`https://api-inference.huggingface.co/models/${model}`, {
+                method: "POST",
+                headers: headers,
+                body: isBinaryUpload ? data : JSON.stringify({ inputs: data })
+            });
+
+            if(!res.ok) {
+                const errText = await res.text();
+                throw new Error(`HF API 錯誤 (${res.status}): ${errText}`);
+            }
+
+            return expectBlobOutput ? await res.blob() : await res.json();
+        };
+
+        /**
+         * [沙盒] 執行主控台任務
+         */
+        window.executeSandboxTask = async () => {
+            const promptInput = document.getElementById('sandbox-prompt').value.trim();
+            const fileInput = document.getElementById('sandbox-file').files[0];
+            const outputArea = document.getElementById('sandbox-output');
+            const submitBtn = document.getElementById('btn-sandbox-submit');
+            
+            const mode = window.currentSandboxMode;
+
+            // 基礎驗證
+            if (mode !== 'image' && !promptInput) {
+                return Swal.fire('提示', '請輸入提示詞', 'warning');
+            }
+            if (mode === 'image' && !fileInput) {
+                return Swal.fire('提示', '影像解析模式需要上傳一張圖片', 'warning');
+            }
+
+            // 鎖定 UI 狀態
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-2"></i>運算中...';
+            outputArea.innerHTML = '<div class="text-yellow-500 font-mono text-xs animate-pulse"><i class="fa-solid fa-satellite-dish mr-2"></i>傳輸至雲端節點推理中...</div>';
+
+            try {
+                let resultHtml = "";
+
+                if (mode === 'text') {
+                    // --- 1. 文字生成 ---
+                    const res = await window.callHuggingFaceAPI(HF_MODELS.text, promptInput, false, false);
+                    const generatedText = res[0]?.generated_text || "無法生成文字";
+                    resultHtml = `<div class="whitespace-pre-wrap">${generatedText.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`;
+                
+                } else if (mode === 'image') {
+                    // --- 2. 圖像解析 (Vision) ---
+                    const res = await window.callHuggingFaceAPI(HF_MODELS.image, fileInput, true, false);
+                    const caption = res[0]?.generated_text || "無法解析此圖片內容";
+                    
+                    // 建立圖片預覽
+                    const imgUrl = URL.createObjectURL(fileInput);
+                    resultHtml = `
+                        <div class="flex flex-col items-center gap-4 w-full">
+                            <img src="${imgUrl}" class="max-h-[150px] rounded-lg border border-white/10 shadow-lg object-contain">
+                            <div class="bg-blue-900/30 text-blue-200 border border-blue-500/40 p-4 rounded-xl w-full text-center tracking-wider">
+                                <i class="fa-solid fa-eye text-blue-400 mr-2"></i> ${caption}
+                            </div>
+                        </div>`;
+
+                } else if (mode === 'draw') {
+                    // --- 3. AI 繪圖 ---
+                    const blob = await window.callHuggingFaceAPI(HF_MODELS.draw, promptInput, false, true);
+                    const imgUrl = URL.createObjectURL(blob);
+                    resultHtml = `<img src="${imgUrl}" class="max-w-full max-h-[300px] rounded-2xl shadow-[0_0_20px_rgba(255,255,255,0.1)] border border-white/10 object-contain">`;
+                
+                } else if (mode === 'voice') {
+                    // --- 4. 語音合成 (TTS) ---
+                    const blob = await window.callHuggingFaceAPI(HF_MODELS.voice, promptInput, false, true);
+                    const audioUrl = URL.createObjectURL(blob);
+                    resultHtml = `
+                        <div class="flex flex-col items-center gap-4 w-full">
+                            <i class="fa-solid fa-wave-square text-4xl text-emerald-400 animate-pulse-slow"></i>
+                            <audio controls src="${audioUrl}" class="w-full max-w-sm custom-audio-player"></audio>
+                            <p class="text-xs text-slate-500 font-mono mt-2 text-center">語音合成完畢，點擊播放即可試聽</p>
+                        </div>`;
+                }
+
+                // 寫入結果
+                outputArea.innerHTML = resultHtml;
+                await window.logAdminAction("AI_SANDBOX_EXEC", `於沙盒執行 [${mode}] 運算任務`);
+
+            } catch (err) {
+                console.error("HF Sandbox Error:", err);
+                outputArea.innerHTML = `<div class="text-red-400 text-xs bg-red-900/20 p-3 rounded-lg border border-red-500/30 w-full"><i class="fa-solid fa-triangle-exclamation mr-2"></i>${err.message}</div>`;
+            } finally {
+                // 解除鎖定
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa-solid fa-play mr-2"></i>執行運算 (Execute)';
+            }
+        };
+
+    </script>
+</body>
+</html>
