@@ -176,8 +176,8 @@
             </div>
             
             <div class="flex items-center gap-4">
-                <button onclick="window.requestAdminNotification()" class="hidden sm:flex items-center gap-2 text-[10px] font-bold text-emerald-400 tracking-[0.1em] bg-emerald-900/20 px-3 py-1.5 rounded-full border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors" title="開啟系統推播">
-                    <i class="fa-solid fa-bell"></i> 啟用通知
+                <button onclick="window.requestAdminNotification()" class="flex items-center justify-center gap-2 text-[10px] font-bold text-emerald-400 tracking-[0.1em] bg-emerald-900/20 w-9 h-9 md:w-auto md:h-auto md:px-4 md:py-2 rounded-xl md:rounded-full border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors" title="啟用新訊息通知">
+                <i class="fa-solid fa-bell text-sm md:text-base"></i> <span class="hidden md:inline">啟用通知</span>
                 </button>
                 <div class="hidden sm:flex items-center gap-2 text-[10px] font-mono text-cyan-400 tracking-[0.1em] bg-cyan-900/20 px-3 py-1.5 rounded-full border border-cyan-500/30">
                     <i class="fa-solid fa-shield-check"></i> 通訊已加密
@@ -248,12 +248,12 @@
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                         <div class="glass-panel p-5 md:p-6 rounded-3xl border-t-4 border-t-cyan-500 shadow-lg relative overflow-hidden">
                             <i class="fa-solid fa-users absolute -right-2 -bottom-2 text-5xl md:text-7xl text-cyan-500/10"></i>
-                            <p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-widest mb-1 relative z-10"><i class="fa-solid fa-users mr-1"></i> 註冊粉絲數</p>
+                            <p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-widest mb-1 relative z-10"><i class="fa-solid fa-users mr-1"></i> 網站註冊粉絲數</p>
                             <h4 id="st-users" class="text-3xl md:text-4xl font-black text-cyan-400 font-mono relative z-10">0</h4>
                         </div>
                         <div class="glass-panel p-5 md:p-6 rounded-3xl border-t-4 border-t-purple-500 shadow-lg relative overflow-hidden">
                             <i class="fa-brands fa-twitch absolute -right-2 -bottom-2 text-5xl md:text-7xl text-purple-500/10"></i>
-                            <p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-widest mb-1 relative z-10"><i class="fa-brands fa-twitch mr-1"></i> Twitch 乾爹</p>
+                            <p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-widest mb-1 relative z-10"><i class="fa-brands fa-twitch mr-1"></i> Twitch 訂閱者</p>
                             <h4 id="st-subs" class="text-3xl md:text-4xl font-black text-purple-400 font-mono relative z-10">0</h4>
                         </div>
                         <div class="glass-panel p-5 md:p-6 rounded-3xl border-t-4 border-t-amber-500 shadow-lg relative overflow-hidden">
@@ -699,17 +699,29 @@
         window.vcore = { app, auth, db, user: null, role: null };
 
         /**
-         * [純前端資料庫驅動] 要求瀏覽器原生桌面通知權限 (免 FCM 金鑰)
+         * [純前端資料庫驅動] 要求瀏覽器原生桌面/行動通知權限 (免 FCM 金鑰)
          */
         window.requestAdminNotification = async () => {
+            // 1. 檢查瀏覽器是否支援 Notification API
             if (!("Notification" in window)) {
-                return Swal.fire('不支援', '您的瀏覽器不支援桌面通知', 'error');
+                return Swal.fire({
+                    title: '設備不支援', 
+                    html: '<p class="text-sm text-sky-100 leading-relaxed">您的瀏覽器暫不支援推播通知。<br><br><span class="text-amber-400 font-bold">⚠️ iOS (iPhone/iPad) 用戶注意：</span><br>Apple 安全規定必須先將本網頁透過 Safari 底部選單<b class="text-white bg-black/50 px-2 py-1 rounded mx-1">加入主畫面</b>，並從桌面開啟 APP 後，才能點擊啟用推播功能！</p>', 
+                    icon: 'warning',
+                    background: 'rgba(10,15,30,0.95)'
+                });
             }
-            const permission = await Notification.requestPermission();
-            if (permission === 'granted') {
-                Swal.fire({toast:true, position: 'top-end', title:'桌面通知已啟用！\n(請保持網頁開啟以接收訊息)', icon:'success', timer:3000, showConfirmButton:false});
-            } else {
-                Swal.fire('已拒絕', '您拒絕了瀏覽器通知，將無法收到即時客訴提醒。', 'warning');
+
+            // 2. 請求權限
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    Swal.fire({toast:true, position: 'top-end', title:'系統通知已啟用！\n(請保持網頁於背景執行以接收訊息)', icon:'success', timer:4000, showConfirmButton:false});
+                } else if (permission === 'denied') {
+                    Swal.fire('已拒絕', '您拒絕了系統通知。若要重新開啟，請至瀏覽器的「網站設定」中允許通知。', 'warning');
+                }
+            } catch (error) {
+                console.error("要求通知權限時發生錯誤: ", error);
             }
         };
 
