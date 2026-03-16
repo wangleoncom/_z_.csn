@@ -1103,50 +1103,128 @@
         let activeTicketId = null; let tkListUnsub = null; let tkMessagesUnsub = null;
         window.currentTicketHistory = []; window.currentTicketEscalated = false;
 
+        // ============================================================================
+        // [系統配置] 客服工單模組設定參數
+        // ============================================================================
+        const TICKET_CONFIG = {
+            NOTIFY_THRESHOLD_MS: 15000,   // 新訊息判定閾值 (15 秒)
+            ICON_PATH: 'avatar-main.jpg'  // 推播圖示
+        };
+
+        // ============================================================================
+        // [輔助函式] 工單狀態視覺對映表 (Strategy Pattern)
+        // ============================================================================
+        const getTicketStatusUI = (status) => {
+            const statusMap = {
+                pending:     { text: '待處理', cssClass: 'text-rose-400 border-rose-400/30 bg-rose-400/10 animate-pulse' },
+                in_progress: { text: '進行中', cssClass: 'text-amber-400 border-amber-400/30 bg-amber-400/10' },
+                closed:      { text: '已結案', cssClass: 'text-zinc-500 border-zinc-500/30 bg-black/40' }
+            };
+            return statusMap[status] || statusMap.closed;
+        };
+
+        // ============================================================================
+        // [輔助函式] 生成單筆工單的 HTML 結構
+        // ============================================================================
+        const generateTicketHTML = (docSnap) => {
+            const data = docSnap.data();
+            const uid = docSnap.id;
+            const displayName = (data.name && data.name !== "匿名粉絲") ? data.name : `用戶: ${uid.substring(0, 6)}`;
+            
+            const statusUI = getTicketStatusUI(data.status);
+            const isActive = (uid === window.activeTicketId);
+            const activeBorderClass = isActive ? 'border-rose-500/50 bg-rose-500/10' : 'border-white/10 hover:bg-white/10';
+
+            return `
+                <div onclick="window.selectTicket('${uid}', '${displayName}')" 
+                     class="p-3 bg-white/5 border rounded-xl cursor-pointer transition-colors duration-200 ${activeBorderClass}">
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="font-bold text-white text-[11px] md:text-xs truncate mr-2">${displayName}</span>
+                        <span class="status-pill ${statusUI.cssClass} text-[8px] px-1 py-0.5 whitespace-nowrap">${statusUI.text}</span>
+                    </div>
+                    <div class="text-[9px] text-slate-400 truncate">${data.lastMessage || '無紀錄'}</div>
+                </div>
+            `;
+        };
+
+        // ============================================================================
+        // [輔助函式] 處理原生桌面推播通知邏輯
+        // ============================================================================
+        const processTicketNotification = (docSnap) => {
+            const data = docSnap.data();
+            const uid = docSnap.id;
+
+            // 1. 條件防護 (Guard Clauses)：非待處理、超過時效、無權限者直接 Return
+            if (data.status !== 'pending') return;
+            if ((Date.now() - data.lastUpdated) > TICKET_CONFIG.NOTIFY_THRESHOLD_MS) return;
+            if (!("Notification" in window) || Notification.permission !== 'granted') return;
+
+            // 2. 防重複快取機制 (Debounce/Deduplication)
+            const cacheKey = `notified_${uid}_${data.lastUpdated}`;
+            if (sessionStorage.getItem(cacheKey)) return;
+            sessionStorage.setItem(cacheKey, 'true');
+
+            // 3. 執行推播 (包含防洗版設定)
+            const title = `🚨 [系統通知] 收到新客服訊息`;
+            const body = `發送者：${data.name || '用戶'}\n內容：${data.lastMessage || '請盡速前往客服中心查看...'}`;
+            
+            const notification = new Notification(title, {
+                body: body,
+                icon: TICKET_CONFIG.ICON_PATH,
+                tag: `ticket_${uid}` // [重點] 使用 Tag 讓同一個用戶連發訊息時，系統只會「更新」舊通知，不會彈出十幾個視窗蓋滿螢幕
+            });
+
+            // 4. 通知點擊事件綁定
+            notification.onclick = () => {
+                window.focus(); // 喚醒瀏覽器至前景
+                window.switchTab('tab-support');
+                window.selectTicket(uid, data.name || '用戶');
+                notification.close();
+            };
+        };
+
+        // ============================================================================
+        // [主程式] 啟動官方問題管理系統 (Main Entry)
+        // ============================================================================
         window.initTicketSystem = async () => {
-            const showClosed = document.getElementById('tk-show-closed').checked;
-            let q = query(collection(db, "support_threads"), orderBy("lastUpdated", "desc"), limit(50));
-            if (!showClosed) q = query(collection(db, "support_threads"), where("status", "!=", "closed"), orderBy("lastUpdated", "desc"), limit(50));
-            if (tkListUnsub) tkListUnsub(); 
-            tkListUnsub = onSnapshot(q, (snap) => {
-                let html = '';
-                snap.forEach(d => {
-                    const data = d.data(); const uid = d.id; const displayName = (data.name && data.name !== "匿名粉絲") ? data.name : `用戶: ${uid.substring(0,6)}`;
-                    let sClass = 'text-zinc-500 border-zinc-500/30 bg-black/40'; let sText = '已結案';
-                    if (data.status === 'pending') { sClass = 'text-rose-400 border-rose-400/30 bg-rose-400/10 animate-pulse'; sText = '待處理'; }
-                    if (data.status === 'in_progress') { sClass = 'text-amber-400 border-amber-400/30 bg-amber-400/10'; sText = '進行中'; }
-                    html += `<div onclick="window.selectTicket('${uid}', '${displayName}')" class="p-3 bg-white/5 border border-white/10 rounded-xl cursor-pointer hover:bg-white/10 ${uid === activeTicketId ? 'border-rose-500/50 bg-rose-500/10' : ''}"><div class="flex justify-between items-start mb-1"><span class="font-bold text-white text-[11px] md:text-xs truncate">${displayName}</span><span class="status-pill ${sClass} text-[8px] px-1 py-0.5">${sText}</span></div><div class="text-[9px] text-slate-400 truncate">${data.lastMessage || '無紀錄'}</div></div>`;
-                });
-                document.getElementById('ticket-list').innerHTML = html || `<div class='text-center p-4 text-slate-600 text-[10px]'>目前無工單隊列</div>`;
-                // [新增] 純資料庫驅動的原生桌面通知
+            const showClosed = document.getElementById('tk-show-closed')?.checked ?? false;
+            
+            // 1. 建構查詢條件 (Query Builder)
+            const baseRef = collection(db, "support_threads");
+            let q = query(baseRef, orderBy("lastUpdated", "desc"), limit(50));
+            
+            if (!showClosed) {
+                q = query(baseRef, where("status", "!=", "closed"), orderBy("lastUpdated", "desc"), limit(50));
+            }
+
+            // 2. 清理舊監聽器，避免記憶體洩漏 (Memory Leak)
+            if (window.tkListUnsub) {
+                window.tkListUnsub(); 
+            }
+
+            // 3. 綁定資料庫實時監聽 (Snapshot Listener)
+            window.tkListUnsub = onSnapshot(q, (snap) => {
+                const listContainer = document.getElementById('ticket-list');
+                if (!listContainer) return;
+
+                // [A] 渲染 UI 視圖
+                if (snap.empty) {
+                    listContainer.innerHTML = `<div class='text-center p-4 text-slate-600 text-[10px] font-mono'>目前無工單隊列</div>`;
+                } else {
+                    // 使用陣列 Map 與 Join 取代字串 += 拼接，效能更好且更安全
+                    const htmlParts = [];
+                    snap.forEach(doc => htmlParts.push(generateTicketHTML(doc)));
+                    listContainer.innerHTML = htmlParts.join('');
+                }
+
+                // [B] 處理背景推播事件
                 snap.docChanges().forEach((change) => {
                     if (change.type === "added" || change.type === "modified") {
-                        const data = change.doc.data();
-                        // 條件：狀態是 pending，且是 15 秒內發生的更新
-                        if (data.status === 'pending' && (Date.now() - data.lastUpdated < 15000)) {
-                            // 檢查是否已授權瀏覽器通知
-                            if ("Notification" in window && Notification.permission === 'granted') {
-                                // 使用 sessionStorage 避免同一個訊息重複觸發通知
-                                const cacheKey = 'notified_' + change.doc.id + '_' + data.lastUpdated;
-                                if (!sessionStorage.getItem(cacheKey)) {
-                                    sessionStorage.setItem(cacheKey, 'true');
-                                    // 觸發作業系統的推播彈窗
-                                    const notification = new Notification(`🚨 收到新訊息：${data.name || '用戶'}`, {
-                                        body: data.lastMessage || '請盡速前往客服中心查看',
-                                        icon: 'avatar-main.jpg'
-                                    });
-                                    // 點擊通知時自動跳回網頁並開啟該工單
-                                    notification.onclick = () => {
-                                        window.focus();
-                                        window.switchTab('tab-support');
-                                        window.selectTicket(change.doc.id, data.name || '用戶');
-                                    };
-                                }
-                            }
-                        }
+                        processTicketNotification(change.doc);
                     }
                 });
-            }, (err) => handleFirebaseError(err, "工單列表讀取失敗"));
+
+            }, (err) => handleFirebaseError(err, "工單列表連線中斷"));
         };
         window.renderTicketList = () => { const term = document.getElementById('tk-search').value.toLowerCase(); const items = document.getElementById('ticket-list').children; for(let item of items) { item.style.display = item.innerText.toLowerCase().includes(term) ? 'block' : 'none'; } };
         window.selectTicket = (uid, displayName) => {
