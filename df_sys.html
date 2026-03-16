@@ -611,7 +611,11 @@
                             <p class="text-[10px] text-slate-500 font-mono mb-2">用於客服系統的即時潤飾與草擬，確保對話極低延遲。</p>
                             <textarea id="keys-groq" rows="2" class="v-input w-full p-4 rounded-2xl text-[11px] font-mono leading-relaxed" placeholder="gsk_..."></textarea>
                         </div>
-                        
+                        <div class="glass-panel p-6 md:p-8 rounded-3xl space-y-4 border-t-2 border-t-emerald-500 shadow-lg bg-[#010409]/60 lg:col-span-2">
+                            <h3 class="text-xs md:text-sm font-black text-emerald-400 uppercase tracking-widest flex items-center"><i class="fa-solid fa-paper-plane mr-2"></i>FCM 離線推播伺服器金鑰</h3>
+                            <p class="text-[10px] text-slate-500 font-mono mb-2">請貼上 Firebase 控制台中 Cloud Messaging (舊版 API) 的「伺服器金鑰」，用於 100% 免費發送離線推播。</p>
+                            <input type="password" id="keys-fcm-server" class="v-input w-full p-4 rounded-2xl text-[11px] font-mono tracking-wider" placeholder="AAAA...">
+                        </div>
                         <div class="glass-panel p-6 md:p-8 rounded-3xl space-y-4 border-t-2 border-t-yellow-500 shadow-lg bg-[#010409]/60 lg:col-span-2">
                             <h3 class="text-xs md:text-sm font-black text-yellow-400 uppercase tracking-widest flex items-center"><i class="fa-solid fa-face-smiling-hands mr-2"></i>Hugging Face 多模態金鑰</h3>
                             <p class="text-[10px] text-slate-500 font-mono mb-2">用於 AI 沙盒的文字、視覺、繪圖與語音模型 (Inference API)。</p>
@@ -1267,10 +1271,56 @@
         };
         window.handleTkKeyPress = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.sendTicketReply(); } };
         window.sendTicketReply = async () => {
-            if(!activeTicketId) return; const input = document.getElementById('tk-reply'); const msg = input.value.trim(); if(!msg) return;
-            const isInternal = document.getElementById('tk-is-internal').checked; const displayName = document.getElementById('tk-display-name').innerText;
-            input.value = ''; input.style.height = ''; document.getElementById('tk-is-internal').checked = false;
-            try { await addDoc(collection(db, "support_threads", activeTicketId, "messages"), { role: 'admin', content: msg, timestamp: Date.now(), isInternalNote: isInternal, author: vcore.user.email }); await setDoc(doc(db, "support_threads", activeTicketId), { name: displayName, status: 'in_progress', lastMessage: msg.substring(0, 20), lastUpdated: Date.now() }, { merge: true }); } catch(err) { handleFirebaseError(err, "發送訊息失敗"); }
+            if(!activeTicketId) return; 
+            const input = document.getElementById('tk-reply'); 
+            const msg = input.value.trim(); 
+            if(!msg) return;
+            
+            const isInternal = document.getElementById('tk-is-internal').checked; 
+            const displayName = document.getElementById('tk-display-name').innerText;
+            
+            input.value = ''; input.style.height = ''; 
+            document.getElementById('tk-is-internal').checked = false;
+            
+            try { 
+                // 1. 儲存訊息到資料庫
+                await addDoc(collection(db, "support_threads", activeTicketId, "messages"), { role: 'admin', content: msg, timestamp: Date.now(), isInternalNote: isInternal, author: vcore.user.email }); 
+                await setDoc(doc(db, "support_threads", activeTicketId), { name: displayName, status: 'in_progress', lastMessage: msg.substring(0, 20), lastUpdated: Date.now() }, { merge: true }); 
+                
+                // ====================================================================
+                // 2. [新增] 100% 免費的 FCM 原生離線推播發射引擎
+                // ====================================================================
+                if (!isInternal) { // 內部備註不發推播
+                    // A. 拿取粉絲的專屬推播 Token
+                    const userDoc = await getDoc(doc(db, "users", activeTicketId));
+                    const fcmToken = userDoc.exists() ? userDoc.data().fcmToken : null;
+                    
+                    // B. 拿取神經金庫裡的 FCM 伺服器金鑰
+                    const keysDoc = await getDoc(doc(db, "system_config", "api_keys"));
+                    const serverKey = keysDoc.exists() ? keysDoc.data().fcm_server : null;
+
+                    if (fcmToken && serverKey) {
+                        // C. 直接從你的電腦向 Google 伺服器發送推播請求！
+                        fetch('https://fcm.googleapis.com/fcm/send', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `key=${serverKey}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                to: fcmToken,
+                                notification: {
+                                    title: "💬 老王基地工程部回覆",
+                                    body: msg.replace(/<[^>]*>?/gm, '').substring(0, 40) + '...',
+                                    icon: "avatar-main.jpg"
+                                },
+                                // 讓粉絲點擊推播時自動打開網站
+                                webpush: { fcmOptions: { link: "https://你的粉絲網站網址.com" } }
+                            })
+                        }).then(res => console.log("推播發射狀態:", res.status)).catch(e => console.error("推播失敗:", e));
+                    }
+                }
+            } catch(err) { handleFirebaseError(err, "發送訊息失敗"); }
         };
         window.openSupportChat = (uid, name) => { window.switchTab('tab-support'); window.selectTicket(uid, name); setDoc(doc(db, "support_threads", uid), { name: name, lastUpdated: Date.now() }, { merge: true }).catch(e=>{}); };
 
@@ -1376,13 +1426,37 @@
         };
 
         window.loadApiKeys = async () => { 
-            try { const d = await getDoc(doc(db, "system_config", "api_keys")); if(d.exists()){ document.getElementById('keys-gemini').value = (d.data().gemini||[]).join('\n'); document.getElementById('keys-groq').value = (d.data().groq||[]).join('\n'); document.getElementById('keys-hf').value = d.data().hf || ''; document.getElementById('keys-twitch-client').value = d.data().twitch_client || ''; } } catch(e) { console.warn("API 讀取被拒"); } 
+            try { 
+                const d = await getDoc(doc(db, "system_config", "api_keys")); 
+                if(d.exists()){ 
+                    document.getElementById('keys-gemini').value = (d.data().gemini||[]).join('\n'); 
+                    document.getElementById('keys-groq').value = (d.data().groq||[]).join('\n'); 
+                    document.getElementById('keys-hf').value = d.data().hf || ''; 
+                    document.getElementById('keys-twitch-client').value = d.data().twitch_client || ''; 
+                    // [新增] 讀取 FCM 金鑰
+                    document.getElementById('keys-fcm-server').value = d.data().fcm_server || ''; 
+                } 
+            } catch(e) { console.warn("API 讀取被拒"); } 
         };
-        window.saveApiKeys = async () => { 
-            const payload = { gemini: document.getElementById('keys-gemini').value.split('\n').filter(k => k.trim()), groq: document.getElementById('keys-groq').value.split('\n').filter(k => k.trim()), hf: document.getElementById('keys-hf').value.trim(), twitch_client: document.getElementById('keys-twitch-client').value.trim() };
-            const secret = document.getElementById('keys-twitch-secret').value.trim(); if (secret) payload.twitch_secret = secret; 
+       window.saveApiKeys = async () => { 
+            const payload = { 
+                gemini: document.getElementById('keys-gemini').value.split('\n').filter(k => k.trim()), 
+                groq: document.getElementById('keys-groq').value.split('\n').filter(k => k.trim()), 
+                hf: document.getElementById('keys-hf').value.trim(), 
+                twitch_client: document.getElementById('keys-twitch-client').value.trim(),
+                // [新增] 儲存 FCM 金鑰
+                fcm_server: document.getElementById('keys-fcm-server').value.trim()
+            };
+            const secret = document.getElementById('keys-twitch-secret').value.trim(); 
+            if (secret) payload.twitch_secret = secret; 
+
             Swal.fire({ title: '寫入金庫中...', didOpen: () => Swal.showLoading() });
-            try { await setDoc(doc(db, "system_config", "api_keys"), payload, {merge:true}); document.getElementById('keys-twitch-secret').value = ""; await window.logAdminAction("UPDATE_API_KEYS", "管理員更新了 API 金庫"); Swal.fire('成功', '機密資訊已安全加密並儲存', 'success'); } catch(e) { handleFirebaseError(e); } 
+            try { 
+                await setDoc(doc(db, "system_config", "api_keys"), payload, {merge:true}); 
+                document.getElementById('keys-twitch-secret').value = ""; 
+                await window.logAdminAction("UPDATE_API_KEYS", "管理員更新了 API 金庫"); 
+                Swal.fire('成功', '機密資訊已安全加密並儲存', 'success'); 
+            } catch(e) { handleFirebaseError(e); } 
         };
 
         window.toggleTwitchMonitor = async (isActive) => {
