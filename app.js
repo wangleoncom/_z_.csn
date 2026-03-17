@@ -894,30 +894,10 @@ async function fetchAnnouncements() {
         });
     } catch(e) {}
 
-    loadedAnnouncements.unshift({
-        id: 'anti-theft-warning-001', 
-        title: "‼️ 重要公告：TikTok 盜片宣導", 
-        date: new Date().toISOString().split('T')[0], 
-        type: "warning", 
-        isPinned: true, 
-        summary: "近期 TikTok 出現盜用老王影片的假帳號，請各位成員認明唯一認證帳號，並協助檢舉！", 
-        image: "fake-account.jpg", 
-        content: `
-            <div class="text-left space-y-4 text-sm text-sky-100 mt-2">
-                <p class="text-red-400 font-bold text-base border-b border-red-500/30 pb-2">⚠️ 請各位粉絲注意！</p>
-                <p>近期我們發現，在 TikTok 出現<b class="text-white">假冒「老王」的帳號</b>。這支帳號惡意盜用原創影片，試圖進行詐騙。</p>
-                <p>提醒大家：</p>
-                <ul class="list-disc pl-5 space-y-2 text-sky-200 bg-black/20 p-3 rounded-lg border border-sky-500/20">
-                    <li>老王的<b class="text-white">唯一真實帳號</b>僅有主頁連結標示的帳號。</li>
-                    <li>老王<b class="text-red-400">絕對不會</b>主動私訊要求粉絲匯款或投資。</li>
-                </ul>
-                <p>若看到可疑帳號，請<b class="text-red-400">動動手指點擊檢舉</b>。如果不確定，請透過網站工程師客服私訊、老王私訊或是在影片留言！</p>
-                </div>
-            </div>`
-    });
     announcementsData = loadedAnnouncements; 
     renderAnnouncements(); 
 }
+
 
 function renderAnnouncements() {
     const homeContainer = document.getElementById('home-pinned-announcements');
