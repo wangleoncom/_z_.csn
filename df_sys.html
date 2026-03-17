@@ -35,16 +35,20 @@
                         neon: { cyan: '#22d3ee', blue: '#3b82f6', purple: '#a855f7', pink: '#ec4899', emerald: '#34d399' }
                     },
                     animation: { 
-                        'fade-in': 'fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards',
-                        'slide-up': 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-                        'pulse-glow': 'pulseGlow 2s infinite',
-                        'terminal-blink': 'blink 1s step-end infinite'
+                        'fade-in': 'fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'slide-up': 'slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'pulse-glow': 'pulseGlow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'terminal-blink': 'blink 1s step-end infinite',
+                        'scale-in': 'scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'float': 'float 6s ease-in-out infinite'
                     },
                     keyframes: {
                         fadeIn: { '0%': { opacity: '0', transform: 'translateY(10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
-                        slideUp: { '0%': { opacity: '0', transform: 'translateY(30px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+                        slideUp: { '0%': { opacity: '0', transform: 'translateY(40px) scale(0.98)' }, '100%': { opacity: '1', transform: 'translateY(0) scale(1)' } },
                         pulseGlow: { '0%, 100%': { opacity: 1, filter: 'drop-shadow(0 0 15px rgba(34,211,238,0.8))' }, '50%': { opacity: 0.6, filter: 'drop-shadow(0 0 5px rgba(34,211,238,0.3))' } },
-                        blink: { '0%, 100%': { opacity: 1 }, '50%': { opacity: 0 } }
+                        blink: { '0%, 100%': { opacity: 1 }, '50%': { opacity: 0 } },
+                        scaleIn: { '0%': { opacity: '0', transform: 'scale(0.95)' }, '100%': { opacity: '1', transform: 'scale(1)' } },
+                        float: { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-10px)' } }
                     }
                 } 
             } 
@@ -127,12 +131,35 @@
             color: #fff !important; 
             backdrop-filter: blur(20px); 
         }
+                /* 讓彈窗更具未來感 */
+        .swal2-toast {
+            box-shadow: 0 0 30px rgba(244, 63, 94, 0.2) !important;
+            border: 1px solid rgba(244, 63, 94, 0.3) !important;
+            border-radius: 20px !important;
+        }
+
+        /* 針對行動端的優化 */
+        @media (max-width: 640px) {
+            .swal2-popup.swal2-toast {
+                width: 90% !important;
+                margin: 10px auto !important;
+                top: 10px !important;
+                right: 0 !important;
+                left: 0 !important;
+            }
+        }
+
+        /* 確保側邊欄按鈕有反饋動畫 */
+        .nav-btn:active {
+            transform: scale(0.95);
+            background: rgba(34, 211, 238, 0.2);
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col selection:bg-cyan-500/30">
 
     <div id="login-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-[#020617]/95 backdrop-blur-3xl transition-all duration-700 px-4">
-        <div class="glass-panel p-8 md:p-12 rounded-[40px] w-full max-w-md text-center border-cyan-500/30 shadow-[0_0_50px_rgba(34,211,238,0.1)] relative overflow-hidden">
+        <div class="glass-panel p-8 md:p-12 rounded-[40px] w-full max-w-md text-center border-cyan-500/30 shadow-[0_0_50px_rgba(34,211,238,0.1)] relative overflow-hidden animate-float">
             <div class="absolute -top-20 -right-20 w-64 h-64 bg-cyan-500/10 rounded-full blur-[80px] pointer-events-none"></div>
             
             <h1 class="text-xl md:text-2xl font-black mb-8 text-white tracking-widest uppercase relative z-10">老王的粉絲網站｜管理系統</h1>
@@ -160,7 +187,7 @@
                 <button onclick="window.toggleMobileMenu()" class="md:hidden w-10 h-10 rounded-xl bg-white/5 border border-white/10 text-cyan-400 flex items-center justify-center hover:bg-white/10 transition-colors">
                     <i class="fa-solid fa-bars"></i>
                 </button>
-                <div class="hidden md:flex w-10 h-10 bg-gradient-to-br from-cyan-400 to-purple-600 rounded-xl items-center justify-center shadow-[0_0_15px_rgba(34,211,238,0.4)]">
+                <div class="hidden md:flex w-10 h-10 bg-gradient-to-br from-cyan-400 to-purple-600 rounded-xl items-center justify-center shadow-[0_0_15px_rgba(34,211,238,0.4)] animate-pulse-glow">
                     <i class="fa-solid fa-server text-white"></i>
                 </div>
                 <div>
@@ -177,7 +204,7 @@
             
             <div class="flex items-center gap-4">
                 <button onclick="window.requestAdminNotification()" class="flex items-center justify-center gap-2 text-[10px] font-bold text-emerald-400 tracking-[0.1em] bg-emerald-900/20 w-9 h-9 md:w-auto md:h-auto md:px-4 md:py-2 rounded-xl md:rounded-full border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors" title="啟用新訊息通知">
-                <i class="fa-solid fa-bell text-sm md:text-base"></i> <span class="hidden md:inline">啟用通知</span>
+                <i class="fa-solid fa-bell text-sm md:text-base animate-pulse"></i> <span class="hidden md:inline">啟用推播</span>
                 </button>
                 <div class="hidden sm:flex items-center gap-2 text-[10px] font-mono text-cyan-400 tracking-[0.1em] bg-cyan-900/20 px-3 py-1.5 rounded-full border border-cyan-500/30">
                     <i class="fa-solid fa-shield-check"></i> 通訊已加密
@@ -243,26 +270,26 @@
 
             <main class="flex-1 p-4 md:p-8 overflow-y-auto no-scrollbar w-full relative bg-transparent">
                 
-                <div id="tab-home" class="tab-content space-y-6 w-full animate-[fadeIn_0.4s_ease]">
+                <div id="tab-home" class="tab-content space-y-6 w-full animate-fade-in">
                     <h2 class="text-xl md:text-2xl font-black text-white tracking-widest">網站數據現況</h2>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                        <div class="glass-panel p-5 md:p-6 rounded-3xl border-t-4 border-t-cyan-500 shadow-lg relative overflow-hidden">
-                            <i class="fa-solid fa-users absolute -right-2 -bottom-2 text-5xl md:text-7xl text-cyan-500/10"></i>
+                        <div class="glass-panel p-5 md:p-6 rounded-3xl border-t-4 border-t-cyan-500 shadow-lg relative overflow-hidden group hover:scale-[1.02] transition-transform">
+                            <i class="fa-solid fa-users absolute -right-2 -bottom-2 text-5xl md:text-7xl text-cyan-500/10 group-hover:text-cyan-500/20 transition-colors"></i>
                             <p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-widest mb-1 relative z-10"><i class="fa-solid fa-users mr-1"></i> 網站註冊粉絲數</p>
                             <h4 id="st-users" class="text-3xl md:text-4xl font-black text-cyan-400 font-mono relative z-10">0</h4>
                         </div>
-                        <div class="glass-panel p-5 md:p-6 rounded-3xl border-t-4 border-t-purple-500 shadow-lg relative overflow-hidden">
-                            <i class="fa-brands fa-twitch absolute -right-2 -bottom-2 text-5xl md:text-7xl text-purple-500/10"></i>
+                        <div class="glass-panel p-5 md:p-6 rounded-3xl border-t-4 border-t-purple-500 shadow-lg relative overflow-hidden group hover:scale-[1.02] transition-transform">
+                            <i class="fa-brands fa-twitch absolute -right-2 -bottom-2 text-5xl md:text-7xl text-purple-500/10 group-hover:text-purple-500/20 transition-colors"></i>
                             <p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-widest mb-1 relative z-10"><i class="fa-brands fa-twitch mr-1"></i> Twitch 訂閱者</p>
                             <h4 id="st-subs" class="text-3xl md:text-4xl font-black text-purple-400 font-mono relative z-10">0</h4>
                         </div>
-                        <div class="glass-panel p-5 md:p-6 rounded-3xl border-t-4 border-t-amber-500 shadow-lg relative overflow-hidden">
-                            <i class="fa-solid fa-bolt absolute -right-2 -bottom-2 text-5xl md:text-7xl text-amber-500/10"></i>
+                        <div class="glass-panel p-5 md:p-6 rounded-3xl border-t-4 border-t-amber-500 shadow-lg relative overflow-hidden group hover:scale-[1.02] transition-transform">
+                            <i class="fa-solid fa-bolt absolute -right-2 -bottom-2 text-5xl md:text-7xl text-amber-500/10 group-hover:text-amber-500/20 transition-colors"></i>
                             <p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-widest mb-1 relative z-10"><i class="fa-solid fa-bolt mr-1"></i> 總積分池 (EXP)</p>
                             <h4 id="st-exp" class="text-3xl md:text-4xl font-black text-amber-400 font-mono relative z-10">0</h4>
                         </div>
-                        <div class="glass-panel p-5 md:p-6 rounded-3xl border-t-4 border-t-rose-500 shadow-lg relative overflow-hidden">
-                            <i class="fa-solid fa-headset absolute -right-2 -bottom-2 text-5xl md:text-7xl text-rose-500/10"></i>
+                        <div class="glass-panel p-5 md:p-6 rounded-3xl border-t-4 border-t-rose-500 shadow-lg relative overflow-hidden group hover:scale-[1.02] transition-transform">
+                            <i class="fa-solid fa-headset absolute -right-2 -bottom-2 text-5xl md:text-7xl text-rose-500/10 group-hover:text-rose-500/20 transition-colors"></i>
                             <p class="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-widest mb-1 relative z-10"><i class="fa-solid fa-headset mr-1"></i> 待處理工單</p>
                             <h4 id="st-tickets" class="text-3xl md:text-4xl font-black text-rose-400 font-mono relative z-10">0</h4>
                         </div>
@@ -317,7 +344,7 @@
                     </div>
                 </div>
 
-                <div id="tab-users" class="tab-content hidden flex flex-col h-[calc(100vh-120px)] md:h-full gap-4 md:gap-6 animate-[fadeIn_0.4s_ease]">
+                <div id="tab-users" class="tab-content hidden flex flex-col h-[calc(100vh-120px)] md:h-full gap-4 md:gap-6 animate-slide-up">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-4">
                         <h2 class="text-xl md:text-2xl font-black text-emerald-400 tracking-widest flex items-center shrink-0">
                             <i class="fa-solid fa-users-gear mr-3 text-white"></i>粉絲管理
@@ -327,7 +354,7 @@
                                 <input type="text" style="position: absolute; opacity: 0; height: 0; width: 0; z-index: -1;" aria-hidden="true" tabindex="-1">
                                 
                                 <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
-                                <input type="text" id="user-search" autocomplete="one-time-code" oninput="window.currentPage=1; window.renderUserTable();" placeholder="搜尋粉絲 UID 或是暱稱..." class="v-input w-full pl-10 pr-4 py-2.5 rounded-xl text-xs font-medium">
+                                <input type="text" id="user-search" autocomplete="one-time-code" onfocus="this.removeAttribute('readonly');" readonly oninput="window.currentPage=1; window.renderUserTable();" placeholder="搜尋粉絲 UID 或是暱稱..." class="v-input w-full pl-10 pr-4 py-2.5 rounded-xl text-xs font-medium">
                             </div>
                             <button onclick="window.exportUsersCSV()" class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 md:px-4 py-2.5 rounded-xl text-[10px] md:text-xs font-black shrink-0 hover:bg-emerald-500/20 transition-colors"><i class="fa-solid fa-file-csv mr-1 md:mr-2"></i>匯出 CSV</button>
                         </div>
@@ -596,7 +623,7 @@
                     </div>
                 </div>
 
-                <div id="tab-keys" class="tab-content hidden space-y-6 animate-[fadeIn_0.4s_ease] w-full">
+                <div id="tab-keys" class="tab-content hidden space-y-6 animate-fade-in w-full">
                     <h2 class="text-xl md:text-2xl font-black text-slate-300 tracking-widest flex items-center border-b border-white/10 pb-4">
                         <i class="fa-solid fa-key mr-3 text-slate-500"></i>API 神經金庫配置
                     </h2>
@@ -613,7 +640,7 @@
                         </div>
                         <div class="glass-panel p-6 md:p-8 rounded-3xl space-y-4 border-t-2 border-t-emerald-500 shadow-lg bg-[#010409]/60 lg:col-span-2">
                             <h3 class="text-xs md:text-sm font-black text-emerald-400 uppercase tracking-widest flex items-center"><i class="fa-solid fa-paper-plane mr-2"></i>FCM 離線推播伺服器金鑰</h3>
-                            <p class="text-[10px] text-slate-500 font-mono mb-2">請貼上 Firebase 控制台中 Cloud Messaging (舊版 API) 的「伺服器金鑰」，用於 100% 免費發送離線推播。</p>
+                            <p class="text-[10px] text-slate-500 font-mono mb-2">請貼上 Firebase 控制台中 Cloud Messaging 的「伺服器金鑰」。</p>
                             <input type="password" id="keys-fcm-server" class="v-input w-full p-4 rounded-2xl text-[11px] font-mono tracking-wider" placeholder="AAAA...">
                         </div>
                         <div class="glass-panel p-6 md:p-8 rounded-3xl space-y-4 border-t-2 border-t-yellow-500 shadow-lg bg-[#010409]/60 lg:col-span-2">
@@ -644,7 +671,7 @@
                     </div>
                 </div>
 
-                <div id="tab-config" class="tab-content hidden space-y-6 animate-[fadeIn_0.4s_ease] w-full">
+                <div id="tab-config" class="tab-content hidden space-y-6 animate-fade-in w-full">
                     <h2 class="text-xl md:text-2xl font-black text-slate-300 tracking-widest border-b border-white/10 pb-4 flex items-center">
                         <i class="fa-solid fa-shield-halved mr-3 text-slate-500"></i>全域防護與自動化排程
                     </h2>
@@ -685,6 +712,8 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, orderBy, limit, getDocs, onSnapshot, where, addDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        // [新增] 引入 Messaging 以支援真・背景推播
+        import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
         
         /**
          * [配置] 初始化 Firebase 服務
@@ -702,32 +731,110 @@
         
         window.vcore = { app, auth, db, user: null, role: null };
 
-        /**
-         * [純前端資料庫驅動] 要求瀏覽器原生桌面/行動通知權限 (免 FCM 金鑰)
-         */
-        window.requestAdminNotification = async () => {
-            // 1. 檢查瀏覽器是否支援 Notification API
-            if (!("Notification" in window)) {
-                return Swal.fire({
-                    title: '設備不支援', 
-                    html: '<p class="text-sm text-sky-100 leading-relaxed">您的瀏覽器暫不支援推播通知。<br><br><span class="text-amber-400 font-bold">⚠️ iOS (iPhone/iPad) 用戶注意：</span><br>Apple 安全規定必須先將本網頁透過 Safari 底部選單<b class="text-white bg-black/50 px-2 py-1 rounded mx-1">加入主畫面</b>，並從桌面開啟 APP 後，才能點擊啟用推播功能！</p>', 
-                    icon: 'warning',
-                    background: 'rgba(10,15,30,0.95)'
-                });
-            }
+        // --- 雙軌通知核心：FCM 背景推播 + Firestore 實時監聽 ---
+window.requestAdminNotification = async () => {
+    const isSupported = "Notification" in window;
+    if (!isSupported) return Swal.fire('不支援', '此瀏覽器不支援通知功能', 'error');
 
-            // 2. 請求權限
-            try {
-                const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    Swal.fire({toast:true, position: 'top-end', title:'系統通知已啟用！\n(請保持網頁於背景執行以接收訊息)', icon:'success', timer:4000, showConfirmButton:false});
-                } else if (permission === 'denied') {
-                    Swal.fire('已拒絕', '您拒絕了系統通知。若要重新開啟，請至瀏覽器的「網站設定」中允許通知。', 'warning');
-                }
-            } catch (error) {
-                console.error("要求通知權限時發生錯誤: ", error);
+    try {
+        Swal.fire({ title: '正在啟動雙軌通知...', html: '<p class="text-xs text-slate-400">正在嘗試連線背景推播與實時監聽中心</p>', didOpen: () => Swal.showLoading(), background: 'rgba(10,15,30,0.95)' });
+
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') throw new Error("使用者拒絕通知權限");
+
+        // --- 軌道 A：嘗試 FCM 背景推播 (即使關閉網頁也能收) ---
+        let fcmSuccess = false;
+        try {
+            const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+            await navigator.serviceWorker.ready;
+            const messaging = getMessaging(app);
+            const currentToken = await getToken(messaging, { 
+                vapidKey: "BMoOxcy8z876xfm2KMxWjjNQ69m-pu4nbZknCF-PCpKMCG3gTwQ3lmIpgvNihEslLfmyxN9FAvEsqo5s9utvROA", 
+                serviceWorkerRegistration: registration 
+            });
+
+            if (currentToken) {
+                await updateDoc(doc(db, "users", vcore.user.uid), { adminFcmToken: currentToken });
+                fcmSuccess = true;
+                console.log("✅ 軌道 A (FCM) 啟動成功");
             }
-        };
+        } catch (fcmErr) {
+            console.warn("⚠️ 軌道 A (FCM) 失敗，將完全依賴軌道 B", fcmErr);
+        }
+
+        // --- 軌道 B：啟動「實時前端監聽」(只要網頁開著就 100% 收到) ---
+        window.startLiveMonitor();
+
+        Swal.fire({
+            icon: fcmSuccess ? 'success' : 'info',
+            title: fcmSuccess ? '全功能通知已啟動' : '實時監聽已啟動',
+            text: fcmSuccess ? '即使關閉網頁，您也能收到工程通知。' : '背景推播受限，只要網頁開著，您仍會收到實時通知。',
+            background: 'rgba(10,15,30,0.95)',
+            timer: 4000
+        });
+
+    } catch (err) {
+        handleFirebaseError(err, "通知系統啟動失敗");
+    }
+};
+
+// --- 軌道 B 的實作：監聽資料庫變動並觸發預設通知 ---
+window.startLiveMonitor = () => {
+    if (window.isMonitoring) return;
+    window.isMonitoring = true;
+
+    console.log("📡 實時監聽中：正在掃描新工單...");
+    
+    // 監聽待處理工單集合
+    const q = query(collection(db, "support_threads"), where("status", "==", "pending"), orderBy("lastUpdated", "desc"), limit(1));
+    
+    onSnapshot(q, (snap) => {
+        snap.docChanges().forEach((change) => {
+            if (change.type === "added" || change.type === "modified") {
+                const data = change.doc.data();
+                // 確保是 30 秒內發生的新變動，避免重複彈窗
+                if (Date.now() - data.lastUpdated < 30000) {
+                    window.triggerUltraNotification(
+                        `🚨 新工單：${data.name || '神秘粉絲'}`,
+                        data.lastMessage || '有人發送了新訊息，請立即處理！',
+                        change.doc.id
+                    );
+                }
+            }
+        });
+    });
+};
+
+// --- 極致漂亮的 UI 通知 + 瀏覽器預設通知 ---
+window.triggerUltraNotification = (title, body, ticketId) => {
+    // 1. 觸發瀏覽器預設推播 (系統層級)
+    if (Notification.permission === "granted") {
+        new Notification(title, { body: body, icon: 'avatar-main.jpg' });
+    }
+
+    // 2. 觸發 Ultra UI 彈窗 (介面層級)
+    Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'warning',
+        title: `<span class="text-rose-400">${title}</span>`,
+        html: `<div class="text-[11px] text-slate-300">${body}</div>`,
+        showConfirmButton: true,
+        confirmButtonText: '立即查看',
+        background: 'rgba(15, 23, 42, 0.95)',
+        timer: 10000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer);
+            toast.addEventListener('mouseleave', Swal.resumeTimer);
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.switchTab('tab-support');
+            if (ticketId) window.selectTicket(ticketId, "管理員");
+        }
+    });
+};
 
         /**
          * [公用] 統一錯誤處理器
@@ -749,12 +856,8 @@
             try { await addDoc(collection(db, "audit_logs"), { admin: window.vcore.user.email, action: action, details: details, timestamp: Date.now() }); } catch(e) { console.warn("稽核日誌寫入失敗", e); }
         };
 
-        /**
-         * [系統] 權限審查 (已解除，全功能開放)
-         */
         window.applyPermissions = () => {
             console.log("[RBAC] 安全權限審查已解除，所有功能強制顯示以供開發測試。");
-            // 讓所有元素直接顯示
             document.querySelectorAll('[data-roles]').forEach(el => el.style.display = 'flex');
             document.querySelectorAll('.auth-admin-only').forEach(el => el.style.display = 'flex');
         };
@@ -893,9 +996,6 @@
             } else { document.getElementById('login-screen').classList.remove('hidden', 'opacity-0'); }
         });
 
-        // ============================================================================
-        // 模組 1-11 功能邏輯保留
-        // ============================================================================
         let trendChartObj = null;
 
         window.initDashboard = async () => {
@@ -1008,6 +1108,9 @@
             window.renderUserTable();
         };
 
+        /**
+         * [優化] CRM 列表渲染 - 加入 Staggered Animation 骨牌進場特效
+         */
         window.renderUserTable = () => {
             const term = document.getElementById('user-search')?.value.toLowerCase() || '';
             const filtered = window.allUsersCache.filter(u => (u.name||'').toLowerCase().includes(term) || u.id.toLowerCase().includes(term) || (u.adminRemarks||'').toLowerCase().includes(term));
@@ -1020,7 +1123,7 @@
 
             document.getElementById('crm-page-info').innerText = `顯示 ${filtered.length > 0 ? startIdx + 1 : 0} - ${Math.min(startIdx + ITEMS_PER_PAGE, filtered.length)} 筆，共 ${filtered.length} 筆`;
 
-            document.getElementById('user-table-body').innerHTML = paginated.map(u => {
+            document.getElementById('user-table-body').innerHTML = paginated.map((u, index) => {
                 let roleDisplay = '普通粉絲'; let roleColor = 'text-cyan-400 border-cyan-400/30 bg-cyan-400/10';
                 if(u.role === 'admin') { roleDisplay = '總管'; roleColor = 'text-rose-400 border-rose-400/30 bg-rose-400/10'; }
                 if(u.role === 'engineer') { roleDisplay = '工程師'; roleColor = 'text-amber-400 border-amber-400/30 bg-amber-400/10'; }
@@ -1031,7 +1134,7 @@
                 const displayName = (u.name && u.name !== "匿名粉絲") ? u.name : `UID: ${u.id.substring(0,6)}`;
 
                 return `
-                <tr class="hover:bg-white/5 transition-colors group">
+                <tr class="hover:bg-white/10 transition-all group animate-scale-in" style="animation-fill-mode: forwards; animation-delay: ${index * 0.05}s; opacity: 0;">
                     <td class="py-2.5 px-4 border-b border-white/5">
                         <div class="flex items-center gap-3">
                             <img src="${u.photoURL||'avatar-main.jpg'}" class="w-8 h-8 rounded-lg object-cover border border-white/10" onerror="this.src='https://via.placeholder.com/150'">
@@ -1107,17 +1210,11 @@
         let activeTicketId = null; let tkListUnsub = null; let tkMessagesUnsub = null;
         window.currentTicketHistory = []; window.currentTicketEscalated = false;
 
-        // ============================================================================
-        // [系統配置] 客服工單模組設定參數
-        // ============================================================================
         const TICKET_CONFIG = {
-            NOTIFY_THRESHOLD_MS: 15000,   // 新訊息判定閾值 (15 秒)
-            ICON_PATH: 'avatar-main.jpg'  // 推播圖示
+            NOTIFY_THRESHOLD_MS: 15000,
+            ICON_PATH: 'avatar-main.jpg'
         };
 
-        // ============================================================================
-        // [輔助函式] 工單狀態視覺對映表 (Strategy Pattern)
-        // ============================================================================
         const getTicketStatusUI = (status) => {
             const statusMap = {
                 pending:     { text: '待處理', cssClass: 'text-rose-400 border-rose-400/30 bg-rose-400/10 animate-pulse' },
@@ -1127,9 +1224,6 @@
             return statusMap[status] || statusMap.closed;
         };
 
-        // ============================================================================
-        // [輔助函式] 生成單筆工單的 HTML 結構
-        // ============================================================================
         const generateTicketHTML = (docSnap) => {
             const data = docSnap.data();
             const uid = docSnap.id;
@@ -1151,85 +1245,52 @@
             `;
         };
 
-        // ============================================================================
-        // [輔助函式] 處理原生桌面推播通知邏輯
-        // ============================================================================
         const processTicketNotification = (docSnap) => {
             const data = docSnap.data();
             const uid = docSnap.id;
 
-            // 1. 條件防護 (Guard Clauses)：非待處理、超過時效、無權限者直接 Return
             if (data.status !== 'pending') return;
             if ((Date.now() - data.lastUpdated) > TICKET_CONFIG.NOTIFY_THRESHOLD_MS) return;
             if (!("Notification" in window) || Notification.permission !== 'granted') return;
 
-            // 2. 防重複快取機制 (Debounce/Deduplication)
             const cacheKey = `notified_${uid}_${data.lastUpdated}`;
             if (sessionStorage.getItem(cacheKey)) return;
             sessionStorage.setItem(cacheKey, 'true');
 
-            // 3. 執行推播 (包含防洗版設定)
             const title = `🚨 [系統通知] 收到新客服訊息`;
             const body = `發送者：${data.name || '用戶'}\n內容：${data.lastMessage || '請盡速前往客服中心查看...'}`;
             
             const notification = new Notification(title, {
                 body: body,
                 icon: TICKET_CONFIG.ICON_PATH,
-                tag: `ticket_${uid}` // [重點] 使用 Tag 讓同一個用戶連發訊息時，系統只會「更新」舊通知，不會彈出十幾個視窗蓋滿螢幕
+                tag: `ticket_${uid}`
             });
 
-            // 4. 通知點擊事件綁定
             notification.onclick = () => {
-                window.focus(); // 喚醒瀏覽器至前景
+                window.focus(); 
                 window.switchTab('tab-support');
                 window.selectTicket(uid, data.name || '用戶');
                 notification.close();
             };
         };
 
-        // ============================================================================
-        // [主程式] 啟動官方問題管理系統 (Main Entry)
-        // ============================================================================
-        window.initTicketSystem = async () => {
-            const showClosed = document.getElementById('tk-show-closed')?.checked ?? false;
+        window.initTicketSystem = () => {
+            const showClosed = document.getElementById('tk-show-closed').checked;
+            if(tkListUnsub) tkListUnsub();
             
-            // 1. 建構查詢條件 (Query Builder)
-            const baseRef = collection(db, "support_threads");
-            let q = query(baseRef, orderBy("lastUpdated", "desc"), limit(50));
+            let q = query(collection(db, "support_threads"), orderBy("lastUpdated", "desc"), limit(50));
+            if(!showClosed) q = query(collection(db, "support_threads"), where("status", "in", ["pending", "in_progress"]), orderBy("lastUpdated", "desc"));
             
-            if (!showClosed) {
-                q = query(baseRef, where("status", "!=", "closed"), orderBy("lastUpdated", "desc"), limit(50));
-            }
-
-            // 2. 清理舊監聽器，避免記憶體洩漏 (Memory Leak)
-            if (window.tkListUnsub) {
-                window.tkListUnsub(); 
-            }
-
-            // 3. 綁定資料庫實時監聽 (Snapshot Listener)
-            window.tkListUnsub = onSnapshot(q, (snap) => {
-                const listContainer = document.getElementById('ticket-list');
-                if (!listContainer) return;
-
-                // [A] 渲染 UI 視圖
-                if (snap.empty) {
-                    listContainer.innerHTML = `<div class='text-center p-4 text-slate-600 text-[10px] font-mono'>目前無工單隊列</div>`;
-                } else {
-                    // 使用陣列 Map 與 Join 取代字串 += 拼接，效能更好且更安全
-                    const htmlParts = [];
-                    snap.forEach(doc => htmlParts.push(generateTicketHTML(doc)));
-                    listContainer.innerHTML = htmlParts.join('');
-                }
-
-                // [B] 處理背景推播事件
-                snap.docChanges().forEach((change) => {
-                    if (change.type === "added" || change.type === "modified") {
-                        processTicketNotification(change.doc);
-                    }
-                });
-
-            }, (err) => handleFirebaseError(err, "工單列表連線中斷"));
+            tkListUnsub = onSnapshot(q, (snap) => {
+                const listEl = document.getElementById('ticket-list');
+                if(snap.empty) { listEl.innerHTML = "<div class='text-center text-slate-500 text-xs py-10'>目前沒有工單</div>"; return; }
+                
+                let html = '';
+                snap.forEach(d => { html += generateTicketHTML(d); processTicketNotification(d); });
+                listEl.innerHTML = html; window.renderTicketList();
+            }, (error) => { handleFirebaseError(error, "讀取工單失敗"); });
         };
+
         window.renderTicketList = () => { const term = document.getElementById('tk-search').value.toLowerCase(); const items = document.getElementById('ticket-list').children; for(let item of items) { item.style.display = item.innerText.toLowerCase().includes(term) ? 'block' : 'none'; } };
         window.selectTicket = (uid, displayName) => {
             activeTicketId = uid; document.getElementById('tk-display-name').innerText = displayName.replace(/<[^>]*>?/gm, '').trim(); document.getElementById('tk-display-uid').innerText = `UID: ${uid}`; document.getElementById('tk-status-select').classList.remove('hidden'); document.getElementById('btn-escalate').classList.remove('hidden'); document.getElementById('tk-input-area').classList.remove('opacity-50', 'pointer-events-none');
@@ -1270,6 +1331,10 @@
             document.getElementById('tk-reply').value = val.replace(/\{name\}/g, displayName);
         };
         window.handleTkKeyPress = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.sendTicketReply(); } };
+        
+        /**
+         * [升級] 發送訊息並觸發安全的後端推播隊列 (Queue)
+         */
         window.sendTicketReply = async () => {
             if(!activeTicketId) return; 
             const input = document.getElementById('tk-reply'); 
@@ -1287,41 +1352,26 @@
                 await addDoc(collection(db, "support_threads", activeTicketId, "messages"), { role: 'admin', content: msg, timestamp: Date.now(), isInternalNote: isInternal, author: vcore.user.email }); 
                 await setDoc(doc(db, "support_threads", activeTicketId), { name: displayName, status: 'in_progress', lastMessage: msg.substring(0, 20), lastUpdated: Date.now() }, { merge: true }); 
                 
-                // ====================================================================
-                // 2. [新增] 100% 免費的 FCM 原生離線推播發射引擎
-                // ====================================================================
-                if (!isInternal) { // 內部備註不發推播
-                    // A. 拿取粉絲的專屬推播 Token
-                    const userDoc = await getDoc(doc(db, "users", activeTicketId));
-                    const fcmToken = userDoc.exists() ? userDoc.data().fcmToken : null;
-                    
-                    // B. 拿取神經金庫裡的 FCM 伺服器金鑰
-                    const keysDoc = await getDoc(doc(db, "system_config", "api_keys"));
-                    const serverKey = keysDoc.exists() ? keysDoc.data().fcm_server : null;
-
-                    if (fcmToken && serverKey) {
-                        // C. 直接從你的電腦向 Google 伺服器發送推播請求！
-                        fetch('https://fcm.googleapis.com/fcm/send', {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': `key=${serverKey}`,
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                to: fcmToken,
-                                notification: {
-                                    title: "💬 老王基地工程部回覆",
-                                    body: msg.replace(/<[^>]*>?/gm, '').substring(0, 40) + '...',
-                                    icon: "avatar-main.jpg"
-                                },
-                                // 讓粉絲點擊推播時自動打開網站
-                                webpush: { fcmOptions: { link: "https://你的粉絲網站網址.com" } }
-                            })
-                        }).then(res => console.log("推播發射狀態:", res.status)).catch(e => console.error("推播失敗:", e));
+                // 2. 【核心資安修正】不再前端用 fetch 拿 Server Key 打 API，而是寫入 Queue 交給 Cloud Functions
+                if (!isInternal) { 
+                    try {
+                        await addDoc(collection(db, "notification_queue"), {
+                            targetUid: activeTicketId,
+                            title: "💬 老王基地工程部回覆",
+                            body: msg.replace(/<[^>]*>?/gm, '').substring(0, 40) + '...',
+                            icon: "avatar-main.jpg",
+                            link: "/",
+                            timestamp: Date.now(),
+                            status: "pending"
+                        });
+                        console.log("推播任務已安全寫入隊列，等待後端發射");
+                    } catch (e) {
+                        console.error("推播任務排程失敗:", e);
                     }
                 }
             } catch(err) { handleFirebaseError(err, "發送訊息失敗"); }
         };
+        
         window.openSupportChat = (uid, name) => { window.switchTab('tab-support'); window.selectTicket(uid, name); setDoc(doc(db, "support_threads", uid), { name: name, lastUpdated: Date.now() }, { merge: true }).catch(e=>{}); };
 
         window.callAdminAI = async (systemPrompt, input) => {
@@ -1433,7 +1483,6 @@
                     document.getElementById('keys-groq').value = (d.data().groq||[]).join('\n'); 
                     document.getElementById('keys-hf').value = d.data().hf || ''; 
                     document.getElementById('keys-twitch-client').value = d.data().twitch_client || ''; 
-                    // [新增] 讀取 FCM 金鑰
                     document.getElementById('keys-fcm-server').value = d.data().fcm_server || ''; 
                 } 
             } catch(e) { console.warn("API 讀取被拒"); } 
@@ -1444,7 +1493,6 @@
                 groq: document.getElementById('keys-groq').value.split('\n').filter(k => k.trim()), 
                 hf: document.getElementById('keys-hf').value.trim(), 
                 twitch_client: document.getElementById('keys-twitch-client').value.trim(),
-                // [新增] 儲存 FCM 金鑰
                 fcm_server: document.getElementById('keys-fcm-server').value.trim()
             };
             const secret = document.getElementById('keys-twitch-secret').value.trim(); 
@@ -1461,8 +1509,8 @@
 
         window.toggleTwitchMonitor = async (isActive) => {
             const statusText = document.getElementById('twitch-scan-status-text');
-            if (isActive) { statusText.innerHTML = `<span class="text-emerald-400">綠燈運行中 (每 60 秒輪詢)</span>`; if(!twitchPollingInterval) { twitchPollingInterval = setInterval(() => { console.log("[背景任務] Twitch 狀態輪詢中..."); }, 60000); } } 
-            else { statusText.innerHTML = `<span class="text-slate-500">掃描服務已停止</span>`; clearInterval(twitchPollingInterval); twitchPollingInterval = null; }
+            if (isActive) { statusText.innerHTML = `<span class="text-emerald-400">綠燈運行中 (每 60 秒輪詢)</span>`; if(!window.twitchPollingInterval) { window.twitchPollingInterval = setInterval(() => { console.log("[背景任務] Twitch 狀態輪詢中..."); }, 60000); } } 
+            else { statusText.innerHTML = `<span class="text-slate-500">掃描服務已停止</span>`; clearInterval(window.twitchPollingInterval); window.twitchPollingInterval = null; }
             try { await setDoc(doc(db, "system_config", "master"), { twitchAuto: isActive }, { merge: true }); Swal.fire({toast:true, position: 'top', title:'監聽配置已變更', icon:'success', timer:1500, showConfirmButton:false}); } catch(e) { handleFirebaseError(e); }
         };
 
@@ -1474,35 +1522,21 @@
             try { const d = await getDoc(doc(db, "system_config", "master")); if(d.exists()){ document.getElementById('cfg-twitch-auto').checked = d.data().twitchAuto || false; if(d.data().twitchAuto) { document.getElementById('twitch-scan-status-text').innerHTML = `<span class="text-emerald-400">綠燈運行中 (每 60 秒輪詢)</span>`; } document.getElementById('cfg-maintenance').checked = d.data().maintenanceMode || false; if(d.data().maintenanceMode) { document.getElementById('maintenance-text').innerText = "當前狀態：系統封鎖協議執行中"; } } } catch(e) { console.warn("載入系統設定失敗", e); }
         };
 
-        // ============================================================================
-        // [全新模組 12] AI 多模態實驗沙盒 (Hugging Face Inference API Integration)
-        // ============================================================================
-        
-        // 預設模式為文字
         window.currentSandboxMode = 'text';
 
-        // 預設定義 Hugging Face 模型 Endpoint
         const HF_MODELS = {
             text: 'mistralai/Mistral-7B-Instruct-v0.2',
-            image: 'Salesforce/blip-image-captioning-large', // Vision Image-to-Text
-            draw: 'stabilityai/stable-diffusion-xl-base-1.0', // Image Generation
-            voice: 'espnet/kan-bayashi_ljspeech_vits' // Text-to-Speech
+            image: 'Salesforce/blip-image-captioning-large', 
+            draw: 'stabilityai/stable-diffusion-xl-base-1.0', 
+            voice: 'espnet/kan-bayashi_ljspeech_vits' 
         };
 
-        /**
-         * [沙盒] 切換實驗模式
-         */
         window.switchSandboxMode = (mode, btn) => {
             window.currentSandboxMode = mode;
-            
-            // UI 按鈕切換
             document.querySelectorAll('.sandbox-mode-btn').forEach(el => el.classList.remove('active'));
             btn.classList.add('active');
-            
-            // 標示當前使用的模型名稱
             document.getElementById('sandbox-model-label').innerText = `Model: ${HF_MODELS[mode]}`;
             
-            // 介面控制：如果是影像解析模式，顯示圖片上傳按鈕
             const fileContainer = document.getElementById('sandbox-file-container');
             if (mode === 'image') {
                 fileContainer.classList.remove('hidden');
@@ -1511,14 +1545,9 @@
                 fileContainer.classList.add('hidden');
                 document.getElementById('sandbox-prompt').placeholder = "請輸入提示詞 (Prompt)...";
             }
-
-            // 清空輸出區
             document.getElementById('sandbox-output').innerHTML = '<span class="text-slate-600 text-xs tracking-widest"><i class="fa-solid fa-terminal mr-2"></i>AWAITING_COMMAND...</span>';
         };
 
-        /**
-         * [沙盒] 共用 API 呼叫引擎
-         */
         window.callHuggingFaceAPI = async (model, data, isBinaryUpload = false, expectBlobOutput = false) => {
             const keySnap = await getDoc(doc(db, "system_config", "api_keys"));
             const hfKey = keySnap.data()?.hf?.trim();
@@ -1541,9 +1570,6 @@
             return expectBlobOutput ? await res.blob() : await res.json();
         };
 
-        /**
-         * [沙盒] 執行主控台任務
-         */
         window.executeSandboxTask = async () => {
             const promptInput = document.getElementById('sandbox-prompt').value.trim();
             const fileInput = document.getElementById('sandbox-file').files[0];
@@ -1552,7 +1578,6 @@
             
             const mode = window.currentSandboxMode;
 
-            // 基礎驗證
             if (mode !== 'image' && !promptInput) {
                 return Swal.fire('提示', '請輸入提示詞', 'warning');
             }
@@ -1560,7 +1585,6 @@
                 return Swal.fire('提示', '影像解析模式需要上傳一張圖片', 'warning');
             }
 
-            // 鎖定 UI 狀態
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-2"></i>運算中...';
             outputArea.innerHTML = '<div class="text-yellow-500 font-mono text-xs animate-pulse"><i class="fa-solid fa-satellite-dish mr-2"></i>傳輸至雲端節點推理中...</div>';
@@ -1569,17 +1593,13 @@
                 let resultHtml = "";
 
                 if (mode === 'text') {
-                    // --- 1. 文字生成 ---
                     const res = await window.callHuggingFaceAPI(HF_MODELS.text, promptInput, false, false);
                     const generatedText = res[0]?.generated_text || "無法生成文字";
                     resultHtml = `<div class="whitespace-pre-wrap">${generatedText.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`;
                 
                 } else if (mode === 'image') {
-                    // --- 2. 圖像解析 (Vision) ---
                     const res = await window.callHuggingFaceAPI(HF_MODELS.image, fileInput, true, false);
                     const caption = res[0]?.generated_text || "無法解析此圖片內容";
-                    
-                    // 建立圖片預覽
                     const imgUrl = URL.createObjectURL(fileInput);
                     resultHtml = `
                         <div class="flex flex-col items-center gap-4 w-full">
@@ -1590,13 +1610,11 @@
                         </div>`;
 
                 } else if (mode === 'draw') {
-                    // --- 3. AI 繪圖 ---
                     const blob = await window.callHuggingFaceAPI(HF_MODELS.draw, promptInput, false, true);
                     const imgUrl = URL.createObjectURL(blob);
                     resultHtml = `<img src="${imgUrl}" class="max-w-full max-h-[300px] rounded-2xl shadow-[0_0_20px_rgba(255,255,255,0.1)] border border-white/10 object-contain">`;
                 
                 } else if (mode === 'voice') {
-                    // --- 4. 語音合成 (TTS) ---
                     const blob = await window.callHuggingFaceAPI(HF_MODELS.voice, promptInput, false, true);
                     const audioUrl = URL.createObjectURL(blob);
                     resultHtml = `
@@ -1607,7 +1625,6 @@
                         </div>`;
                 }
 
-                // 寫入結果
                 outputArea.innerHTML = resultHtml;
                 await window.logAdminAction("AI_SANDBOX_EXEC", `於沙盒執行 [${mode}] 運算任務`);
 
@@ -1615,7 +1632,6 @@
                 console.error("HF Sandbox Error:", err);
                 outputArea.innerHTML = `<div class="text-red-400 text-xs bg-red-900/20 p-3 rounded-lg border border-red-500/30 w-full"><i class="fa-solid fa-triangle-exclamation mr-2"></i>${err.message}</div>`;
             } finally {
-                // 解除鎖定
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i class="fa-solid fa-play mr-2"></i>執行運算 (Execute)';
             }
